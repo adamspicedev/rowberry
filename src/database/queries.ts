@@ -83,6 +83,7 @@ interface Execution {
   rowCount: number | null;
   returnedRows: number;
   busy: boolean;
+  closing: boolean;
   cancelling?: Promise<void>;
   cancelled: boolean;
   cancelPending: boolean;
@@ -113,6 +114,22 @@ export class QueryEngine {
     this.opening.set(tabId, controller);
     try {
       const session = await openSession(config, controller.signal);
+      // pg's client read timer assumes Query.callback is eventually invoked.
+      // Cursor does not use that callback, so its timer can fire while a portal
+      // is suspended and send Sync, committing an implicit mutation. Disable it
+      // for this dedicated client; PostgreSQL statement_timeout bounds each
+      // Execute rather than the user's time between page requests.
+      const parameters =
+        "connectionParameters" in session.client ? session.client.connectionParameters : undefined;
+      if (
+        typeof parameters !== "object" ||
+        parameters === null ||
+        !("query_timeout" in parameters)
+      ) {
+        await session.client.end();
+        throw new Error("Unsupported PostgreSQL client timeout contract.");
+      }
+      parameters.query_timeout = 0;
       const pid = "processID" in session.client ? session.client.processID : undefined;
       if (typeof pid !== "number" || !Number.isSafeInteger(pid)) {
         await session.client.end();
@@ -134,6 +151,7 @@ export class QueryEngine {
               : message.status === "E"
                 ? "aborted"
                 : "unknown";
+        if (tab.query && !tab.query.busy) this.emit(tab.query);
       });
       const lost = () => {
         tab.closed = true;
@@ -155,7 +173,7 @@ export class QueryEngine {
   start(tabId: string, sql: string) {
     const tab = this.tabs.get(tabId);
     if (!tab || tab.closed) throw new Error("SQL tab is unavailable.");
-    if (tab.query?.status === "running" || tab.query?.cancelPending)
+    if (tab.query?.status === "running" || tab.query?.cancelPending || tab.query?.closing)
       throw new Error("Finish or close the current result first.");
     if (!sql.trim() || Buffer.byteLength(sql) > 1024 * 1024)
       throw new Error("SQL must contain 1 byte to 1 MiB.");
@@ -175,14 +193,35 @@ export class QueryEngine {
       rowCount: null,
       returnedRows: 0,
       busy: false,
+      closing: false,
       cancelled: false,
       cancelPending: false,
     };
     cursor.on("end", () => {
       cursor.ended = true;
     });
-    cursor.on("error", () => {
+    cursor.on("error", (error: unknown) => {
       cursor.failed = true;
+      // Errors can arrive before the first fetch or while a portal is idle.
+      // They must still terminate the visible execution state.
+      if (!execution.busy) {
+        if (
+          error instanceof DatabaseError &&
+          error.severity !== "FATAL" &&
+          !error.code?.startsWith("08")
+        ) {
+          execution.status = "error";
+          execution.error = error.message.slice(0, 4096);
+        } else {
+          execution.status = "unknown";
+          execution.error =
+            "Connection failed; outcome unknown. Do not retry mutations automatically.";
+          tab.closed = true;
+          tab.transaction = "unknown";
+          void tab.session.client.end().catch(() => {});
+        }
+        this.emit(execution);
+      }
     });
     cursor.abortCopy = () => {
       void tab.session.client.end().catch(() => {});
@@ -200,7 +239,7 @@ export class QueryEngine {
     const query = this.require(queryId);
     if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 1000)
       throw new Error("Page size must be 1–1,000.");
-    if (query.busy) throw new Error("A fetch is already pending.");
+    if (query.busy || query.closing) throw new Error("A fetch or result close is already pending.");
     if (query.status !== "running") return this.snapshot(query, []);
     query.busy = true;
     let rows: (string | null)[][] = [];
@@ -266,6 +305,7 @@ export class QueryEngine {
   }
   async cancel(queryId: string) {
     const query = this.require(queryId);
+    if (query.closing && !query.cancelling) throw new Error("SQL result is closing.");
     if (query.status !== "running" || query.cancelling) return query.cancelling;
     query.cancelled = true;
     query.cancelPending = true;
@@ -303,11 +343,21 @@ export class QueryEngine {
   }
   async close(queryId: string) {
     const query = this.require(queryId);
-    if (query.busy) throw new Error("Cancel the active fetch before closing its result.");
-    if (!query.cursor.failed) await query.cursor.close();
-    this.queries.delete(queryId);
-    if (query.tab.query === query) query.tab.query = undefined;
+    if (query.busy || query.closing)
+      throw new Error("Cancel the active fetch or wait for result close.");
+    query.closing = true;
+    try {
+      // Keep tab.query owned while a delayed control connection can still send
+      // pg_cancel_backend. Releasing it first could cancel the next SQL command.
+      await query.cancelling;
+      if (!query.cursor.failed) await query.cursor.close();
+      this.queries.delete(queryId);
+      if (query.tab.query === query) query.tab.query = undefined;
+    } finally {
+      query.closing = false;
+    }
   }
+
   async closeTab(tabId: string) {
     this.opening.get(tabId)?.abort();
     await this.pending.get(tabId)?.catch(() => {});

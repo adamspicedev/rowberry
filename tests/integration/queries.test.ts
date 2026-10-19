@@ -1,4 +1,5 @@
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
+import * as connections from "../../src/database/connections";
 import { QueryEngine } from "../../src/database/queries";
 import { ConnectionProfileSchema, SessionIdSchema } from "../../src/shared/protocol";
 for (const version of [14, 18])
@@ -26,6 +27,84 @@ for (const version of [14, 18])
       const { queryId } = engine.start(id, sql);
       return engine.fetch(queryId);
     }
+    test("suspended mutation outlives the driver read timeout without implicit commit", async () => {
+      const realOpen = connections.openSession;
+      const spy = vi.spyOn(connections, "openSession").mockImplementation(async (...args) => {
+        const session = await realOpen(...args);
+        const client = session.client;
+        if (
+          !("connectionParameters" in client) ||
+          typeof client.connectionParameters !== "object" ||
+          client.connectionParameters === null ||
+          !("query_timeout" in client.connectionParameters)
+        )
+          throw new Error("Missing pg timer config");
+        // Compress pg's inherited 35-second timer while retaining real sockets,
+        // protocol dispatch, cursor and PostgreSQL transaction behavior.
+        client.connectionParameters.query_timeout = 50;
+        return session;
+      });
+      const schema = `query_lifetime_${crypto.randomUUID().replaceAll("-", "")}`;
+      try {
+        await tab();
+        await tab("b");
+        await run(`CREATE SCHEMA "${schema}"`, "b");
+        await run(`CREATE TABLE "${schema}".writes(i int)`, "b");
+        const { queryId } = engine.start(
+          "a",
+          `INSERT INTO "${schema}".writes SELECT i FROM generate_series(1,10) i RETURNING i`,
+        );
+        expect((await engine.fetch(queryId, 1)).done).toBe(false);
+        await new Promise((r) => setTimeout(r, 150));
+        expect(engine.state(queryId).status).toBe("running");
+        expect((await engine.fetch(queryId, 1)).rows).toEqual([["2"]]);
+        await engine.closeTab("a");
+        expect((await run(`SELECT count(*) FROM "${schema}".writes`, "b")).rows).toEqual([["0"]]);
+      } finally {
+        spy.mockRestore();
+        await engine.closeTab("a");
+        await run(`DROP SCHEMA IF EXISTS "${schema}" CASCADE`, "b");
+      }
+    });
+    test("pending cancellation retains tab ownership until result close completes", async () => {
+      await tab();
+      const { queryId } = engine.start("a", "SELECT i FROM generate_series(1,10) i");
+      await engine.fetch(queryId, 1);
+      const realOpen = connections.openSession;
+      let release: () => void = () => {};
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const spy = vi.spyOn(connections, "openSession").mockImplementation(async (...args) => {
+        await gate;
+        return realOpen(...args);
+      });
+      const cancellation = engine.cancel(queryId);
+      const closing = engine.close(queryId);
+      try {
+        await new Promise((r) => setTimeout(r, 30));
+        expect(() => engine.start("a", "SELECT pg_sleep(1)")).toThrow();
+        release();
+        await Promise.all([cancellation, closing]);
+        expect((await run("SELECT pg_sleep(0.1), 42")).rows).toEqual([["", "42"]]);
+      } finally {
+        release();
+        await Promise.allSettled([cancellation, closing]);
+        spy.mockRestore();
+      }
+    });
+    test("server execution timeout and pre-fetch errors produce terminal states", async () => {
+      await tab();
+      await run("SET statement_timeout TO 50");
+      const timed = await run("SELECT pg_sleep(1)");
+      expect(timed.status).toBe("error");
+      expect(timed.error).toContain("statement timeout");
+      expect((await run("SELECT 1")).status).toBe("complete");
+      const { queryId } = engine.start("a", "SELECT FROM invalid syntax");
+      await expect.poll(() => engine.state(queryId).status).toBe("error");
+      expect((await engine.fetch(queryId)).done).toBe(true);
+      expect((await run("SELECT 2")).rows).toEqual([["2"]]);
+    });
     test("raw SELECT pages retain OIDs, null and precision with bounded continuation", async () => {
       await tab();
       const { queryId } = engine.start(
