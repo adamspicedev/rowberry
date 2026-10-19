@@ -1,4 +1,4 @@
-import { QueryEngine } from "./queries";
+import { QueryEngine, QueryTabClosedError } from "./queries";
 import type { ResolvedConnection } from "./types";
 import {
   boundedReply,
@@ -136,8 +136,11 @@ export class QueryDispatch {
         return failure("QUERY_UNAVAILABLE", requestId);
       }
       return ReplySchema.parse(reply);
-    } catch {
-      return failure("QUERY_UNAVAILABLE", requestId);
+    } catch (error) {
+      return failure(
+        error instanceof QueryTabClosedError ? "QUERY_SESSION_CLOSED" : "QUERY_UNAVAILABLE",
+        requestId,
+      );
     } finally {
       this.pending--;
     }

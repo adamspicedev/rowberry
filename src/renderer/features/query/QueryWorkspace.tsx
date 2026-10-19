@@ -212,7 +212,13 @@ function QueryTab({
       setTransaction(reply.data.transaction);
       setMessage(reply.data.error ?? reply.data.status);
       if (reply.data.status === "unknown") setReady(false);
-    } else if (!reply.ok) setMessage(reply.error.message);
+    } else if (!reply.ok) {
+      setMessage(reply.error.message);
+      if (reply.error.code === "QUERY_SESSION_CLOSED") {
+        setReady(false);
+        setTransaction("unknown");
+      }
+    }
   }
   async function run(text: string) {
     if (busy) return;
@@ -240,7 +246,13 @@ function QueryTab({
         const id = QueryIdSchema.parse(reply.data.queryId);
         setQueryId(id);
         await fetchPage(id);
-      } else if (!reply.ok) setMessage(reply.error.message);
+      } else if (!reply.ok) {
+        setMessage(reply.error.message);
+        if (reply.error.code === "QUERY_SESSION_CLOSED") {
+          setReady(false);
+          setTransaction("unknown");
+        }
+      }
     } finally {
       if (live.current) setBusy(false);
     }
@@ -318,6 +330,10 @@ function QueryTab({
                 .then((reply) => {
                   if (live.current) {
                     setReady(reply.ok);
+                    if (reply.ok) {
+                      setTransaction("idle");
+                      setConfirmEnd(false);
+                    }
                     setQueryId(null);
                     setPage(null);
                     setBusy(false);

@@ -84,6 +84,39 @@ for (const version of [14, 18])
       for (let i = 0; i < 7; i++) await page.keyboard.press("Shift+ArrowRight");
       await runButton.click();
       await expect(page.locator(".query-tab output")).toContainText("complete");
+      await text("SELECT pg_backend_pid()");
+      await runButton.click();
+      await expect(page.locator(".query-tab output")).toContainText("complete");
+      const backendPid = Number(
+        await page
+          .getByRole("table", { name: "SQL results" })
+          .locator("tbody td")
+          .first()
+          .textContent(),
+      );
+      await client.query("SELECT pg_terminate_backend($1)", [backendPid]);
+      await expect
+        .poll(async () =>
+          Number(
+            (await client.query("SELECT count(*) FROM pg_stat_activity WHERE pid=$1", [backendPid]))
+              .rows[0].count,
+          ),
+        )
+        .toBe(0);
+      await text("SELECT 424242");
+      await runButton.click();
+      const reopen = page.getByRole("button", { name: "Reopen session", exact: true });
+      await expect(reopen).toBeVisible();
+      await expect(page.locator(".query-tab output")).toContainText("Transaction: unknown");
+      await expect(editor).toHaveValue("SELECT 424242");
+      await reopen.click();
+      await expect(page.locator(".query-tab output")).toContainText(
+        "Session reopened. Run SQL explicitly. · Transaction: idle",
+      );
+      await expect(editor).toHaveValue("SELECT 424242");
+      await expect(page.getByRole("table", { name: "SQL results" })).toHaveCount(0);
+      await runButton.click();
+      await expect(page.getByRole("table", { name: "SQL results" })).toContainText("424242");
       await page.getByRole("button", { name: "BEGIN", exact: true }).click();
       await expect(page.locator(".query-tab output")).toContainText("Transaction: active");
       await text("SELECT no_such_column");

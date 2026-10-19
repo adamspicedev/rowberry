@@ -3,6 +3,12 @@ import { DatabaseError, type QueryResult } from "pg";
 import { openSession, textParsers, type Session } from "./connections";
 import type { ResolvedConnection } from "./types";
 
+export class QueryTabClosedError extends Error {
+  constructor() {
+    super("SQL tab is unavailable.");
+  }
+}
+
 export type TransactionState = "idle" | "active" | "aborted" | "unknown";
 export type QueryStatus = "running" | "complete" | "error" | "cancelled" | "limit" | "unknown";
 export interface QueryPage {
@@ -172,7 +178,7 @@ export class QueryEngine {
   }
   start(tabId: string, sql: string) {
     const tab = this.tabs.get(tabId);
-    if (!tab || tab.closed) throw new Error("SQL tab is unavailable.");
+    if (!tab || tab.closed) throw new QueryTabClosedError();
     if (tab.query?.status === "running" || tab.query?.cancelPending || tab.query?.closing)
       throw new Error("Finish or close the current result first.");
     if (!sql.trim() || Buffer.byteLength(sql) > 1024 * 1024)

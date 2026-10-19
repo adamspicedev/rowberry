@@ -209,6 +209,7 @@ export const ErrorSchema = z
       "BROWSE_COLUMN_LIMIT",
       "QUERY_TAB_LIMIT",
       "QUERY_UNAVAILABLE",
+      "QUERY_SESSION_CLOSED",
     ]),
     message: z.string().max(256),
     retryable: z.boolean(),
@@ -371,11 +372,12 @@ export interface DesktopBridge {
   subscribe(listener: EventListener): () => void;
   unsubscribe(listener: EventListener): void;
 }
+const SQL_WIRE_BYTES = 6 * 1024 * 1024 + 2048;
 export function boundedReply(value: unknown, kind: Command["kind"]): boolean {
   return bounded(
     value,
     kind === "queries.saved.get"
-      ? 1024 * 1024 + 2048
+      ? SQL_WIRE_BYTES
       : kind === "rows.value"
         ? VALUE_BYTES
         : kind === "rows.fetch" || kind === "schema.list" || kind === "queries.fetch"
@@ -384,7 +386,7 @@ export function boundedReply(value: unknown, kind: Command["kind"]): boolean {
   );
 }
 export function boundedCommand(value: unknown): boolean {
-  return bounded(value, 1024 * 1024 + 2048);
+  return bounded(value, SQL_WIRE_BYTES);
 }
 export function bounded(value: unknown, limit = MAX_MESSAGE_BYTES): boolean {
   try {
@@ -399,6 +401,8 @@ export function failure(
   requestId: z.infer<typeof RequestIdSchema> | null = null,
 ): Reply {
   const messages = {
+    QUERY_SESSION_CLOSED:
+      "SQL tab connection closed; transaction outcome is unknown. Reopen the session explicitly before running SQL. No SQL was retried.",
     QUERY_TAB_LIMIT: "At most 16 SQL tabs can be open. Close a tab before opening another.",
     QUERY_UNAVAILABLE:
       "SQL session unavailable or busy. Wait for active work, end the result explicitly, or reopen the tab session. SQL was not retried.",

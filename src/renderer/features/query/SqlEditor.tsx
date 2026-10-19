@@ -27,6 +27,7 @@ export function SqlEditor({
     changed.current = onChange;
   }, [onChange]);
   const initial = useRef(value);
+  const ownedModel = useRef<monaco.editor.ITextModel | null>(null);
   useEffect(() => {
     if (!host.current) return;
     const editor = monaco.editor.create(host.current, {
@@ -41,6 +42,7 @@ export function SqlEditor({
       ariaLabel: "SQL editor",
       scrollBeyondLastLine: false,
     });
+    ownedModel.current = editor.getModel();
     onReady({
       text: () => editor.getValue(),
       selected: () => {
@@ -55,12 +57,14 @@ export function SqlEditor({
       const model = editor.getModel();
       editor.dispose();
       model?.dispose();
+      ownedModel.current = null;
     };
   }, [onReady]);
   useEffect(() => {
     const quote = (name: string) => '"' + name.replaceAll('"', '""') + '"';
     const provider = monaco.languages.registerCompletionItemProvider("sql", {
       provideCompletionItems(model, position) {
+        if (model !== ownedModel.current) return { suggestions: [] };
         const word = model.getWordUntilPosition(position);
         const range = {
           startLineNumber: position.lineNumber,
