@@ -200,6 +200,69 @@ for (const version of [14, 18])
         (await observer.client.query('SELECT value FROM "write fixture".triggered')).rows[0]?.value,
       ).toBe("second!");
     });
+    for (const deferred of [false, true])
+      test(`${deferred ? "deferred constraint" : "later row AFTER"} trigger refreshes final batch baseline`, async () => {
+        const name = deferred ? "deferred_final" : "batch_final";
+        await observer.client.query(
+          `CREATE TABLE "write fixture".${name}(id integer PRIMARY KEY,value text);INSERT INTO "write fixture".${name} VALUES(1,'one'),(2,'two');CREATE FUNCTION "write fixture".${name}_trigger() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN ${deferred ? `IF NEW.value NOT LIKE '%!' THEN UPDATE "write fixture".${name} SET value=NEW.value||'!' WHERE id=NEW.id; END IF;` : `IF NEW.id=2 THEN UPDATE "write fixture".${name} SET value='changed by later row' WHERE id=1; END IF;`} RETURN NEW; END $$;CREATE ${deferred ? "CONSTRAINT " : ""}TRIGGER final_value AFTER UPDATE ON "write fixture".${name} ${deferred ? "DEFERRABLE INITIALLY DEFERRED" : ""} FOR EACH ROW EXECUTE FUNCTION "write fixture".${name}_trigger();`,
+        );
+        const table = (await introspect(session)).tables.find(
+          (t) => t.schema === "write fixture" && t.name === name,
+        );
+        if (!table) throw Error("Missing table");
+        const rows = (await browser.fetch({ tableId: table.id })).rows;
+        const first = rows[0]?.target,
+          second = rows[1]?.target;
+        if (!first || !second) throw Error("No targets");
+        const result = await browser.save({
+          changes: [
+            { target: first, values: { value: "first draft" } },
+            { target: second, values: { value: "second draft" } },
+          ],
+        });
+        expect(result.kind).toBe("committed");
+        if (result.kind !== "committed") throw Error("Not committed");
+        const actual = await observer.client.query(
+          `SELECT value FROM "write fixture".${name} ORDER BY id`,
+        );
+        expect(result.rows.map((r) => r.row.cells[1]?.text)).toEqual(
+          actual.rows.map((r) => r.value),
+        );
+        expect(result.rows[0]?.row.cells[1]?.text).toBe(
+          deferred ? "first draft!" : "changed by later row",
+        );
+        const refreshed = result.rows[0]?.row.target;
+        if (!refreshed) throw Error("Missing refreshed target");
+        const again = await browser.save({
+          changes: [{ target: refreshed, values: { value: "next draft" } }],
+        });
+        expect(again.kind).toBe("committed");
+        if (again.kind !== "committed") throw Error("Not committed");
+        expect(again.rows[0]?.row.cells[1]?.text).toBe(
+          (await observer.client.query(`SELECT value FROM "write fixture".${name} WHERE id=1`))
+            .rows[0]?.value,
+        );
+      });
+    test("deferred trigger changing returned key rolls back rather than issuing stale target", async () => {
+      await observer.client.query(
+        `CREATE TABLE "write fixture".key_trigger(id integer PRIMARY KEY,value text);INSERT INTO "write fixture".key_trigger VALUES(1,'original');CREATE FUNCTION "write fixture".key_trigger_fn() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.id<100 THEN UPDATE "write fixture".key_trigger SET id=NEW.id+100 WHERE id=NEW.id; END IF; RETURN NEW; END $$;CREATE CONSTRAINT TRIGGER key_change AFTER UPDATE ON "write fixture".key_trigger DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION "write fixture".key_trigger_fn();`,
+      );
+      const table = (await introspect(session)).tables.find(
+        (t) => t.schema === "write fixture" && t.name === "key_trigger",
+      );
+      if (!table) throw Error("Missing table");
+      const target = (await browser.fetch({ tableId: table.id })).rows[0]?.target;
+      if (!target) throw Error("No target");
+      const result = await browser.save({
+        changes: [{ target, values: { value: "must roll back" } }],
+      });
+      expect(result.kind).toBe("failed");
+      if (result.kind !== "committed") expect(result.message).toContain("returned key");
+      expect(
+        (await observer.client.query('SELECT id::text,value FROM "write fixture".key_trigger'))
+          .rows,
+      ).toEqual([{ id: "1", value: "original" }]);
+    });
     test("RLS denied UPDATE produces conflict while retaining row", async () => {
       await observer.client.query(
         `CREATE TABLE "write fixture".restricted(id integer PRIMARY KEY, value text);INSERT INTO "write fixture".restricted VALUES(1,'original');ALTER TABLE "write fixture".restricted ENABLE ROW LEVEL SECURITY;CREATE POLICY reads ON "write fixture".restricted FOR SELECT USING(true);CREATE ROLE dbapp_write_${version};GRANT USAGE ON SCHEMA "write fixture" TO dbapp_write_${version};GRANT SELECT,UPDATE ON "write fixture".restricted TO dbapp_write_${version};`,

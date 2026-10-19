@@ -240,6 +240,18 @@ export class RowBrowser {
           Math.floor((PAGE_BYTES - 1024 * 1024) / 8 / args.changes.length / table.columns.length),
         ),
       );
+      const projections = table.columns.flatMap((c, i) => [
+        `CASE WHEN octet_length(${quote(c.name)}::text)<=${cellLimit} THEN ${quote(c.name)}::text ELSE NULL END AS ${quote("v" + i)}`,
+        `octet_length(${quote(c.name)}::text)::text AS ${quote("b" + i)}`,
+      ]);
+      projections.push(
+        'xmin::text AS "version"',
+        ...table.key.map(
+          (key, i) =>
+            `CASE WHEN octet_length(${quote(key)}::text)<=8192 THEN ${quote(key)}::text ELSE NULL END AS ${quote("k" + i)}`,
+        ),
+      );
+      const pending: { previousTarget: string; keys: (string | null)[] }[] = [];
       const updated: {
         previousTarget: string;
         row: RowPage["rows"][number];
@@ -277,17 +289,6 @@ export class RowBrowser {
           (key, i) => `${quote(key)} = ${bind(original.values[i] ?? null)}`,
         );
         where.push(`xmin::text = ${bind(original.version)}`);
-        const projections = table.columns.flatMap((c, i) => [
-          `CASE WHEN octet_length(${quote(c.name)}::text)<=${cellLimit} THEN ${quote(c.name)}::text ELSE NULL END AS ${quote("v" + i)}`,
-          `octet_length(${quote(c.name)}::text)::text AS ${quote("b" + i)}`,
-        ]);
-        projections.push(
-          'xmin::text AS "version"',
-          ...table.key.map(
-            (key, i) =>
-              `CASE WHEN octet_length(${quote(key)}::text)<=8192 THEN ${quote(key)}::text ELSE NULL END AS ${quote("k" + i)}`,
-          ),
-        );
         const result = await this.session.client.query<Record<string, string | null>>(
           `UPDATE ${quote(table.schema)}.${quote(table.name)} SET ${assignments.join(",")} WHERE ${where.join(" AND ")} RETURNING ${projections.join(",")}`,
           parameters,
@@ -307,11 +308,18 @@ export class RowBrowser {
           throw new Error(
             "Updated row key exceeds the 8192 byte identity limit. No edits were saved.",
           );
-        // AFTER triggers can change values and xmin after UPDATE RETURNING.
-        // Read the transaction's final visible row instead of issuing stale tokens.
+        pending.push({
+          previousTarget: change.target,
+          keys: table.key.map((_, i) => returned["k" + i] ?? null),
+        });
+      }
+      // Finish all writes and fire deferred constraint triggers before establishing
+      // the baseline represented by returned cells and opaque row-version targets.
+      await this.session.client.query("SET CONSTRAINTS ALL IMMEDIATE");
+      for (const saved of pending) {
         const final = await this.session.client.query<Record<string, string | null>>(
           `SELECT ${projections.join(",")} FROM ${quote(table.schema)}.${quote(table.name)} WHERE ${table.key.map((key, i) => `${quote(key)} = $${i + 1}`).join(" AND ")} LIMIT 2`,
-          table.key.map((_, i) => returned["k" + i] ?? null),
+          saved.keys,
         );
         const raw = final.rows[0];
         if (final.rows.length !== 1 || !raw)
@@ -340,7 +348,7 @@ export class RowBrowser {
               },
         );
         updated.push({
-          previousTarget: change.target,
+          previousTarget: saved.previousTarget,
           row: { target, cells },
           identity: {
             table,
