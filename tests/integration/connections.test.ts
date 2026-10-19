@@ -3,7 +3,7 @@ import { _electron, type ElectronApplication } from "@playwright/test";
 import { build } from "esbuild";
 import { z } from "zod";
 import { createServer, type Socket } from "node:net";
-import { readFileSync, mkdtempSync, rmSync } from "node:fs";
+import { readFileSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { openSession } from "../../src/database/connections";
@@ -110,6 +110,44 @@ for (const version of [14, 18])
       }
     });
   });
+for (const source of ["environment", "password file"]) {
+  for (const password of [null, ""]) {
+    test(`missing/empty explicit secret (${String(password)}) cannot use ambient ${source} credentials`, async () => {
+      const previousPassword = process.env.PGPASSWORD;
+      const previousFile = process.env.PGPASSFILE;
+      const temporary = mkdtempSync(path.join(tmpdir(), "dbapp-ambient-secret-"));
+      try {
+        if (source === "environment") process.env.PGPASSWORD = "fixture-only-password";
+        else delete process.env.PGPASSWORD;
+        const passfile = path.join(temporary, "pgpass");
+        writeFileSync(
+          passfile,
+          source === "password file"
+            ? "localhost:55414:fixture:fixture:fixture-only-password\n"
+            : "",
+          {
+            mode: 0o600,
+          },
+        );
+        process.env.PGPASSFILE = passfile;
+        const outcome = await openSession({ ...config(14), password }).then(
+          async (session) => {
+            await session.client.end();
+            return "authenticated with ambient credential";
+          },
+          () => "rejected",
+        );
+        expect(outcome).toBe("rejected");
+      } finally {
+        if (previousPassword === undefined) delete process.env.PGPASSWORD;
+        else process.env.PGPASSWORD = previousPassword;
+        if (previousFile === undefined) delete process.env.PGPASSFILE;
+        else process.env.PGPASSFILE = previousFile;
+        rmSync(temporary, { recursive: true, force: true });
+      }
+    });
+  }
+}
 test("connect timeout closes a socket stalled before authentication", async () => {
   const sockets = new Set<Socket>();
   const server = createServer((socket) => {

@@ -37,7 +37,9 @@ export async function openSession(
     port: profile.port,
     database: profile.database,
     user: profile.user,
-    password: config.password ?? "",
+    // A callback is truthy even for a missing/empty secret: pg must never fall
+    // back to inherited PGPASSWORD or a user password file.
+    password: () => config.password ?? "",
     ssl,
     types: textParsers,
     connectionTimeoutMillis: config.connectTimeoutMs,

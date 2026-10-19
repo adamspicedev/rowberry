@@ -4,6 +4,7 @@ import { createServer, type Socket } from "node:net";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { z } from "zod";
+import { Client } from "pg";
 import { ConnectionProfileSchema } from "../../src/shared/protocol";
 const fixture = z
   .object({ directory: z.string() })
@@ -115,53 +116,128 @@ test("saved metadata and private transient password open a real TLS session from
   }
 });
 
-test("Disconnect remains available while a main-bridge connection handshake is pending", async () => {
-  const sockets = new Set<Socket>();
-  const server = createServer((socket) => {
-    sockets.add(socket);
-    socket.resume();
-    socket.on("close", () => sockets.delete(socket));
+for (const action of ["Disconnect", "Reload"])
+  test(`${action} closes a pending main-bridge connection handshake`, async () => {
+    const sockets = new Set<Socket>();
+    const server = createServer((socket) => {
+      sockets.add(socket);
+      socket.resume();
+      socket.on("close", () => sockets.delete(socket));
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    const address = server.address();
+    if (!address || typeof address === "string") throw new Error();
+    const userData = mkdtempSync(path.join(tmpdir(), "dbapp-pending-ui-"));
+    const application = await electron.launch({
+      args: [path.resolve("."), `--user-data-dir=${userData}`],
+    });
+    try {
+      const page = await application.firstWindow();
+      const profile = ConnectionProfileSchema.parse({
+        id: crypto.randomUUID(),
+        name: "Stalled fixture",
+        host: "127.0.0.1",
+        port: address.port,
+        user: "fixture",
+        database: "fixture",
+        tls: { kind: "disable", acknowledged: true },
+        environmentColor: "#123456",
+      });
+      const saved = await page.evaluate(
+        async (profile) =>
+          Reflect.apply(window.dbapp.request, window.dbapp, [
+            { kind: "connections.save", requestId: "pending", profile },
+          ]),
+        profile,
+      );
+      expect(saved.ok).toBe(true);
+      await page.reload();
+      await page.getByRole("button", { name: "Connect Stalled fixture", exact: true }).click();
+      await expect(page.locator(".connection-state")).toHaveText("connecting");
+      await expect.poll(() => sockets.size).toBe(1);
+      const start = Date.now();
+      if (action === "Reload") {
+        await page.reload();
+        await expect(page.locator(".connection-state")).toHaveText("No connection");
+      } else {
+        await page.getByRole("button", { name: "Disconnect", exact: true }).click();
+        await expect(page.locator(".connection-state")).toHaveText("disconnected");
+      }
+      expect(Date.now() - start).toBeLessThan(2000);
+      await expect.poll(() => sockets.size).toBe(0);
+    } finally {
+      await application.close();
+      rmSync(userData, { recursive: true, force: true });
+      for (const socket of sockets) socket.destroy();
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
   });
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const address = server.address();
-  if (!address || typeof address === "string") throw new Error();
-  const userData = mkdtempSync(path.join(tmpdir(), "dbapp-pending-ui-"));
+
+test("renderer reload closes a connected database backend and does not reconnect", async () => {
+  const userData = mkdtempSync(path.join(tmpdir(), "dbapp-reload-ui-"));
+  const observer = new Client({
+    host: "localhost",
+    port: 55414,
+    database: "fixture",
+    user: "fixture",
+    password: "fixture-only-password",
+    application_name: "dbapp-review-observer",
+  });
+  await observer.connect();
   const application = await electron.launch({
     args: [path.resolve("."), `--user-data-dir=${userData}`],
   });
+  const backendCount = async () =>
+    (
+      await observer.query(
+        "SELECT count(*)::int AS count FROM pg_stat_activity WHERE application_name = 'dbapp'",
+      )
+    ).rows[0]?.count;
   try {
     const page = await application.firstWindow();
     const profile = ConnectionProfileSchema.parse({
       id: crypto.randomUUID(),
-      name: "Stalled fixture",
-      host: "127.0.0.1",
-      port: address.port,
+      name: "Reload fixture",
+      host: "localhost",
+      port: 55414,
       user: "fixture",
       database: "fixture",
-      tls: { kind: "disable", acknowledged: true },
+      tls: { kind: "verify-full", caPath: path.join(fixture.directory, "ca.crt") },
       environmentColor: "#123456",
     });
-    const saved = await page.evaluate(
-      async (profile) =>
-        Reflect.apply(window.dbapp.request, window.dbapp, [
-          { kind: "connections.save", requestId: "pending", profile },
-        ]),
-      profile,
-    );
-    expect(saved.ok).toBe(true);
+    await page.evaluate(async (profile) => {
+      await Reflect.apply(window.dbapp.request, window.dbapp, [
+        { kind: "connections.save", requestId: "reload-save", profile },
+      ]);
+      await Reflect.apply(window.dbapp.request, window.dbapp, [
+        {
+          kind: "connections.submitSecret",
+          requestId: "reload-secret",
+          id: profile.id,
+          secret: "fixture-only-password",
+          persist: false,
+        },
+      ]);
+    }, profile);
     await page.reload();
-    await page.getByRole("button", { name: "Connect Stalled fixture", exact: true }).click();
-    await expect(page.locator(".connection-state")).toHaveText("connecting");
-    await expect.poll(() => sockets.size).toBe(1);
-    const start = Date.now();
-    await page.getByRole("button", { name: "Disconnect", exact: true }).click();
-    await expect(page.locator(".connection-state")).toHaveText("disconnected");
-    expect(Date.now() - start).toBeLessThan(2000);
-    await expect.poll(() => sockets.size).toBe(0);
+    await page.getByRole("button", { name: "Connect Reload fixture", exact: true }).click();
+    await expect(page.locator(".connection-state")).toHaveText("connected");
+    await expect.poll(backendCount).toBe(1);
+    await page.reload();
+    await expect(page.locator(".connection-state")).toHaveText("No connection");
+    await expect(page.getByRole("button", { name: "Disconnect", exact: true })).toHaveCount(0);
+    await expect.poll(backendCount).toBe(0);
+    expect(
+      await application.evaluate(
+        ({ app }) => app.getAppMetrics().filter((item) => item.name === "Database session").length,
+      ),
+    ).toBe(0);
+    await page.getByRole("button", { name: "Connect Reload fixture", exact: true }).click();
+    await expect(page.locator(".connection-state")).toHaveText("connected");
+    await expect.poll(backendCount).toBe(1);
   } finally {
     await application.close();
+    await observer.end();
     rmSync(userData, { recursive: true, force: true });
-    for (const socket of sockets) socket.destroy();
-    await new Promise<void>((resolve) => server.close(() => resolve()));
   }
 });

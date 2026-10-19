@@ -29,6 +29,11 @@ app.whenReady().then(() => {
   installBridge(() => mainWindow, pathToFileURL(rendererPath).href, connections, sessions);
   const open = () => {
     mainWindow = createWindow(rendererPath);
+    // Renderer state is ephemeral. A new main-frame document must not inherit
+    // an invisible live worker or finish a previous document's pending connect.
+    mainWindow.webContents.on("did-start-navigation", (details) => {
+      if (details.isMainFrame && !details.isSameDocument) sessions.stop();
+    });
     mainWindow.on("closed", () => {
       sessions.stop();
       mainWindow = null;
