@@ -1,4 +1,4 @@
-# Open source PostgreSQL desktop client
+# Rowberry PostgreSQL desktop client
 
 ## Product intent
 
@@ -93,4 +93,12 @@ For initial distribution, target macOS Apple Silicon and Intel, Windows x64, and
 4. Add guarded table/JSON saves, previews, conflicts, and recovery.
 5. Complete accessibility, platform verification, signing, documentation, and release acceptance.
 
-Each milestone must exercise working behaviour. A completed local build is not evidence of a successful cross-platform release. Product naming and licensing must be selected before public packaging; use the internal working name dbapp until then.
+Each milestone must exercise working behaviour. A completed local build is not evidence of a successful cross-platform release. The approved public display name is Rowberry. Licensing must be selected before public distribution. Keep internal dbapp identifiers stable.
+
+## Branding appendix, 20 October 2026
+
+Approved name: Rowberry, with lowercase `rowberry` rounded wordmark. Tagline: Your databases. In a good place. Verified artwork is `/Users/spicey/Documents/Codex/2026-10-20/task/rowberry-artwork/exec-882a3ffc-0a34-4809-9662-a9a7a8b76a2b.png` (1536 × 1024). Its actual pixels were inspected before deriving clean SVG masters.
+
+The berry uses rounded table cells in rows of 3, 3, 2, 1 with a mint cursor/leaf. Palette: charcoal #191B24, lavender #9B7BFA, mint #72D6B0, warm offwhite #F7F5F0. Light primary controls use darker purple with white; dark primary controls use lavender with charcoal. Preserve the existing data-centred workspace. Concept-board illustration content does not define new features.
+
+Branding milestone: source SVG mark, custom rounded vector wordmark, favicon, PNG/ICO/ICNS packaging assets, public display labels, and accessible light/dark shell. Internal app ID, IPC, credential service, and saved profile location remain stable. Asset provenance and verification evidence are recorded in the branding report. Licensing remains pending; no domain, trademark, or publishing claims.

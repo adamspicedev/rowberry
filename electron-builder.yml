@@ -1,5 +1,5 @@
 appId: org.dbapp.desktop
-productName: dbapp
+productName: Rowberry
 asar: true
 directories:
   output: release
@@ -8,6 +8,7 @@ files:
   - package.json
 npmRebuild: false
 mac:
+  icon: assets/branding/rowberry.icns
   target:
     - target: dmg
       arch: [arm64, x64]
@@ -15,11 +16,13 @@ mac:
   minimumSystemVersion: "13.0"
   category: public.app-category.developer-tools
 win:
+  icon: assets/branding/rowberry.ico
   target:
     - target: nsis
       arch: [x64]
-  signAndEditExecutable: false
 linux:
+  icon: assets/branding/icons
+  executableName: rowberry
   target:
     - target: AppImage
       arch: [x64]

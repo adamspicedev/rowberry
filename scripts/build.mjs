@@ -1,3 +1,4 @@
+import { copyFile } from "node:fs/promises";
 import { build } from "esbuild";
 import { build as viteBuild } from "vite";
 await build({
@@ -25,3 +26,5 @@ await build({
   external: ["pg-native"],
 });
 await viteBuild();
+
+await copyFile("assets/branding/icons/512.png", "dist/renderer/app-icon.png");

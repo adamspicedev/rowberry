@@ -12,9 +12,10 @@ export function createWindow(rendererPath: string): BrowserWindow {
     height: 800,
     minWidth: 760,
     minHeight: 500,
-    backgroundColor: "#f8f9fb",
+    backgroundColor: "#f7f5f0",
     show: false,
-    title: "dbapp",
+    title: "Rowberry",
+    icon: path.join(__dirname, "../renderer/app-icon.png"),
     webPreferences: {
       preload: path.join(__dirname, "../preload/index.cjs"),
       session: applicationSession,

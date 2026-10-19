@@ -1,3 +1,5 @@
+import wordmark from "../assets/rowberry-wordmark.svg";
+import mark from "../assets/rowberry-mark.svg";
 import { useEffect, useState } from "react";
 import { acceptSessionEvent, type SessionState } from "./session-state";
 import { RequestIdSchema } from "../../shared/protocol";
@@ -39,8 +41,8 @@ export function App() {
     <div className="app" data-app-ready>
       <aside aria-label="Connections and schemas">
         <header>
-          <span className="brand-mark">▦</span>
-          <strong>dbapp</strong>
+          <img className="brand-mark" src={mark} alt="" />
+          <img className="brand-wordmark" src={wordmark} alt="Rowberry" />
           <span className="badge">LOCAL</span>
         </header>
         <div className="sidebar-content">
@@ -98,10 +100,10 @@ export function App() {
           <section className="workspace" aria-label="Empty workspace">
             <div className="welcome">
               <div className="database-icon" aria-hidden="true">
-                ▦
+                <img src={mark} alt="" />
               </div>
               <h1>Your database workspace</h1>
-              <p>Browse tables, write SQL, and inspect JSON in one place.</p>
+              <p>Your databases. In a good place.</p>
               <div className="empty-card">
                 <strong>
                   {session?.state === "connected" ? "Database connected" : "No database connected"}

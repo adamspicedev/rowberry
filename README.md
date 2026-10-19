@@ -1,8 +1,8 @@
-# dbapp
+# Rowberry
 
-An early PostgreSQL desktop client built with Electron, React, TypeScript, shadcn/ui controls, and Tailwind. The current milestone provides a secure local shell and packaging checks. Database connections, queries, and JSON editing are planned and are not implemented yet.
+An early PostgreSQL desktop client built with Electron, React, TypeScript, shadcn/ui controls, and Tailwind. The current build provides saved connections, PostgreSQL sessions, schema navigation, bounded table browsing, and raw JSON inspection. SQL execution and editing remain planned.
 
-The working name is dbapp. Product naming and licensing remain undecided. There is no paid tier, telemetry, remote service, release publishing, or automatic updater. Do not distribute publicly until a license and product name are selected.
+The approved product name is Rowberry. Licensing remains undecided. There is no paid tier, telemetry, remote service, release publishing, or automatic updater. Do not distribute publicly until a license is selected.
 
 ## Develop
 
@@ -30,7 +30,7 @@ bun run test:e2e
 
 ```sh
 bun run package
-bun run verify:package release/mac-arm64/dbapp.app arm64
+bun run verify:package release/mac-arm64/Rowberry.app arm64
 ```
 
 The configuration produces unsigned development DMGs for macOS arm64/x64, Windows x64 NSIS installers, and Linux x64 AppImage/deb packages on the appropriate hosts. Use `bun run package --mac`, `--win`, or `--linux` to select a platform. Outputs are in `release/`. Verification accepts an unpacked application directory or a macOS `.app`, checks the actual executable header and bundled assets, then launches a smoke check on the host's architecture. A different architecture receives inspection only and is explicitly reported as not launched. Windows uses `release/win-unpacked x64`; Linux uses `release/linux-unpacked x64`. Linux checks need a graphical session; CI uses Xvfb.
@@ -66,3 +66,7 @@ bun run test:postgres:cleanup
 The setup generates a local CA, server certificate and client certificate in a temporary directory, then starts isolated PostgreSQL 14 and 18 containers with memory-backed storage and localhost-only ports 55414/55418. The manifest is `/tmp/dbapp-task3-fixtures.json` (override with `DBAPP_POSTGRES_FIXTURES`). Credentials are fixture-only and never use the default application profile. Cleanup removes only containers bearing the task's disposable fixture label and generated keys. `compose.yaml` also supplies simple password-authenticated disposable servers; TLS/client-certificate tests use the setup above.
 
 The live suite checks text preservation, authentication failures, verified TLS, rejected trust failures, client certificates, connection timeouts, utility worker cancellation/crashes, server-side socket cleanup, and stale session generations. The Electron UI check saves metadata in a temporary profile, submits a session-only password privately, and connects/disconnects through the actual bridge. A separate Linux CI job provisions the same fixtures and runs both live suites, including TLS and client-certificate checks. That job has not been run locally; macOS results do not establish Windows or Linux transport results.
+
+## Branding
+
+The Rowberry berry mark, rounded lowercase wordmark, palette, and packaging icons are in `assets/branding`. See [asset provenance](assets/branding/PROVENANCE.md). Regenerate PNG, ICO, and ICNS assets locally with `bun scripts/generate-icons.mjs`. The vector masters contain no fonts or remote resources. Internal `dbapp` identifiers and the original profile directory stay stable.

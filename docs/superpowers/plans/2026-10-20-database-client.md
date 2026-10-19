@@ -1,4 +1,4 @@
-# PostgreSQL Desktop Client Implementation Plan
+# Rowberry implementation plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox syntax for tracking.
 
@@ -172,3 +172,11 @@ Shared IDs are opaque strings: ConnectionId, SessionId, RequestId, DocumentId. E
 ## Self-review decisions
 
 The credential-entry wording clarifies the spec: a user-entered password necessarily exists briefly in the connection form, but retrieved secrets never enter renderer state. Numeric JSON fixtures are acceptance gates for the parser choice. Buffer and document limits are explicit and must be displayed, not silently applied. The milestone order follows the spec's shared process/transport boundaries; external signing and product decisions remain release dependencies. No implementation or public-release claims follow from this plan alone.
+
+## Branding appendix, 20 October 2026
+
+Approved name: Rowberry, with lowercase `rowberry` rounded wordmark. Tagline: Your databases. In a good place. Verified artwork is `/Users/spicey/Documents/Codex/2026-10-20/task/rowberry-artwork/exec-882a3ffc-0a34-4809-9662-a9a7a8b76a2b.png` (1536 × 1024). Its actual pixels were inspected before deriving clean SVG masters.
+
+The berry uses rounded table cells in rows of 3, 3, 2, 1 with a mint cursor/leaf. Palette: charcoal #191B24, lavender #9B7BFA, mint #72D6B0, warm offwhite #F7F5F0. Light primary controls use darker purple with white; dark primary controls use lavender with charcoal. Preserve the existing data-centred workspace. Concept-board illustration content does not define new features.
+
+Branding milestone: source SVG mark, custom rounded vector wordmark, favicon, PNG/ICO/ICNS packaging assets, public display labels, and accessible light/dark shell. Internal app ID, IPC, credential service, and saved profile location remain stable. Asset provenance and verification evidence are recorded in the branding report. Licensing remains pending; no domain, trademark, or publishing claims.

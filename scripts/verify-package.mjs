@@ -11,8 +11,8 @@ if (!["x64", "arm64"].includes(architecture)) throw new Error("Unsupported archi
 const root = path.resolve(packagePath);
 const executable =
   process.platform === "darwin"
-    ? path.join(root, "Contents/MacOS/dbapp")
-    : path.join(root, process.platform === "win32" ? "dbapp.exe" : "dbapp");
+    ? path.join(root, "Contents/MacOS/Rowberry")
+    : path.join(root, process.platform === "win32" ? "Rowberry.exe" : "rowberry");
 const resources = path.join(
   root,
   process.platform === "darwin" ? "Contents/Resources" : "resources",

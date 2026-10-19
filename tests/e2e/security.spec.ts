@@ -81,12 +81,31 @@ test("unexpected navigation and new windows are blocked", async () => {
   expect(page.url()).toBe(original);
 });
 
-test("workspace loads with keyboard-accessible appearance choices", async () => {
+test("Rowberry shell loads vector branding and keyboard-accessible light/dark appearance", async () => {
   const page = await application.firstWindow();
   await expect(page.getByRole("heading", { name: "Your database workspace" })).toBeVisible();
+  await expect(page).toHaveTitle("Rowberry");
+  const wordmark = page.getByRole("img", { name: "Rowberry", exact: true });
+  await expect(wordmark).toBeVisible();
+  expect(
+    await wordmark.evaluate(
+      (image) => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0,
+    ),
+  ).toBe(true);
+  expect(
+    await application.evaluate(({ app }) => ({
+      name: app.getName(),
+      userData: app.getPath("userData"),
+    })),
+  ).toEqual({ name: "Rowberry", userData: directory });
   await page.getByLabel("Appearance").selectOption("dark");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.screenshot({ animations: "disabled", path: "test-results/rowberry-dark.png" });
+  await page.getByRole("button", { name: "New connection", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.screenshot({ animations: "disabled", path: "test-results/rowberry-dark-dialog.png" });
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await page.getByLabel("Appearance").selectOption("light");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-  await page.screenshot({ path: "test-results/desktop-shell.png" });
+  await page.screenshot({ animations: "disabled", path: "test-results/rowberry-light.png" });
 });

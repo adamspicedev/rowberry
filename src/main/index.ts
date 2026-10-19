@@ -11,7 +11,12 @@ import { ConnectionService } from "./connections";
 import { createWindow } from "./windows";
 app.enableSandbox();
 const userDataOverride = app.commandLine.getSwitchValue("user-data-dir");
-if (userDataOverride) app.setPath("userData", path.resolve(userDataOverride));
+// Preserve the original profile directory when the packaged product name changes.
+app.setPath(
+  "userData",
+  userDataOverride ? path.resolve(userDataOverride) : path.join(app.getPath("appData"), "dbapp"),
+);
+app.setName("Rowberry");
 let mainWindow: BrowserWindow | null = null;
 const rendererPath = path.join(__dirname, "../renderer/index.html");
 app.whenReady().then(() => {
