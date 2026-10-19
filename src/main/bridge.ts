@@ -1,4 +1,5 @@
 import { app, ipcMain, type BrowserWindow, type IpcMainInvokeEvent } from "electron";
+import type { DatabaseProcess } from "./database-process";
 import type { ConnectionService } from "./connections";
 import {
   bounded,
@@ -24,17 +25,12 @@ export function installBridge(
   getWindow: () => BrowserWindow | null,
   rendererURL: string,
   connections: ConnectionService,
+  sessions: DatabaseProcess,
 ): void {
   let pending = Promise.resolve();
   let queued = 0;
-  ipcMain.handle(REQUEST_CHANNEL, async (event, input: unknown): Promise<Reply> => {
-    const window = getWindow();
-    if (!window || !trustedSender(event, window, rendererURL)) return failure("UNTRUSTED_SENDER");
-    if (!bounded(input)) return failure("VALIDATION_ERROR");
-    const parsed = CommandSchema.safeParse(input);
-    if (!parsed.success) return failure("VALIDATION_ERROR");
-    // Serialize metadata/credential operations so a late native write cannot race deletion.
-    if (queued >= 32) return failure("INTERNAL_ERROR", parsed.data.requestId);
+  async function serialize<T>(operation: () => Promise<T>): Promise<T> {
+    if (queued >= 32) throw new Error("Too many operations.");
     queued++;
     const previous = pending;
     let release = () => {};
@@ -43,56 +39,96 @@ export function installBridge(
     });
     await previous;
     try {
-      const command = parsed.data;
-      switch (command.kind) {
-        case "app.info":
-          return ReplySchema.parse({
-            ok: true,
-            requestId: command.requestId,
-            kind: command.kind,
-            data: { name: app.getName(), version: app.getVersion(), platform: process.platform },
-          });
-        case "connections.list":
-          return ReplySchema.parse({
-            ok: true,
-            requestId: command.requestId,
-            kind: command.kind,
-            data: await connections.list(command.offset),
-          });
-        case "connections.save":
-          return ReplySchema.parse({
-            ok: true,
-            requestId: command.requestId,
-            kind: command.kind,
-            data: await connections.save(command.profile),
-          });
-        case "connections.submitSecret":
-          return ReplySchema.parse({
-            ok: true,
-            requestId: command.requestId,
-            kind: command.kind,
-            data: await connections.submitSecret(command.id, command.secret, command.persist),
-          });
-        case "connections.delete":
-          await connections.delete(command.id);
-          return ReplySchema.parse({
-            ok: true,
-            requestId: command.requestId,
-            kind: command.kind,
-            data: {},
-          });
-        case "connections.connect":
-          return failure("UNAVAILABLE", command.requestId);
-        default: {
-          const exhaustive: never = command;
-          return exhaustive;
-        }
-      }
-    } catch {
-      return failure("INTERNAL_ERROR", parsed.data.requestId);
+      return await operation();
     } finally {
       queued--;
       release();
+    }
+  }
+  ipcMain.handle(REQUEST_CHANNEL, async (event, input: unknown): Promise<Reply> => {
+    const window = getWindow();
+    if (!window || !trustedSender(event, window, rendererURL)) return failure("UNTRUSTED_SENDER");
+    if (!bounded(input)) return failure("VALIDATION_ERROR");
+    const parsed = CommandSchema.safeParse(input);
+    if (!parsed.success) return failure("VALIDATION_ERROR");
+    const command = parsed.data;
+    // Closing is never queued behind OS credential access or a network handshake.
+    if (command.kind === "sessions.close") {
+      sessions.close(command.sessionId);
+      return ReplySchema.parse({
+        ok: true,
+        requestId: command.requestId,
+        kind: command.kind,
+        data: {},
+      });
+    }
+    if (command.kind === "sessions.open" || command.kind === "connections.connect") {
+      const profileId = command.kind === "sessions.open" ? command.profileId : command.id;
+      try {
+        const data = await sessions.open(profileId, () =>
+          serialize(async () => ({
+            profile: connections.profile(profileId),
+            password: await connections.resolveSecret(profileId),
+          })),
+        );
+        return ReplySchema.parse({
+          ok: true,
+          requestId: command.requestId,
+          kind: command.kind,
+          data,
+        });
+      } catch {
+        return failure("CONNECTION_FAILED", command.requestId);
+      }
+    }
+    // Serialize metadata/credential operations so reads cannot race deletion.
+    try {
+      return await serialize(async () => {
+        switch (command.kind) {
+          case "app.info":
+            return ReplySchema.parse({
+              ok: true,
+              requestId: command.requestId,
+              kind: command.kind,
+              data: { name: app.getName(), version: app.getVersion(), platform: process.platform },
+            });
+          case "connections.list":
+            return ReplySchema.parse({
+              ok: true,
+              requestId: command.requestId,
+              kind: command.kind,
+              data: await connections.list(command.offset),
+            });
+          case "connections.save":
+            return ReplySchema.parse({
+              ok: true,
+              requestId: command.requestId,
+              kind: command.kind,
+              data: await connections.save(command.profile),
+            });
+          case "connections.submitSecret":
+            return ReplySchema.parse({
+              ok: true,
+              requestId: command.requestId,
+              kind: command.kind,
+              data: await connections.submitSecret(command.id, command.secret, command.persist),
+            });
+          case "connections.delete":
+            await connections.delete(command.id);
+            return ReplySchema.parse({
+              ok: true,
+              requestId: command.requestId,
+              kind: command.kind,
+              data: {},
+            });
+          default: {
+            const exhaustive: never = command;
+            return exhaustive;
+          }
+        }
+      });
+    } catch {
+      return failure("INTERNAL_ERROR", parsed.data.requestId);
     }
   });
 }

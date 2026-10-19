@@ -3,6 +3,8 @@ export const REQUEST_CHANNEL = "dbapp:request";
 export const EVENT_CHANNEL = "dbapp:event";
 export const MAX_MESSAGE_BYTES = 64 * 1024;
 export const RequestIdSchema = z.string().min(1).max(128).brand<"RequestId">();
+export const SessionIdSchema = z.uuid().brand<"SessionId">();
+export type SessionId = z.infer<typeof SessionIdSchema>;
 export const ConnectionIdSchema = z.uuid().brand<"ConnectionId">();
 const certificatePath = z.string().min(1).max(512);
 export const TlsSchema = z.discriminatedUnion("kind", [
@@ -36,6 +38,20 @@ export const ConnectionProfileSchema = z
 export type ConnectionProfile = z.infer<typeof ConnectionProfileSchema>;
 export type ConnectionId = ConnectionProfile["id"];
 export const CommandSchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      kind: z.literal("sessions.open"),
+      requestId: RequestIdSchema,
+      profileId: ConnectionIdSchema,
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal("sessions.close"),
+      requestId: RequestIdSchema,
+      sessionId: SessionIdSchema,
+    })
+    .strict(),
   z.object({ kind: z.literal("app.info"), requestId: RequestIdSchema }).strict(),
   z
     .object({
@@ -78,14 +94,34 @@ export const CommandSchema = z.discriminatedUnion("kind", [
 export type Command = z.infer<typeof CommandSchema>;
 export const ErrorSchema = z
   .object({
-    code: z.enum(["VALIDATION_ERROR", "UNTRUSTED_SENDER", "INTERNAL_ERROR", "UNAVAILABLE"]),
+    code: z.enum([
+      "VALIDATION_ERROR",
+      "UNTRUSTED_SENDER",
+      "INTERNAL_ERROR",
+      "UNAVAILABLE",
+      "CONNECTION_FAILED",
+    ]),
     message: z.string().max(256),
     retryable: z.boolean(),
     outcome: z.enum(["failed", "unknown"]),
   })
   .strict();
 const successFields = { ok: z.literal(true), requestId: RequestIdSchema };
+const sessionData = z
+  .object({
+    sessionId: SessionIdSchema,
+    generation: z.number().int().positive(),
+    serverVersion: z.string().max(128),
+  })
+  .strict();
 const SuccessSchema = z.discriminatedUnion("kind", [
+  z.object({ ...successFields, kind: z.literal("sessions.open"), data: sessionData }).strict(),
+  z
+    .object({ ...successFields, kind: z.literal("connections.connect"), data: sessionData })
+    .strict(),
+  z
+    .object({ ...successFields, kind: z.literal("sessions.close"), data: z.object({}).strict() })
+    .strict(),
   z
     .object({
       ...successFields,
@@ -141,9 +177,18 @@ export const ReplySchema = z.union([
     .strict(),
 ]);
 export type Reply = z.infer<typeof ReplySchema>;
-export const AppEventSchema = z
-  .object({ kind: z.literal("app.lifecycle"), state: z.literal("ready") })
-  .strict();
+export const AppEventSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("app.lifecycle"), state: z.literal("ready") }).strict(),
+  z
+    .object({
+      kind: z.literal("sessions.state"),
+      sessionId: SessionIdSchema,
+      profileId: ConnectionIdSchema,
+      generation: z.number().int().positive(),
+      state: z.enum(["connecting", "connected", "disconnected"]),
+    })
+    .strict(),
+]);
 export type AppEvent = z.infer<typeof AppEventSchema>;
 export type EventListener = (event: AppEvent) => void;
 export interface DesktopBridge {
@@ -167,7 +212,9 @@ export function failure(
     VALIDATION_ERROR: "Invalid application command.",
     UNTRUSTED_SENDER: "This frame cannot access the application.",
     INTERNAL_ERROR: "The operation could not be completed.",
-    UNAVAILABLE: "Database connections will be available in the next milestone.",
+    UNAVAILABLE: "This operation is unavailable.",
+    CONNECTION_FAILED:
+      "Database connection failed. Check credentials, TLS settings and server availability.",
   };
   return {
     ok: false,

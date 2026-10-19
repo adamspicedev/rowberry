@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RequestIdSchema, type ConnectionProfile } from "../../../shared/protocol";
 import { Button } from "../../components/ui/button";
 import { ConnectionDialog } from "./ConnectionDialog";
 export function ConnectionList() {
+  const connectRequest = useRef(0);
   const [profiles, setProfiles] = useState<ConnectionProfile[]>([]);
   const [secureStorage, setSecureStorage] = useState(false);
   const [dialog, setDialog] = useState<"new" | ConnectionProfile | null>(null);
@@ -94,12 +95,15 @@ export function ConnectionList() {
                   variant="ghost"
                   aria-label={`Connect ${profile.name}`}
                   onClick={async () => {
+                    const selection = ++connectRequest.current;
+                    setMessage("Connecting…");
                     const reply = await window.dbapp.request({
                       kind: "connections.connect",
                       requestId: requestId(),
                       id: profile.id,
                     });
-                    if (!reply.ok) setMessage(reply.error.message);
+                    if (selection === connectRequest.current)
+                      setMessage(reply.ok ? "Connected." : reply.error.message);
                   }}
                 >
                   Connect

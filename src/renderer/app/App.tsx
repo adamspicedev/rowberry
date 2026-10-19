@@ -1,8 +1,17 @@
 import { useEffect, useState } from "react";
+import { acceptSessionEvent, type SessionState } from "./session-state";
 import { RequestIdSchema } from "../../shared/protocol";
 import { ConnectionList } from "../features/connections/ConnectionList";
 import { Button } from "../components/ui/button";
 export function App() {
+  const [session, setSession] = useState<SessionState | null>(null);
+  useEffect(
+    () =>
+      window.dbapp.subscribe((event) =>
+        setSession((current) => acceptSessionEvent(current, event)),
+      ),
+    [],
+  );
   const [status, setStatus] = useState("Starting");
   const [theme, setTheme] = useState("system");
   useEffect(() => {
@@ -47,8 +56,22 @@ export function App() {
             Overview
           </Button>
           <span className="connection-state">
-            <i /> No connection
+            <i /> {session?.state ?? "No connection"}
           </span>
+          {session && session.state !== "disconnected" && (
+            <Button
+              variant="ghost"
+              onClick={() =>
+                void window.dbapp.request({
+                  kind: "sessions.close",
+                  sessionId: session.sessionId,
+                  requestId: RequestIdSchema.parse(crypto.randomUUID()),
+                })
+              }
+            >
+              Disconnect
+            </Button>
+          )}
         </nav>
         <section className="workspace" aria-label="Empty workspace">
           <div className="welcome">
@@ -58,11 +81,10 @@ export function App() {
             <h1>Your database workspace</h1>
             <p>Browse tables, write SQL, and inspect JSON in one place.</p>
             <div className="empty-card">
-              <strong>No database connected</strong>
-              <p>
-                Save a connection from the sidebar. Database connectivity will follow in the next
-                milestone.
-              </p>
+              <strong>
+                {session?.state === "connected" ? "Database connected" : "No database connected"}
+              </strong>
+              <p>Select Connect in the sidebar to open a PostgreSQL session.</p>
             </div>
           </div>
         </section>

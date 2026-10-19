@@ -34,10 +34,6 @@ test("save, restart, edit and delete connection metadata through the desktop UI"
   await expect(page.getByLabel("Password", { exact: true })).toHaveValue("");
   await page.getByLabel("Name", { exact: true }).fill("Renamed");
   await page.getByRole("button", { name: "Save connection", exact: true }).click();
-  await page.getByRole("button", { name: "Connect Renamed", exact: true }).click();
-  await expect(
-    page.getByText("Database connections will be available in the next milestone."),
-  ).toBeVisible();
   await page.getByRole("button", { name: "Delete Renamed", exact: true }).click();
   await page.getByRole("button", { name: "Delete connection", exact: true }).click();
   await expect(page.getByText("No saved connections")).toBeVisible();

@@ -45,6 +45,11 @@ export class ConnectionStore {
         return ConnectionProfileSchema.parse(JSON.parse(row.profile));
       });
   }
+  get(id: ConnectionId): ConnectionProfile {
+    const row = this.db.prepare("SELECT profile FROM connections WHERE id = ?").get(id);
+    if (typeof row?.profile !== "string") throw new Error("Connection does not exist.");
+    return ConnectionProfileSchema.parse(JSON.parse(row.profile));
+  }
   has(id: ConnectionId): boolean {
     return !!this.db.prepare("SELECT id FROM connections WHERE id = ?").get(id);
   }

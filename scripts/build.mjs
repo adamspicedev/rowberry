@@ -16,4 +16,12 @@ await build({
   external: ["electron"],
   format: "cjs",
 });
+await build({
+  entryPoints: ["src/database/index.ts"],
+  outfile: "dist/database/index.cjs",
+  bundle: true,
+  platform: "node",
+  format: "cjs",
+  external: ["pg-native"],
+});
 await viteBuild();

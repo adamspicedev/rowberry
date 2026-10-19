@@ -1,0 +1,18 @@
+# Disposable integration databases only. No app profile or user database is used.
+services:
+  postgres14:
+    image: postgres:14
+    environment:
+      POSTGRES_USER: fixture
+      POSTGRES_PASSWORD: fixture-only-password
+      POSTGRES_DB: fixture
+    ports: ["127.0.0.1:55414:5432"]
+    tmpfs: ["/var/lib/postgresql/data"]
+  postgres18:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: fixture
+      POSTGRES_PASSWORD: fixture-only-password
+      POSTGRES_DB: fixture
+    ports: ["127.0.0.1:55418:5432"]
+    tmpfs: ["/var/lib/postgresql"]

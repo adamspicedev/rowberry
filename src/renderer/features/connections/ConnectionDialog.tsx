@@ -68,7 +68,7 @@ export function ConnectionDialog({
         setError(saved.error.message);
         return;
       }
-      let message = "Connection saved. Database connectivity is not available yet.";
+      let message = "Connection saved. Select Connect to open a session.";
       if (secret !== "") {
         const pending = window.dbapp.request({
           kind: "connections.submitSecret",

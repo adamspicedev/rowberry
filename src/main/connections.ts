@@ -52,6 +52,9 @@ export class ConnectionService {
     this.sessionSecrets.set(id, secret);
     return { storage: "session" };
   }
+  profile(id: ConnectionId): ConnectionProfile {
+    return this.store.get(id);
+  }
   async resolveSecret(id: ConnectionId): Promise<string | null> {
     if (!this.store.has(id)) return null;
     if (this.sessionSecrets.has(id)) return this.sessionSecrets.get(id) ?? null;

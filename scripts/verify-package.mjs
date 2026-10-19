@@ -46,6 +46,7 @@ const archive = path.join(resources, "app.asar");
 const entries = listPackage(archive).map((entry) => entry.replaceAll("\\", "/"));
 for (const entry of [
   "/dist/main/index.cjs",
+  "/dist/database/index.cjs",
   "/dist/preload/index.cjs",
   "/dist/renderer/index.html",
 ])

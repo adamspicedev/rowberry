@@ -5,6 +5,8 @@ import { installBridge } from "./bridge";
 import { mkdirSync } from "node:fs";
 import { ConnectionStore } from "./store";
 import { NativeCredentialStore } from "./credentials";
+import { DatabaseProcess } from "./database-process";
+import { EVENT_CHANNEL } from "../shared/protocol";
 import { ConnectionService } from "./connections";
 import { createWindow } from "./windows";
 app.enableSandbox();
@@ -17,11 +19,18 @@ app.whenReady().then(() => {
   mkdirSync(dataPath, { recursive: true, mode: 0o700 });
   const store = new ConnectionStore(path.join(dataPath, "profiles.sqlite"));
   const connections = new ConnectionService(store, new NativeCredentialStore());
-  app.once("will-quit", () => store.close());
-  installBridge(() => mainWindow, pathToFileURL(rendererPath).href, connections);
+  const sessions = new DatabaseProcess((event) => {
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(EVENT_CHANNEL, event);
+  });
+  app.once("will-quit", () => {
+    sessions.stop();
+    store.close();
+  });
+  installBridge(() => mainWindow, pathToFileURL(rendererPath).href, connections, sessions);
   const open = () => {
     mainWindow = createWindow(rendererPath);
     mainWindow.on("closed", () => {
+      sessions.stop();
       mainWindow = null;
     });
   };
