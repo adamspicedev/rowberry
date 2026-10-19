@@ -17,12 +17,14 @@ export type ValidatedJsonDraft = {
   documentId: string;
   text: string;
   originalSource: string;
+  originalSqlNull?: boolean;
   revision: number;
   saveTarget: JsonSaveTarget;
 };
 export function JsonInspector({
   documentId,
   sourceText,
+  originalSqlNull = false,
   saveTarget,
   onValidatedDraft,
   onClose,
@@ -33,6 +35,7 @@ export function JsonInspector({
 }: {
   documentId: string;
   sourceText: string;
+  originalSqlNull?: boolean;
   saveTarget?: JsonSaveTarget;
   onValidatedDraft?: (draft: ValidatedJsonDraft | null) => void;
   onClose: () => void;
@@ -76,7 +79,7 @@ export function JsonInspector({
   const [valueKind, setValueKind] = useState("string");
   const [value, setValue] = useState("");
   const [status, setStatus] = useState("");
-  const dirty = state.text !== sourceText;
+  const dirty = originalSqlNull || state.text !== sourceText;
   const editable = !!state.document?.editable && !state.pending && !saving;
   const limited =
     state.document?.diagnostics.some((diagnostic) => diagnostic.kind === "limit") ?? false;
@@ -91,13 +94,23 @@ export function JsonInspector({
             documentId,
             text: state.text,
             originalSource: sourceText,
+            originalSqlNull,
             revision: state.document.revision,
             saveTarget,
           }
         : null,
     );
     return () => onValidatedDraft?.(null);
-  }, [editable, saveTarget, state.document, state.text, documentId, sourceText, onValidatedDraft]);
+  }, [
+    editable,
+    saveTarget,
+    state.document,
+    state.text,
+    documentId,
+    sourceText,
+    originalSqlNull,
+    onValidatedDraft,
+  ]);
   function typedValue(): JsonValue {
     switch (valueKind) {
       case "number":
@@ -139,9 +152,11 @@ export function JsonInspector({
       <header className="json-toolbar">
         <strong>JSON {dirty ? "· unsaved draft" : ""}</strong>
         <span>
-          {saveTarget
-            ? "Table draft · guarded database save"
-            : "Untargeted value · copy-only draft"}
+          {originalSqlNull
+            ? "Creating JSON from SQL NULL · unsaved until confirmed"
+            : saveTarget
+              ? "Table draft · guarded database save"
+              : "Untargeted value · copy-only draft"}
         </span>
         <button onClick={() => setExpanded(!expanded)}>
           {expanded ? "Restore panel" : "Expand panel"}
@@ -195,6 +210,7 @@ export function JsonInspector({
               documentId,
               text: state.text,
               originalSource: sourceText,
+              originalSqlNull,
               revision: state.document.revision,
               saveTarget,
             });
@@ -367,7 +383,7 @@ export function JsonInspector({
           Move selected to pointer
         </button>
       </div>
-      <JsonChangePreview original={sourceText} draft={state.text} />
+      <JsonChangePreview original={originalSqlNull ? "SQL NULL" : sourceText} draft={state.text} />
       {closing && (
         <div role="alertdialog" aria-label="Discard JSON draft">
           <p>Discard unsaved JSON changes? Copy the draft first if you need it.</p>

@@ -186,6 +186,7 @@ export function TableView({
       const cell = saved?.cells[index];
       if (saved?.target && cell?.kind === "value" && cell.text !== null) {
         setInspected(cell.text);
+        setOriginalSqlNull(false);
         setJsonTarget({ ...jsonSaveDraft.saveTarget, target: saved.target });
         setJsonId(crypto.randomUUID());
         setJsonDirty(false);
@@ -222,6 +223,7 @@ export function TableView({
   const [selection, setSelection] = useState({ row: 0, col: 0 });
   const [jsonTarget, setJsonTarget] = useState<JsonSaveTarget | undefined>();
   const [jsonDirty, setJsonDirty] = useState(false);
+  const [originalSqlNull, setOriginalSqlNull] = useState(false);
   const [jsonId, setJsonId] = useState(crypto.randomUUID());
   const [inspected, setInspected] = useState<string | null>(null);
   const [inspectStatus, setInspectStatus] = useState("");
@@ -236,6 +238,7 @@ export function TableView({
   function clearInspection() {
     inspectionVersion.current++;
     setInspected(null);
+    setOriginalSqlNull(false);
     setJsonSaveDraft(null);
     setJsonDirty(false);
     setInspectStatus("");
@@ -274,6 +277,7 @@ export function TableView({
       column = table.columns[col];
     if (!cell || !column || ![114, 3802].includes(cell.typeOid)) return;
     setInspected(null);
+    setOriginalSqlNull(false);
     setJsonId(crypto.randomUUID());
     setJsonTarget(
       record?.target && cell.editable
@@ -437,7 +441,14 @@ export function TableView({
                           : original.text
                         : (jsonSaveDraft?.originalSource ?? "Large original value")}
                     </pre>
-                    <pre aria-label={`Pending ${name}`}>{text === null ? "SQL NULL" : text}</pre>
+                    <pre aria-label={`Pending ${name}`}>
+                      {text === null
+                        ? "SQL NULL"
+                        : [114, 3802].includes(table.columns[index]?.typeOid ?? 0) &&
+                            text.trim() === "null"
+                          ? "JSON null"
+                          : text}
+                    </pre>
                   </div>
                 );
               })}
@@ -813,6 +824,7 @@ export function TableView({
           key={jsonId}
           documentId={jsonId}
           sourceText={inspected}
+          originalSqlNull={originalSqlNull}
           saveTarget={jsonTarget}
           onClose={clearInspection}
           onDirtyChange={setJsonDirty}
@@ -832,6 +844,18 @@ export function TableView({
         inspectStatus && (
           <section className="raw-inspector" aria-label="JSON inspection">
             <strong>{inspectStatus}</strong>
+            {inspectStatus === "SQL NULL" && jsonTarget && (
+              <Button
+                disabled={saving || blocked || !!drafts.length || !!editor}
+                onClick={() => {
+                  setOriginalSqlNull(true);
+                  setInspected("null");
+                  setJsonId(crypto.randomUUID());
+                }}
+              >
+                Create JSON value
+              </Button>
+            )}
             <Button variant="ghost" onClick={clearInspection}>
               Close inspection
             </Button>

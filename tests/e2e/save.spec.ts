@@ -226,6 +226,77 @@ for (const version of [14, 18])
         { sql_null: true, doc: null },
         { sql_null: false, doc: "null" },
       ]);
+      await grid.getByRole("gridcell").nth(2).dblclick();
+      const sqlNullPanel = page.getByRole("region", { name: "JSON inspection", exact: true });
+      await expect(
+        sqlNullPanel.getByRole("button", { name: "Create JSON value", exact: true }),
+      ).toBeVisible();
+      await sqlNullPanel.getByRole("button", { name: "Create JSON value", exact: true }).click();
+      await expect(inspector.getByRole("tree")).toBeVisible();
+      await expect(inspector).toContainText("Creating JSON from SQL NULL");
+      async function creationText(value: string) {
+        await inspector.getByRole("textbox", { name: "JSON text editor", exact: true }).focus();
+        await page.keyboard.press("Meta+A");
+        await page.keyboard.type(value);
+      }
+      await creationText('{"x":1,"x":2}');
+      await expect(inspector.getByText(/Duplicate keys:/)).toBeVisible();
+      await expect(
+        inspector.getByRole("button", { name: "Save to database", exact: true }),
+      ).toBeDisabled();
+      await creationText('{"broken":');
+      await expect(
+        inspector.getByRole("button", { name: "Save to database", exact: true }),
+      ).toBeDisabled();
+      await creationText('{"created":true}');
+      await inspector.getByRole("button", { name: "Save to database", exact: true }).click();
+      await expect(preview.getByLabel("Original doc")).toHaveText("SQL NULL");
+      await expect(preview.getByLabel("Pending doc")).toHaveText('{"created":true}');
+      await preview.getByRole("button", { name: "Cancel preview", exact: true }).click();
+      expect(
+        (await client.query("SELECT doc IS NULL AS empty FROM dbapp_save_ui.records WHERE id=1"))
+          .rows[0].empty,
+      ).toBe(true);
+      await inspector.getByRole("button", { name: "Close JSON", exact: true }).click();
+      await page.getByRole("button", { name: "Discard and close JSON", exact: true }).click();
+      expect(
+        (await client.query("SELECT doc IS NULL AS empty FROM dbapp_save_ui.records WHERE id=1"))
+          .rows[0].empty,
+      ).toBe(true);
+      await grid.getByRole("gridcell").nth(2).dblclick();
+      await sqlNullPanel.getByRole("button", { name: "Create JSON value", exact: true }).click();
+      await expect(inspector.getByRole("tree")).toBeVisible();
+      await creationText('{"created":true}');
+      await inspector.getByRole("button", { name: "Save to database", exact: true }).click();
+      await preview.getByRole("button", { name: "Confirm save", exact: true }).click();
+      await expect(inspector).not.toContainText("Creating JSON from SQL NULL");
+      expect(
+        (await client.query("SELECT doc::text FROM dbapp_save_ui.records WHERE id=1")).rows[0].doc,
+      ).toBe('{"created":true}');
+      await inspector.getByRole("button", { name: "Close JSON", exact: true }).click();
+      await grid.getByRole("gridcell").nth(2).click();
+      await page.getByRole("button", { name: "Stage selected SQL NULL", exact: true }).click();
+      await page.getByRole("button", { name: "Preview changes", exact: true }).click();
+      await preview.getByRole("button", { name: "Confirm save", exact: true }).click();
+      await expect(grid.getByRole("gridcell").nth(2)).toHaveText("NULL");
+      await grid.getByRole("gridcell").nth(2).dblclick();
+      await sqlNullPanel.getByRole("button", { name: "Create JSON value", exact: true }).click();
+      await expect(inspector.getByRole("tree")).toBeVisible();
+      await inspector.getByRole("button", { name: "Save to database", exact: true }).click();
+      await expect(preview.getByLabel("Original doc")).toHaveText("SQL NULL");
+      await expect(preview.getByLabel("Pending doc")).toHaveText("JSON null");
+      await preview.getByRole("button", { name: "Confirm save", exact: true }).click();
+      await expect(inspector).not.toContainText("unsaved draft");
+      expect(
+        (
+          await client.query(
+            "SELECT doc IS NULL AS sql_null,doc::text FROM dbapp_save_ui.records ORDER BY id",
+          )
+        ).rows,
+      ).toEqual([
+        { sql_null: false, doc: "null" },
+        { sql_null: false, doc: "null" },
+      ]);
     } finally {
       await app.close();
       await client.end();
