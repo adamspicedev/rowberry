@@ -14,8 +14,8 @@ test("live schema navigation, typed virtual grid, filtering, sorting, paging and
   });
   await client.connect();
   await client.query(`DROP SCHEMA IF EXISTS dbapp_desktop_browse CASCADE; CREATE SCHEMA dbapp_desktop_browse;
- CREATE TABLE dbapp_desktop_browse.records (id integer PRIMARY KEY, amount numeric, doc json);
- INSERT INTO dbapp_desktop_browse.records SELECT i,12345678901234567890.123456789,'{"n":9007199254740993,"n":2}'::json FROM generate_series(1,1200) i;
+ CREATE TABLE dbapp_desktop_browse.records (id integer PRIMARY KEY, amount numeric, doc json, ${Array.from({ length: 10 }, (_, i) => `tail_${i} text DEFAULT 'tail'`).join(",")});
+ INSERT INTO dbapp_desktop_browse.records (id,amount,doc) SELECT i,12345678901234567890.123456789,'{"n":9007199254740993,"n":2}'::json FROM generate_series(1,1200) i;
  UPDATE dbapp_desktop_browse.records SET doc=('"'||repeat('x',1048576)||'"')::json WHERE id=1;
  UPDATE dbapp_desktop_browse.records SET doc=('"'||repeat('x',33554432)||'"')::json WHERE id=2;
  CREATE TABLE dbapp_desktop_browse.empty (id integer PRIMARY KEY);
@@ -67,6 +67,24 @@ test("live schema navigation, typed virtual grid, filtering, sorting, paging and
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await expect(page.getByText("200 rows · page 2", { exact: true })).toBeVisible();
     await expect(grid.getByRole("gridcell").first()).toHaveText("201");
+    await grid.evaluate((el) => {
+      el.scrollTop = 5000;
+      el.scrollLeft = 1600;
+    });
+    await expect.poll(() => grid.evaluate((el) => el.scrollTop)).toBeGreaterThan(4000);
+    await expect.poll(() => grid.evaluate((el) => el.scrollLeft)).toBeGreaterThan(1000);
+    await page.getByRole("button", { name: "Previous", exact: true }).click();
+    await expect(grid.getByRole("gridcell").first()).toHaveText("1");
+    await expect(page.getByRole("button", { name: "Sort by id", exact: true })).toBeVisible();
+    await grid.evaluate((el) => {
+      el.scrollTop = 4000;
+      el.scrollLeft = 1600;
+    });
+    await expect.poll(() => grid.evaluate((el) => el.scrollTop)).toBeGreaterThan(3000);
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await expect(grid.getByRole("gridcell").first()).toHaveText("201");
+    await expect(page.getByRole("button", { name: "Sort by id", exact: true })).toBeVisible();
+
     await page.getByRole("button", { name: "Sort by id", exact: true }).click();
     await expect(grid.getByRole("gridcell").first()).toHaveText("1");
     await page.getByRole("button", { name: "Sort by id", exact: true }).click();
@@ -106,6 +124,21 @@ test("live schema navigation, typed virtual grid, filtering, sorting, paging and
       ),
     ).toBeVisible();
     await expect(page.getByRole("textbox", { name: "Raw JSON", exact: true })).toHaveCount(0);
+    await page.getByRole("button", { name: "Close inspection" }).click();
+    await page.getByLabel("Filter value", { exact: true }).fill("1");
+    await page.getByRole("button", { name: "Apply filter", exact: true }).click();
+    await expect(grid.getByRole("gridcell").first()).toHaveText("1");
+    await client.query("ALTER TABLE dbapp_desktop_browse.records DROP COLUMN amount");
+    await page.getByRole("button", { name: "Refresh", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Sort by amount", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Sort by doc", exact: true })).toBeVisible();
+    await grid.getByRole("gridcell").nth(1).dblclick();
+    await expect
+      .poll(
+        async () =>
+          (await page.getByRole("textbox", { name: "Raw JSON", exact: true }).inputValue()).length,
+      )
+      .toBe(1048578);
     await page.getByRole("button", { name: "Close inspection" }).click();
     await search.fill("dbapp_desktop_browse.empty");
     await page.getByRole("button", { name: "empty dbapp_desktop_browse · table" }).click();

@@ -34,7 +34,9 @@ export function useTablePage(
               : {
                   kind: "error",
                   message:
-                    "Could not load rows. The table may have changed, or a value exceeds browsing limits. Refresh to retry.",
+                    !reply.ok && reply.error.code === "BROWSE_COLUMN_LIMIT"
+                      ? reply.error.message
+                      : "Could not load rows. The table may have changed, or a value exceeds browsing limits. Refresh to retry.",
                 },
         });
       });

@@ -158,6 +158,28 @@ for (const version of [14, 18])
         );
       }
     });
+    test("pages carry the authoritative column layout after an external earlier-column drop", async () => {
+      await session.client.query(
+        `CREATE TABLE "browse fixture".schema_change(id integer PRIMARY KEY,removed text,doc json); INSERT INTO "browse fixture".schema_change VALUES(1,'old','{"n":9007199254740993}'::json)`,
+      );
+      const t = await table("schema_change");
+      const before = await browser.fetch({ tableId: t.id });
+      expect(before.table.columns.map((c) => c.name)).toEqual(["id", "removed", "doc"]);
+      await session.client.query('ALTER TABLE "browse fixture".schema_change DROP COLUMN removed');
+      const after = await browser.fetch({ tableId: t.id });
+      expect(after.table.columns.map((c) => c.name)).toEqual(["id", "doc"]);
+      expect(after.rows[0]?.cells[1]).toMatchObject({
+        typeOid: 114,
+        text: '{"n":9007199254740993}',
+      });
+    });
+    test("wide tables fail explicitly before exceeding PostgreSQL target-list limits", async () => {
+      await session.client.query(
+        `CREATE TABLE "browse fixture".too_wide (id integer PRIMARY KEY,${Array.from({ length: 800 }, (_, i) => `c${i} text`).join(",")})`,
+      );
+      const t = await table("too_wide");
+      await expect(browser.fetch({ tableId: t.id })).rejects.toThrow("at most 800 visible columns");
+    });
     test("oversized JSON is explicit, bounded and separately retrievable with a hard full-value cap", async () => {
       const t = await table("large");
       const page = await browser.fetch({ tableId: t.id });

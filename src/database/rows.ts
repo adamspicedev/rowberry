@@ -20,6 +20,7 @@ interface Cursor {
   values: (string | null)[];
   offset: number;
 }
+export class BrowseColumnLimitError extends Error {}
 // Values and cursors are opaque handles; callers never supply row predicates.
 // Only the latest page's identities remain live and at most 64 cursors survive.
 export class RowBrowser {
@@ -30,6 +31,10 @@ export class RowBrowser {
     const args = FetchSchema.parse(input);
     const table = (await introspect(this.session)).tables.find((t) => t.id === args.tableId);
     if (!table) throw new Error("Table unavailable.");
+    if (table.columns.length > 800)
+      throw new BrowseColumnLimitError(
+        "Browsing supports at most 800 visible columns. Select a narrower view or use SQL.",
+      );
     const source = quote(table.schema) + "." + quote(table.name);
     const column = (name: string) => {
       const c = table.columns.find((c) => c.name === name);
@@ -148,7 +153,7 @@ export class RowBrowser {
         if (oldest) this.cursors.delete(oldest);
       }
     }
-    const page = { rows, nextCursor, stable };
+    const page = { table, rows, nextCursor, stable };
     if (Buffer.byteLength(JSON.stringify(page)) > PAGE_BYTES)
       throw new Error("Page exceeds supported limits.");
     return page;

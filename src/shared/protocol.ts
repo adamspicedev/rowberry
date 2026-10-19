@@ -139,6 +139,7 @@ export const ErrorSchema = z
       "INTERNAL_ERROR",
       "UNAVAILABLE",
       "CONNECTION_FAILED",
+      "BROWSE_COLUMN_LIMIT",
     ]),
     message: z.string().max(256),
     retryable: z.boolean(),
@@ -263,6 +264,8 @@ export function failure(
   requestId: z.infer<typeof RequestIdSchema> | null = null,
 ): Reply {
   const messages = {
+    BROWSE_COLUMN_LIMIT:
+      "Browsing supports at most 800 visible columns. Select a narrower view or use SQL.",
     VALIDATION_ERROR: "Invalid application command.",
     UNTRUSTED_SENDER: "This frame cannot access the application.",
     INTERNAL_ERROR: "The operation could not be completed.",

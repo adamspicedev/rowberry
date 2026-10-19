@@ -7,7 +7,7 @@ import { useTablePage } from "./table-state";
 const WIDTH = 210,
   HEIGHT = 34;
 export function TableView({
-  table,
+  table: initialTable,
   sessionId,
   generation,
 }: {
@@ -15,10 +15,11 @@ export function TableView({
   sessionId: SessionId;
   generation: number;
 }) {
-  const [input, setInput] = useState<FetchInput>({ tableId: table.id });
+  const [input, setInput] = useState<FetchInput>({ tableId: initialTable.id });
   const [history, setHistory] = useState<(string | null)[]>([]);
   const [reload, setReload] = useState(0);
   const state = useTablePage(sessionId, generation, input, reload);
+  const table = state.kind === "ready" ? state.page.table : initialTable;
   const [filterColumn, setFilterColumn] = useState(table.columns[0]?.name ?? "");
   const [operator, setOperator] = useState("eq");
   const [value, setValue] = useState("");
@@ -43,12 +44,16 @@ export function TableView({
     lastRow = Math.ceil((scroll.top + scroll.height) / HEIGHT) + 3;
   const firstColumn = Math.max(0, Math.floor(scroll.left / WIDTH) - 1),
     lastColumn = Math.ceil((scroll.left + scroll.width) / WIDTH) + 1;
+  function resetViewport() {
+    setScroll((current) => ({ ...current, top: 0, left: 0 }));
+    setSelection({ row: 0, col: 0 });
+    grid.current?.scrollTo({ top: 0, left: 0 });
+  }
   function reset(next: FetchInput) {
     setInput(next);
     setHistory([]);
-    setSelection({ row: 0, col: 0 });
+    resetViewport();
     clearInspection();
-    if (grid.current) grid.current.scrollTop = 0;
   }
   async function inspect(row: number, col: number) {
     const version = ++inspectionVersion.current;
@@ -375,6 +380,7 @@ export function TableView({
                 const cursor = history.at(-1) ?? null;
                 setHistory((h) => h.slice(0, -1));
                 setInput({ ...input, cursor });
+                resetViewport();
                 clearInspection();
               }}
             >
@@ -387,7 +393,7 @@ export function TableView({
                 setHistory((h) => [...h, input.cursor ?? null]);
                 setInput({ ...input, cursor: state.page.nextCursor });
                 clearInspection();
-                if (grid.current) grid.current.scrollTop = 0;
+                resetViewport();
               }}
             >
               Next

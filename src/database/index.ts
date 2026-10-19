@@ -1,7 +1,7 @@
 import { openSession, type Session } from "./connections";
 import { WorkerCommandSchema } from "./types";
 import { introspect } from "./introspection";
-import { RowBrowser } from "./rows";
+import { RowBrowser, BrowseColumnLimitError } from "./rows";
 import { boundedReply, failure } from "../shared/protocol";
 let browser: RowBrowser | undefined;
 let busy = false;
@@ -49,8 +49,14 @@ port.on("message", async ({ data }: { data: unknown }) => {
           ? reply
           : failure("UNAVAILABLE", request.requestId),
       });
-    } catch {
-      port.postMessage({ kind: "reply", reply: failure("UNAVAILABLE", request.requestId) });
+    } catch (error) {
+      port.postMessage({
+        kind: "reply",
+        reply: failure(
+          error instanceof BrowseColumnLimitError ? "BROWSE_COLUMN_LIMIT" : "UNAVAILABLE",
+          request.requestId,
+        ),
+      });
     } finally {
       busy = false;
     }

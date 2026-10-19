@@ -82,6 +82,7 @@ export const CellSchema = z.discriminatedUnion("kind", [
 ]);
 export const RowPageSchema = z
   .object({
+    table: TableSchema,
     rows: z
       .array(
         z.object({ cells: z.array(CellSchema).max(1600), target: z.uuid().nullable() }).strict(),
