@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { parseDocument } from "./document";
-import { searchDocument, type SearchMatch } from "./search";
+import { defaultYield, searchDocument, type SearchMatch } from "./search";
 import { createJsonWorker } from "./worker";
 import { isCurrentReply, type JsonReply } from "./protocol";
 it("searches collapsed nested keys and decoded values with precise source token ranges", async () => {
@@ -303,4 +303,31 @@ it("raw fragment validation yields to cancellation before any source splice comm
     revision: 1,
     document: { text: "[null]" },
   });
+});
+it("cooperative scheduler serves timer cancellation and concurrent callers without losing wakeups", async () => {
+  let cancelled = false;
+  const timer = setTimeout(() => {
+    cancelled = true;
+  }, 0);
+  let checkpoints = 0;
+  try {
+    while (!cancelled && checkpoints < 100000) {
+      await defaultYield();
+      checkpoints++;
+    }
+    expect(cancelled).toBe(true);
+    expect(checkpoints).toBeLessThan(100000);
+    let completed = 0;
+    await Promise.all(
+      Array.from({ length: 64 }, async () => {
+        await defaultYield();
+        completed++;
+        await defaultYield();
+        completed++;
+      }),
+    );
+    expect(completed).toBe(128);
+  } finally {
+    clearTimeout(timer);
+  }
 });

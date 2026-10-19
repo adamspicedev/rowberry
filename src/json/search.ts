@@ -2,7 +2,44 @@ import type { JsonDocument, JsonNode, Range } from "./document";
 import { escapePointer } from "./paths";
 export type SearchMatch = { path: string; kind: "key" | "value"; range: Range };
 export type WorkControl = { cancelled: () => boolean; yield: () => Promise<void> };
-export const defaultYield = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+let taskChannel: MessageChannel | undefined;
+let pendingTasks: (() => void)[] = [];
+let lastFairTurn = performance.now();
+/** One reusable normal-priority task queue. Unlike nested timers, posted messages are not clamped. */
+export function defaultYield(): Promise<void> {
+  // Legacy/test runtimes without MessageChannel still yield a task, never only a microtask.
+  if (typeof MessageChannel === "undefined")
+    return new Promise<void>((resolve) => setTimeout(resolve, 0));
+  if (!taskChannel) {
+    taskChannel = new MessageChannel();
+    const receivingPort = taskChannel.port1;
+    receivingPort.onmessage = () => {
+      const ready = pendingTasks;
+      pendingTasks = [];
+      // Node/Bun ports should keep a pending yield alive, but never retain an idle process.
+      if ("unref" in receivingPort && typeof receivingPort.unref === "function")
+        receivingPort.unref();
+      for (const resolve of ready) resolve();
+    };
+    const sendingPort = taskChannel.port2;
+    if ("unref" in sendingPort && typeof sendingPort.unref === "function") sendingPort.unref();
+  }
+  const channel = taskChannel;
+  return new Promise<void>((resolve) => {
+    pendingTasks.push(resolve);
+    if (pendingTasks.length === 1) {
+      if ("ref" in channel.port1 && typeof channel.port1.ref === "function") channel.port1.ref();
+      // Some runtimes prefer message-port tasks over external worker messages. Periodically
+      // leave that task source entirely, so load/cancel/release messages cannot starve.
+      if (performance.now() - lastFairTurn >= 8) {
+        setTimeout(() => {
+          lastFairTurn = performance.now();
+          channel.port2.postMessage(null);
+        }, 0);
+      } else channel.port2.postMessage(null);
+    }
+  });
+}
 export async function searchDocument(
   doc: JsonDocument,
   query: string,
