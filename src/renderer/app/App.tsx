@@ -1,4 +1,4 @@
-import wordmark from "../assets/rowberry-wordmark.svg";
+import { QueryWorkspace } from "../features/query/QueryWorkspace";
 import mark from "../assets/rowberry-mark.svg";
 import { useEffect, useState } from "react";
 import { acceptSessionEvent, type SessionState } from "./session-state";
@@ -9,6 +9,8 @@ import { SchemaSidebar } from "../features/schema/SchemaSidebar";
 import { TableView } from "../features/table/TableView";
 import type { Table } from "../../shared/browse";
 export function App() {
+  const [sqlOpened, setSqlOpened] = useState(false);
+  const [showSql, setShowSql] = useState(false);
   const [selected, setSelected] = useState<{ sessionId: string; table: Table } | null>(null);
   const [session, setSession] = useState<SessionState | null>(null);
   useEffect(
@@ -42,7 +44,7 @@ export function App() {
       <aside aria-label="Connections and schemas">
         <header>
           <img className="brand-mark" src={mark} alt="" />
-          <img className="brand-wordmark" src={wordmark} alt="Rowberry" />
+          <strong className="brand-wordmark">rowberry</strong>
           <span className="badge">LOCAL</span>
         </header>
         <div className="sidebar-content">
@@ -53,7 +55,10 @@ export function App() {
               sessionId={session.sessionId}
               generation={session.generation}
               selected={table?.id ?? null}
-              onSelect={(table) => setSelected({ sessionId: session.sessionId, table })}
+              onSelect={(table) => {
+                setShowSql(false);
+                setSelected({ sessionId: session.sessionId, table });
+              }}
             />
           )}
         </div>
@@ -71,6 +76,17 @@ export function App() {
           <Button variant="ghost" className="active-tab" aria-current="page">
             {session?.state === "connected" && table ? table.name : "Overview"}
           </Button>
+          {session?.state === "connected" && (
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setSqlOpened(true);
+                setShowSql((current) => !current);
+              }}
+            >
+              {showSql ? "Table workspace" : "SQL workspace"}
+            </Button>
+          )}
           <span className="connection-state">
             <i /> {session?.state ?? "No connection"}
           </span>
@@ -89,30 +105,42 @@ export function App() {
             </Button>
           )}
         </nav>
-        {session?.state === "connected" && table ? (
-          <TableView
-            key={session.sessionId + table.id}
-            table={table}
-            sessionId={session.sessionId}
-            generation={session.generation}
-          />
-        ) : (
-          <section className="workspace" aria-label="Empty workspace">
-            <div className="welcome">
-              <div className="database-icon" aria-hidden="true">
-                <img src={mark} alt="" />
-              </div>
-              <h1>Your database workspace</h1>
-              <p>Your databases. In a good place.</p>
-              <div className="empty-card">
-                <strong>
-                  {session?.state === "connected" ? "Database connected" : "No database connected"}
-                </strong>
-                <p>Select Connect in the sidebar to open a PostgreSQL session.</p>
-              </div>
-            </div>
-          </section>
+        {sqlOpened && session?.state === "connected" && (
+          <div hidden={!showSql}>
+            <QueryWorkspace
+              key={session.sessionId}
+              sessionId={session.sessionId}
+              generation={session.generation}
+            />
+          </div>
         )}
+        {!showSql &&
+          (session?.state === "connected" && table ? (
+            <TableView
+              key={session.sessionId + table.id}
+              table={table}
+              sessionId={session.sessionId}
+              generation={session.generation}
+            />
+          ) : (
+            <section className="workspace" aria-label="Empty workspace">
+              <div className="welcome">
+                <div className="database-icon" aria-hidden="true">
+                  <img src={mark} alt="" />
+                </div>
+                <h1>Your database workspace</h1>
+                <p>Your databases. In a good place.</p>
+                <div className="empty-card">
+                  <strong>
+                    {session?.state === "connected"
+                      ? "Database connected"
+                      : "No database connected"}
+                  </strong>
+                  <p>Select Connect in the sidebar to open a PostgreSQL session.</p>
+                </div>
+              </div>
+            </section>
+          ))}
         <div className="statusbar">
           <span>PostgreSQL workspace</span>
           <span>{status}</span>

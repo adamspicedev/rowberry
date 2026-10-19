@@ -3,5 +3,5 @@ import base from "./playwright.config";
 export default defineConfig({
   ...base,
   testIgnore: [],
-  testMatch: ["**/sessions.spec.ts", "**/browse.spec.ts"],
+  testMatch: ["**/sessions.spec.ts", "**/browse.spec.ts", "**/query.spec.ts"],
 });

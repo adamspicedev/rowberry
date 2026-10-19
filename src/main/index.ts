@@ -27,11 +27,19 @@ app.whenReady().then(() => {
   const sessions = new DatabaseProcess((event) => {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(EVENT_CHANNEL, event);
   });
+  let quitting = false;
+  app.on("before-quit", (event) => {
+    if (quitting) return;
+    quitting = true;
+    event.preventDefault();
+    sessions.stop();
+    void sessions.drain().finally(() => app.quit());
+  });
   app.once("will-quit", () => {
     sessions.stop();
     store.close();
   });
-  installBridge(() => mainWindow, pathToFileURL(rendererPath).href, connections, sessions);
+  installBridge(() => mainWindow, pathToFileURL(rendererPath).href, connections, sessions, store);
   const open = () => {
     mainWindow = createWindow(rendererPath);
     // Renderer state is ephemeral. A new main-frame document must not inherit

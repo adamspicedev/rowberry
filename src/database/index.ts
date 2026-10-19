@@ -1,3 +1,5 @@
+import { QueryDispatch } from "./query-dispatch";
+let queries: QueryDispatch | undefined;
 import { openSession, type Session } from "./connections";
 import { WorkerCommandSchema } from "./types";
 import { introspect } from "./introspection";
@@ -18,9 +20,18 @@ port.on("message", async ({ data }: { data: unknown }) => {
   }
   if (command.data.kind === "close") {
     controller.abort();
+    await queries?.closeAll();
     await session?.client.end().catch(() => {});
     port.postMessage({ kind: "disconnected" });
     process.exit(0);
+  }
+  if (command.data.kind === "query") {
+    const request = command.data.command;
+    port.postMessage({
+      kind: "reply",
+      reply: queries ? await queries.request(request) : failure("UNAVAILABLE", request.requestId),
+    });
+    return;
   }
   if (command.data.kind === "browse") {
     const request = command.data.command;
@@ -70,6 +81,9 @@ port.on("message", async ({ data }: { data: unknown }) => {
   try {
     session = await openSession(command.data.config, controller.signal);
     browser = new RowBrowser(session);
+    queries = new QueryDispatch(command.data.config, (event) =>
+      port.postMessage({ kind: "queryEvent", event }),
+    );
     session.client.once("end", () => {
       port.postMessage({ kind: "disconnected" });
       process.exit(0);

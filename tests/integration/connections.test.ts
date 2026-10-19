@@ -259,19 +259,23 @@ describe("real Electron utility-process transport", () => {
     input.profile.host = "127.0.0.1";
     input.profile.port = address.port;
     try {
-      const outcome = await application.evaluate(async (_, input) => {
-        const pending = globalThis.sessionHarness.open(input).then(
-          () => "unexpected",
-          () => "cancelled",
-        );
-        await new Promise((resolve) => setTimeout(resolve, 400));
+      const pending = application.evaluate(
+        async (_, input) =>
+          globalThis.sessionHarness.open(input).then(
+            () => "unexpected",
+            () => "cancelled",
+          ),
+        input,
+      );
+      // Wait for real transport acceptance; importing the SQL engine can make
+      // cold utility-process startup exceed a fixed 400 ms under host load.
+      await expect.poll(() => accepted).toBe(1);
+      await application.evaluate(() => {
         const event = globalThis.sessionHarness.events.at(-1);
         if (!event || event.kind !== "sessions.state") throw new Error();
         globalThis.sessionHarness.close(event.sessionId);
-        return pending;
-      }, input);
-      expect(outcome).toBe("cancelled");
-      expect(accepted).toBe(1);
+      });
+      expect(await pending).toBe("cancelled");
       await expect.poll(() => sockets.size).toBe(0);
     } finally {
       for (const socket of sockets) socket.destroy();

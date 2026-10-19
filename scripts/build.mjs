@@ -28,3 +28,5 @@ await build({
 await viteBuild();
 
 await copyFile("assets/branding/icons/512.png", "dist/renderer/app-icon.png");
+
+await copyFile("src/renderer/assets/fonts/OFL.txt", "dist/renderer/Baloo2-OFL.txt");

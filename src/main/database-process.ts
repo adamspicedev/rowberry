@@ -8,6 +8,7 @@ import {
   type Reply,
   type Command,
   type BrowseCommand,
+  type QueryCommand,
   type AppEvent,
   type ConnectionId,
   type SessionId,
@@ -30,6 +31,7 @@ export class DatabaseProcess {
     { resolve: (reply: Reply) => void; timer: ReturnType<typeof setTimeout> }
   >();
   private generation = 0;
+  private readonly retiring = new Set<Promise<void>>();
   private active: ActiveSession | null = null;
   constructor(
     private readonly emit: (event: AppEvent) => void,
@@ -74,6 +76,12 @@ export class DatabaseProcess {
           worker.on("message", (input: unknown) => {
             if (this.active !== active) return;
             const parsed = WorkerEventSchema.safeParse(input);
+            if (parsed.success && parsed.data.kind === "queryEvent") {
+              const event = parsed.data.event;
+              if (event.sessionId === active.sessionId && event.generation === active.generation)
+                this.emit(event);
+              return;
+            }
             if (parsed.success && parsed.data.kind === "reply") {
               const reply = parsed.data.reply;
               if (reply.requestId) {
@@ -113,13 +121,16 @@ export class DatabaseProcess {
         });
     });
   }
-  request(command: BrowseCommand): Promise<Reply> {
+  request(command: BrowseCommand | QueryCommand): Promise<Reply> {
     const active = this.active;
     if (
       !active?.worker ||
       active.sessionId !== command.sessionId ||
       active.generation !== command.generation ||
-      this.pending.size >= 8 ||
+      this.pending.size >= 32 ||
+      (this.pending.size >= 31 &&
+        command.kind !== "queries.cancel" &&
+        command.kind !== "queries.closeTab") ||
       this.pending.has(command.requestId)
     )
       return Promise.resolve(failure("UNAVAILABLE", command.requestId));
@@ -137,11 +148,14 @@ export class DatabaseProcess {
               : failure("UNAVAILABLE", command.requestId),
           ),
       });
-      active.worker?.postMessage({ kind: "browse", command });
+      active.worker?.postMessage({ kind: "tabId" in command ? "query" : "browse", command });
     });
   }
   close(sessionId: SessionId): void {
     if (this.active?.sessionId === sessionId) this.stop();
+  }
+  async drain(): Promise<void> {
+    await Promise.all(this.retiring);
   }
   stop(): void {
     const active = this.active;
@@ -153,9 +167,35 @@ export class DatabaseProcess {
     }
     this.pending.clear();
     if (active.timer) clearTimeout(active.timer);
-    // Killing the isolated worker also closes sockets during DNS, TLS and auth,
-    // when a driver-level close cannot guarantee prompt cancellation.
-    active.worker?.kill();
+    // Invalidate immediately, then let the worker cancel active SQL before
+    // disconnecting. Killing its TCP socket alone leaves PostgreSQL executing
+    // until it next notices the disconnect. Bound cleanup for DNS/auth failures.
+    const worker = active.worker;
+    if (worker) {
+      const retired = new Promise<void>((resolve) => {
+        const deadline = setTimeout(() => {
+          try {
+            worker.kill();
+          } finally {
+            resolve();
+          }
+        }, 3500);
+        deadline.unref();
+        worker.once("exit", () => {
+          clearTimeout(deadline);
+          resolve();
+        });
+        try {
+          worker.postMessage({ kind: "close" });
+        } catch {
+          clearTimeout(deadline);
+          worker.kill();
+          resolve();
+        }
+      });
+      this.retiring.add(retired);
+      void retired.then(() => this.retiring.delete(retired));
+    }
     active.reject(connectionError());
     this.state(active, "disconnected");
   }

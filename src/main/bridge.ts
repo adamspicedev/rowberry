@@ -1,8 +1,9 @@
 import { app, ipcMain, type BrowserWindow, type IpcMainInvokeEvent } from "electron";
+import type { ConnectionStore } from "./store";
 import type { DatabaseProcess } from "./database-process";
 import type { ConnectionService } from "./connections";
 import {
-  bounded,
+  boundedCommand,
   CommandSchema,
   failure,
   ReplySchema,
@@ -26,6 +27,7 @@ export function installBridge(
   rendererURL: string,
   connections: ConnectionService,
   sessions: DatabaseProcess,
+  store: ConnectionStore,
 ): void {
   let pending = Promise.resolve();
   let queued = 0;
@@ -48,14 +50,15 @@ export function installBridge(
   ipcMain.handle(REQUEST_CHANNEL, async (event, input: unknown): Promise<Reply> => {
     const window = getWindow();
     if (!window || !trustedSender(event, window, rendererURL)) return failure("UNTRUSTED_SENDER");
-    if (!bounded(input)) return failure("VALIDATION_ERROR");
+    if (!boundedCommand(input)) return failure("VALIDATION_ERROR");
     const parsed = CommandSchema.safeParse(input);
     if (!parsed.success) return failure("VALIDATION_ERROR");
     const command = parsed.data;
     if (
       command.kind === "schema.list" ||
       command.kind === "rows.fetch" ||
-      command.kind === "rows.value"
+      command.kind === "rows.value" ||
+      "tabId" in command
     )
       return sessions.request(command);
     // Closing is never queued behind OS credential access or a network handshake.
@@ -91,6 +94,28 @@ export function installBridge(
     try {
       return await serialize(async () => {
         switch (command.kind) {
+          case "queries.saved.list":
+            return ReplySchema.parse({
+              ok: true,
+              kind: command.kind,
+              requestId: command.requestId,
+              data: store.savedList(command.offset),
+            });
+          case "queries.saved.get":
+            return ReplySchema.parse({
+              ok: true,
+              kind: command.kind,
+              requestId: command.requestId,
+              data: store.savedGet(command.id),
+            });
+          case "queries.saved.save":
+            store.savedSave(command.id, command.name, command.sql);
+            return ReplySchema.parse({
+              ok: true,
+              kind: command.kind,
+              requestId: command.requestId,
+              data: {},
+            });
           case "app.info":
             return ReplySchema.parse({
               ok: true,

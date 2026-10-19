@@ -81,17 +81,17 @@ test("unexpected navigation and new windows are blocked", async () => {
   expect(page.url()).toBe(original);
 });
 
-test("Rowberry shell loads vector branding and keyboard-accessible light/dark appearance", async () => {
+test("Rowberry shell loads Baloo 2 wordmark text and keyboard-accessible light/dark appearance", async () => {
   const page = await application.firstWindow();
   await expect(page.getByRole("heading", { name: "Your database workspace" })).toBeVisible();
   await expect(page).toHaveTitle("Rowberry");
-  const wordmark = page.getByRole("img", { name: "Rowberry", exact: true });
+  const wordmark = page.getByText("rowberry", { exact: true });
   await expect(wordmark).toBeVisible();
-  expect(
-    await wordmark.evaluate(
-      (image) => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0,
-    ),
-  ).toBe(true);
+  await page.evaluate(() => document.fonts.ready);
+  expect(await wordmark.evaluate((element) => getComputedStyle(element).fontFamily)).toContain(
+    "Baloo 2",
+  );
+  expect(await page.evaluate(() => document.fonts.check('800 30px "Baloo 2"'))).toBe(true);
   expect(
     await application.evaluate(({ app }) => ({
       name: app.getName(),

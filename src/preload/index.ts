@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from "electron";
 import {
   AppEventSchema,
+  boundedCommand,
   bounded,
   boundedReply,
   CommandSchema,
@@ -17,7 +18,7 @@ const listeners = new Map<
 >();
 const bridge: DesktopBridge = {
   async request(command) {
-    if (!bounded(command)) return failure("VALIDATION_ERROR");
+    if (!boundedCommand(command)) return failure("VALIDATION_ERROR");
     const parsed = CommandSchema.safeParse(command);
     if (!parsed.success) return failure("VALIDATION_ERROR");
     try {

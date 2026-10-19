@@ -24,7 +24,7 @@ bun run build
 bun run test:e2e
 ```
 
-`bun run format` applies Oxfmt. Oxlint checks code. Unit tests run with Vitest and desktop tests run actual Electron through Playwright. `bun run test:integration` is reserved for the forthcoming database integration suite and currently reports no tests. Run `bun run test` rather than Bun's built-in test command to use the configured runner.
+`bun run format` applies Oxfmt. Oxlint checks code. Unit tests run with Vitest and desktop tests run actual Electron through Playwright. `bun run test:integration` runs the real PostgreSQL integration suite against disposable fixtures. Run `bun run test` rather than Bun's built-in test command to use the configured runner.
 
 ## Package and verify
 
@@ -43,9 +43,9 @@ Electron 44 requires macOS 13 or newer. Windows and Linux OS minimums and creden
 
 The renderer loads only local built assets with a restrictive CSP, disabled Node integration, context isolation, and a global process sandbox. Its preload refuses to expose the bridge unless sandboxing and context isolation are active. Navigation, new windows, webviews, permission grants, and downloads are blocked. `window.dbapp` exposes only validated `request`, `subscribe`, and `unsubscribe` operations. Commands cover application info, saved connection metadata, transient secret submission, and opening/closing live database sessions. Retrieved passwords stay in main and its private database worker.
 
-The main process accepts requests only from the registered window's exact main-frame URL and frame identity. Runtime schemas reject unknown fields and commands. Both sides bound serialized messages to 64 KiB of UTF-8 and validate responses/events. Errors contain fixed messages, request identifiers, retryability, and failure outcome. Filesystem, shell, credentials, and generic IPC are not exposed. Later document transport will need its own explicit bounded contract rather than increasing this control-message limit blindly.
+The main process accepts requests only from the registered window's exact main-frame URL and frame identity. Runtime schemas reject unknown fields and commands. Both sides validate responses/events and bound serialized payloads: control replies/events use 64 KiB, SQL requests allow 1 MiB of UTF-8 text plus a bounded envelope, query and browse pages use 16 MiB including metadata/envelope, and individual browse-value reads use 32 MiB. Control errors contain fixed messages, request identifiers, retryability, and failure outcome; SQL result pages carry bounded PostgreSQL errors and explicit completion, cancellation, limit, and unknown-outcome states. Filesystem, shell, credentials, and generic IPC are not exposed. Later document transport will need its own explicit bounded contract rather than increasing this control-message limit blindly.
 
-Connection metadata is saved in local SQLite. Passwords use the native OS credential store when available, otherwise session-only memory. Each live workspace opens a separate database utility process; switching connections invalidates the previous generation and closes its sockets. Verified TLS is the default. Querying and table editing will follow in later milestones.
+Connection metadata is saved in local SQLite. Passwords use the native OS credential store when available, otherwise session-only memory. Each live workspace opens a separate database utility process; switching connections invalidates the previous generation and closes its sockets. Verified TLS is the default. Schema/table browsing and SQL execution are available; table editing follows in later milestones.
 
 ## Dependency sources
 
@@ -69,4 +69,12 @@ The live suite checks text preservation, authentication failures, verified TLS, 
 
 ## Branding
 
-The Rowberry berry mark, rounded lowercase wordmark, palette, and packaging icons are in `assets/branding`. See [asset provenance](assets/branding/PROVENANCE.md). Regenerate PNG, ICO, and ICNS assets locally with `bun scripts/generate-icons.mjs`. The vector masters contain no fonts or remote resources. Internal `dbapp` identifiers and the original profile directory stay stable.
+The Rowberry berry mark, palette, and packaging icons are in `assets/branding`. The lowercase wordmark is actual text set in locally bundled Baloo 2. See [asset provenance](assets/branding/PROVENANCE.md). Regenerate PNG, ICO, and ICNS assets locally with `bun scripts/generate-icons.mjs`. The berry vector masters contain no fonts or remote resources. Baloo 2 and its OFL licence are bundled in `src/renderer/assets/fonts`. Internal `dbapp` identifiers and the original profile directory stay stable.
+
+## SQL workspace
+
+Open **SQL workspace** after connecting. Each of at most 16 SQL tabs uses its own PostgreSQL connection. Run executes selected text when present, otherwise the editor contents; PostgreSQL rejects multi-statement batches before executing any statement. Use Control+Space for catalog table/column completion. Results preserve raw text, OIDs and SQL NULL and remain read only. Next result page replaces the current 200 rows; it does not accumulate previous pages. The bridge accepts up to 1,000 rows per fetch and 32 outstanding operations, reserving capacity for cancellation.
+
+BEGIN, COMMIT and ROLLBACK run explicitly on the tab connection; transaction state includes aborted and unknown. Cancel targets active work. **End unfinished result** requires confirmation because closing a portal can commit an implicit mutation. **Close SQL tab** disconnects its connection and rolls back any open transaction. Unknown cancellation/connection outcomes require explicit session reopening; no SQL is retried automatically. COPY streaming is unsupported.
+
+Named saved queries live in `profiles.sqlite` in the application profile directory (on macOS, `~/Library/Application Support/dbapp/`). They contain SQL text and may contain sensitive values. Lists return at most 20 names per page, and individual saved SQL text is limited to 1 MiB. Opening saved SQL never executes it. Current editor drafts are also kept locally in the renderer's storage for connection-switch recovery; full versioned recovery controls belong to the later workspace-recovery milestone.

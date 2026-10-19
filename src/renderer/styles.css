@@ -1,4 +1,11 @@
 @import "tailwindcss";
+@font-face {
+  font-family: "Baloo 2";
+  src: url("./assets/fonts/Baloo2-Variable.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+}
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -19,7 +26,6 @@
   --border: #e3e6eb;
   --subtle: #61616d;
   --sidebar: #f7f5f0;
-  --wordmark-filter: none;
   background: var(--background);
   color: var(--foreground);
   font-size: 13px;
@@ -36,7 +42,6 @@
   --border: #30343d;
   --subtle: #9ba3b1;
   --sidebar: #1f212b;
-  --wordmark-filter: brightness(0) invert(1);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -51,7 +56,6 @@
     --border: #30343d;
     --subtle: #9ba3b1;
     --sidebar: #1f212b;
-    --wordmark-filter: brightness(0) invert(1);
   }
 }
 * {
@@ -85,8 +89,13 @@ header {
 }
 .brand-wordmark {
   width: 122px;
-  height: 36px;
-  filter: var(--wordmark-filter);
+  flex-shrink: 0;
+  font-family: "Baloo 2", sans-serif;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 36px;
+  letter-spacing: -1px;
+  color: var(--foreground);
 }
 .badge {
   font-size: 9px;
@@ -503,4 +512,55 @@ select:focus-visible,
 textarea:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+.query-workspace {
+  padding: 16px;
+  min-width: 0;
+}
+.query-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+.query-workspace button,
+.query-workspace input,
+.query-workspace select {
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 6px 10px;
+  background: var(--surface);
+  color: inherit;
+}
+.query-workspace button:disabled {
+  opacity: 0.45;
+}
+.query-workspace [aria-selected="true"] {
+  border-bottom: 2px solid #c75a69;
+}
+.sql-editor {
+  height: 260px;
+  border: 1px solid var(--border);
+}
+.sql-results {
+  max-height: 300px;
+  overflow: auto;
+}
+.sql-results table {
+  border-collapse: collapse;
+  font-family: monospace;
+  font-size: 12px;
+}
+.sql-results td,
+.sql-results th {
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+  max-width: 380px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sql-results small {
+  opacity: 0.6;
 }

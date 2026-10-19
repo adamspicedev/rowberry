@@ -6,6 +6,7 @@ import {
 } from "../shared/protocol";
 const migrations = [
   "CREATE TABLE connections (id TEXT PRIMARY KEY, profile TEXT NOT NULL, credential_ref INTEGER NOT NULL DEFAULT 0, credential_enabled INTEGER NOT NULL DEFAULT 0)",
+  "CREATE TABLE saved_queries (id TEXT PRIMARY KEY, name TEXT NOT NULL, sql TEXT NOT NULL)",
 ];
 export function migrate(db: DatabaseSync, steps: readonly string[] = migrations): void {
   db.exec("BEGIN IMMEDIATE");
@@ -35,6 +36,22 @@ export class ConnectionStore {
       this.db.close();
       throw new Error("Local storage could not be updated.");
     }
+  }
+  savedList(offset: number) {
+    const items = this.db
+      .prepare("SELECT id,name FROM saved_queries ORDER BY name,id LIMIT 20 OFFSET ?")
+      .all(offset);
+    return { items, nextOffset: items.length === 20 ? offset + 20 : null };
+  }
+  savedGet(id: string) {
+    return this.db.prepare("SELECT id,name,sql FROM saved_queries WHERE id=?").get(id);
+  }
+  savedSave(id: string, name: string, sql: string) {
+    this.db
+      .prepare(
+        "INSERT INTO saved_queries(id,name,sql) VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET name=excluded.name,sql=excluded.sql",
+      )
+      .run(id, name, sql);
   }
   list(offset = 0): ConnectionProfile[] {
     return this.db
