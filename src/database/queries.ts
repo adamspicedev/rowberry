@@ -313,6 +313,7 @@ export class QueryEngine {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 2500);
       let control: Session | undefined;
+      let sent = false;
       const abort = () => {
         void control?.client.end().catch(() => {});
       };
@@ -323,7 +324,25 @@ export class QueryEngine {
           controller.signal,
         );
         controller.signal.throwIfAborted();
+        sent = true;
         await control.client.query("SELECT pg_cancel_backend($1)", [query.tab.pid]);
+      } catch (error) {
+        query.cancelled = false;
+        const message = sent
+          ? "Cancellation acknowledgement lost; outcome unknown. SQL tab disconnected to prevent late cancellation. Reopen explicitly before running SQL."
+          : "Cancellation could not be sent; work may still be running and its outcome is unknown. Close the result or tab before running more SQL.";
+        if (sent) {
+          // Ending the control TCP socket cannot recall SQL already sent to its
+          // backend. Retire the target backend so a late cancel cannot hit newer
+          // work on that backend after this result is released.
+          query.status = "unknown";
+          query.tab.closed = true;
+          query.tab.transaction = "unknown";
+          await query.tab.session.client.end().catch(() => {});
+        }
+        query.error = message;
+        this.emit(query);
+        throw error;
       } finally {
         clearTimeout(timeout);
         controller.signal.removeEventListener("abort", abort);
@@ -349,8 +368,11 @@ export class QueryEngine {
     try {
       // Keep tab.query owned while a delayed control connection can still send
       // pg_cancel_backend. Releasing it first could cancel the next SQL command.
-      await query.cancelling;
-      if (!query.cursor.failed) await query.cursor.close();
+      // Rejection still means the control operation has settled and its finally
+      // block ended any socket. Pre-send failure must not permanently pin a
+      // suspended portal; post-send uncertainty has already retired the tab.
+      await query.cancelling?.catch(() => {});
+      if (!query.cursor.failed && !query.tab.closed) await query.cursor.close();
       this.queries.delete(queryId);
       if (query.tab.query === query) query.tab.query = undefined;
     } finally {

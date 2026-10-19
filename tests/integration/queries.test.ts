@@ -1,3 +1,4 @@
+import { Socket } from "node:net";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import * as connections from "../../src/database/connections";
 import { QueryEngine } from "../../src/database/queries";
@@ -93,6 +94,77 @@ for (const version of [14, 18])
         spy.mockRestore();
       }
     });
+    test("failed cancellation connection still permits result close and subsequent SQL", async () => {
+      await tab();
+      const { queryId } = engine.start("a", "SELECT i FROM generate_series(1,10) i");
+      await engine.fetch(queryId, 1);
+      const spy = vi
+        .spyOn(connections, "openSession")
+        .mockRejectedValue(new Error("Control connection unavailable"));
+      try {
+        await expect(engine.cancel(queryId)).rejects.toThrow("Control connection unavailable");
+        expect(engine.state(queryId).error).toContain("Cancellation could not be sent");
+        await engine.close(queryId);
+        expect((await run("SELECT pg_sleep(0.1), 42")).rows).toEqual([["", "42"]]);
+      } finally {
+        spy.mockRestore();
+      }
+    });
+    test("expired cancellation cleans up a late control connection before releasing result ownership", async () => {
+      await tab();
+      const { queryId } = engine.start("a", "SELECT i FROM generate_series(1,10) i");
+      await engine.fetch(queryId, 1);
+      const realOpen = connections.openSession;
+      const spy = vi.spyOn(connections, "openSession").mockImplementation(async (config) => {
+        // Simulate connect completion racing the deadline. Return a real socket
+        // even though the control signal expired; the engine must never send
+        // pg_cancel_backend on it and must end it before close releases the tab.
+        await new Promise((r) => setTimeout(r, 2700));
+        return realOpen(config);
+      });
+      const cancellation = engine.cancel(queryId);
+      const rejected = expect(cancellation).rejects.toThrow();
+      const closing = engine.close(queryId);
+      const settled = Promise.allSettled([closing]);
+      try {
+        await new Promise((r) => setTimeout(r, 2550));
+        expect(() => engine.start("a", "SELECT 1")).toThrow();
+        await rejected;
+        await closing;
+        expect((await run("SELECT pg_sleep(0.2), 43")).rows).toEqual([["", "43"]]);
+      } finally {
+        await settled;
+        spy.mockRestore();
+      }
+    }, 6000);
+    test("sent cancellation without acknowledgement retires the target backend", async () => {
+      await tab();
+      const { queryId } = engine.start("a", "SELECT i FROM generate_series(1,10) i");
+      await engine.fetch(queryId, 1);
+      const realOpen = connections.openSession;
+      const spy = vi.spyOn(connections, "openSession").mockImplementation(async (...args) => {
+        const control = await realOpen(...args);
+        const connection = control.client.connection;
+        if (!("stream" in connection) || !(connection.stream instanceof Socket))
+          throw new Error("Missing control socket");
+        // Real cancellation SQL reaches PostgreSQL, but its real acknowledgement
+        // cannot reach the driver before the deadline.
+        connection.stream.pause();
+        return control;
+      });
+      try {
+        await expect(engine.cancel(queryId)).rejects.toThrow();
+        expect(engine.state(queryId).status).toBe("unknown");
+        expect(engine.state(queryId).error).toContain("Cancellation acknowledgement lost");
+        await engine.close(queryId);
+        expect(() => engine.start("a", "SELECT 1")).toThrow();
+      } finally {
+        spy.mockRestore();
+        await engine.closeTab("a");
+      }
+      await tab();
+      expect((await run("SELECT pg_sleep(0.1), 44")).rows).toEqual([["", "44"]]);
+    }, 6000);
     test("server execution timeout and pre-fetch errors produce terminal states", async () => {
       await tab();
       await run("SET statement_timeout TO 50");
