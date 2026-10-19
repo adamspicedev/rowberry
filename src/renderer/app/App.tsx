@@ -3,7 +3,11 @@ import { acceptSessionEvent, type SessionState } from "./session-state";
 import { RequestIdSchema } from "../../shared/protocol";
 import { ConnectionList } from "../features/connections/ConnectionList";
 import { Button } from "../components/ui/button";
+import { SchemaSidebar } from "../features/schema/SchemaSidebar";
+import { TableView } from "../features/table/TableView";
+import type { Table } from "../../shared/browse";
 export function App() {
+  const [selected, setSelected] = useState<{ sessionId: string; table: Table } | null>(null);
   const [session, setSession] = useState<SessionState | null>(null);
   useEffect(
     () =>
@@ -12,6 +16,7 @@ export function App() {
       ),
     [],
   );
+  const table = selected?.sessionId === session?.sessionId ? (selected?.table ?? null) : null;
   const [status, setStatus] = useState("Starting");
   const [theme, setTheme] = useState("system");
   useEffect(() => {
@@ -40,6 +45,15 @@ export function App() {
         </header>
         <div className="sidebar-content">
           <ConnectionList />
+          {session?.state === "connected" && (
+            <SchemaSidebar
+              key={session.sessionId}
+              sessionId={session.sessionId}
+              generation={session.generation}
+              selected={table?.id ?? null}
+              onSelect={(table) => setSelected({ sessionId: session.sessionId, table })}
+            />
+          )}
         </div>
         <footer>
           <label htmlFor="appearance">Appearance</label>
@@ -53,7 +67,7 @@ export function App() {
       <main>
         <nav aria-label="Workspace tabs">
           <Button variant="ghost" className="active-tab" aria-current="page">
-            Overview
+            {session?.state === "connected" && table ? table.name : "Overview"}
           </Button>
           <span className="connection-state">
             <i /> {session?.state ?? "No connection"}
@@ -73,21 +87,30 @@ export function App() {
             </Button>
           )}
         </nav>
-        <section className="workspace" aria-label="Empty workspace">
-          <div className="welcome">
-            <div className="database-icon" aria-hidden="true">
-              ▦
+        {session?.state === "connected" && table ? (
+          <TableView
+            key={session.sessionId + table.id}
+            table={table}
+            sessionId={session.sessionId}
+            generation={session.generation}
+          />
+        ) : (
+          <section className="workspace" aria-label="Empty workspace">
+            <div className="welcome">
+              <div className="database-icon" aria-hidden="true">
+                ▦
+              </div>
+              <h1>Your database workspace</h1>
+              <p>Browse tables, write SQL, and inspect JSON in one place.</p>
+              <div className="empty-card">
+                <strong>
+                  {session?.state === "connected" ? "Database connected" : "No database connected"}
+                </strong>
+                <p>Select Connect in the sidebar to open a PostgreSQL session.</p>
+              </div>
             </div>
-            <h1>Your database workspace</h1>
-            <p>Browse tables, write SQL, and inspect JSON in one place.</p>
-            <div className="empty-card">
-              <strong>
-                {session?.state === "connected" ? "Database connected" : "No database connected"}
-              </strong>
-              <p>Select Connect in the sidebar to open a PostgreSQL session.</p>
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
         <div className="statusbar">
           <span>PostgreSQL workspace</span>
           <span>{status}</span>

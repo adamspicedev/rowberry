@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { ConnectionProfileSchema, SessionIdSchema } from "../shared/protocol";
+import {
+  BrowseCommandSchema,
+  ReplySchema,
+  ConnectionProfileSchema,
+  SessionIdSchema,
+} from "../shared/protocol";
 export const ResolvedConnectionSchema = z
   .object({
     profile: ConnectionProfileSchema,
@@ -11,6 +16,7 @@ export const ResolvedConnectionSchema = z
   .strict();
 export type ResolvedConnection = z.input<typeof ResolvedConnectionSchema>;
 export const WorkerCommandSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("browse"), command: BrowseCommandSchema }).strict(),
   z.object({ kind: z.literal("open"), config: ResolvedConnectionSchema }).strict(),
   z.object({ kind: z.literal("close") }).strict(),
 ]);
@@ -23,6 +29,7 @@ export const SessionResultSchema = z
   .strict();
 export type SessionResult = z.infer<typeof SessionResultSchema>;
 export const WorkerEventSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("reply"), reply: ReplySchema }).strict(),
   z.object({ kind: z.literal("connected"), data: SessionResultSchema }).strict(),
   z.object({ kind: z.literal("disconnected") }).strict(),
   z.object({ kind: z.literal("failed") }).strict(),

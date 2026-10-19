@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from "electron";
 import {
   AppEventSchema,
   bounded,
+  boundedReply,
   CommandSchema,
   EVENT_CHANNEL,
   failure,
@@ -21,9 +22,14 @@ const bridge: DesktopBridge = {
     if (!parsed.success) return failure("VALIDATION_ERROR");
     try {
       const input: unknown = await ipcRenderer.invoke(REQUEST_CHANNEL, parsed.data);
-      if (!bounded(input)) return failure("INTERNAL_ERROR", parsed.data.requestId);
+      if (!boundedReply(input, parsed.data.kind))
+        return failure("INTERNAL_ERROR", parsed.data.requestId);
       const reply = ReplySchema.safeParse(input);
-      if (!reply.success || reply.data.requestId !== parsed.data.requestId)
+      if (
+        !reply.success ||
+        reply.data.requestId !== parsed.data.requestId ||
+        (reply.data.ok && reply.data.kind !== parsed.data.kind)
+      )
         return failure("INTERNAL_ERROR", parsed.data.requestId);
       return reply.data;
     } catch {

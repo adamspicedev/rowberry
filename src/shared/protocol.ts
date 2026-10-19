@@ -1,4 +1,13 @@
 import { z } from "zod";
+import {
+  FetchSchema,
+  ValueInputSchema,
+  SchemaSnapshotSchema,
+  RowPageSchema,
+  ValueSchema,
+  PAGE_BYTES,
+  VALUE_BYTES,
+} from "./browse";
 export const REQUEST_CHANNEL = "dbapp:request";
 export const EVENT_CHANNEL = "dbapp:event";
 export const MAX_MESSAGE_BYTES = 64 * 1024;
@@ -37,7 +46,37 @@ export const ConnectionProfileSchema = z
   .strict();
 export type ConnectionProfile = z.infer<typeof ConnectionProfileSchema>;
 export type ConnectionId = ConnectionProfile["id"];
+export const BrowseCommandSchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      kind: z.literal("schema.list"),
+      requestId: RequestIdSchema,
+      sessionId: SessionIdSchema,
+      generation: z.number().int().positive(),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal("rows.fetch"),
+      requestId: RequestIdSchema,
+      sessionId: SessionIdSchema,
+      generation: z.number().int().positive(),
+      ...FetchSchema.shape,
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal("rows.value"),
+      requestId: RequestIdSchema,
+      sessionId: SessionIdSchema,
+      generation: z.number().int().positive(),
+      ...ValueInputSchema.shape,
+    })
+    .strict(),
+]);
+export type BrowseCommand = z.infer<typeof BrowseCommandSchema>;
 export const CommandSchema = z.discriminatedUnion("kind", [
+  ...BrowseCommandSchema.options,
   z
     .object({
       kind: z.literal("sessions.open"),
@@ -115,6 +154,11 @@ const sessionData = z
   })
   .strict();
 const SuccessSchema = z.discriminatedUnion("kind", [
+  z
+    .object({ ...successFields, kind: z.literal("schema.list"), data: SchemaSnapshotSchema })
+    .strict(),
+  z.object({ ...successFields, kind: z.literal("rows.fetch"), data: RowPageSchema }).strict(),
+  z.object({ ...successFields, kind: z.literal("rows.value"), data: ValueSchema }).strict(),
   z.object({ ...successFields, kind: z.literal("sessions.open"), data: sessionData }).strict(),
   z
     .object({ ...successFields, kind: z.literal("connections.connect"), data: sessionData })
@@ -196,10 +240,20 @@ export interface DesktopBridge {
   subscribe(listener: EventListener): () => void;
   unsubscribe(listener: EventListener): void;
 }
-export function bounded(value: unknown): boolean {
+export function boundedReply(value: unknown, kind: Command["kind"]): boolean {
+  return bounded(
+    value,
+    kind === "rows.value"
+      ? VALUE_BYTES
+      : kind === "rows.fetch" || kind === "schema.list"
+        ? PAGE_BYTES
+        : MAX_MESSAGE_BYTES,
+  );
+}
+export function bounded(value: unknown, limit = MAX_MESSAGE_BYTES): boolean {
   try {
     const text = JSON.stringify(value);
-    return typeof text === "string" && new TextEncoder().encode(text).length <= MAX_MESSAGE_BYTES;
+    return typeof text === "string" && new TextEncoder().encode(text).length <= limit;
   } catch {
     return false;
   }

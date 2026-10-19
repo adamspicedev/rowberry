@@ -1,5 +1,10 @@
 import { openSession, type Session } from "./connections";
 import { WorkerCommandSchema } from "./types";
+import { introspect } from "./introspection";
+import { RowBrowser } from "./rows";
+import { boundedReply, failure } from "../shared/protocol";
+let browser: RowBrowser | undefined;
+let busy = false;
 const port = process.parentPort;
 if (!port) throw new Error("Database worker requires a private parent port.");
 let session: Session | undefined;
@@ -17,6 +22,40 @@ port.on("message", async ({ data }: { data: unknown }) => {
     port.postMessage({ kind: "disconnected" });
     process.exit(0);
   }
+  if (command.data.kind === "browse") {
+    const request = command.data.command;
+    if (
+      !session ||
+      !browser ||
+      session.sessionId !== request.sessionId ||
+      session.generation !== request.generation ||
+      busy
+    ) {
+      port.postMessage({ kind: "reply", reply: failure("UNAVAILABLE", request.requestId) });
+      return;
+    }
+    busy = true;
+    try {
+      let data;
+      if (request.kind === "schema.list") data = await introspect(session);
+      else if (request.kind === "rows.fetch") {
+        const { tableId, filter, sort, cursor, pageSize } = request;
+        data = await browser.fetch({ tableId, filter, sort, cursor, pageSize });
+      } else data = await browser.value({ target: request.target, column: request.column });
+      const reply = { ok: true, kind: request.kind, requestId: request.requestId, data };
+      port.postMessage({
+        kind: "reply",
+        reply: boundedReply(reply, request.kind)
+          ? reply
+          : failure("UNAVAILABLE", request.requestId),
+      });
+    } catch {
+      port.postMessage({ kind: "reply", reply: failure("UNAVAILABLE", request.requestId) });
+    } finally {
+      busy = false;
+    }
+    return;
+  }
   if (opening) {
     port.postMessage({ kind: "failed" });
     return;
@@ -24,6 +63,7 @@ port.on("message", async ({ data }: { data: unknown }) => {
   opening = true;
   try {
     session = await openSession(command.data.config, controller.signal);
+    browser = new RowBrowser(session);
     session.client.once("end", () => {
       port.postMessage({ kind: "disconnected" });
       process.exit(0);

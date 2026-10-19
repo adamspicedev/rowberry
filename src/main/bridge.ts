@@ -52,6 +52,12 @@ export function installBridge(
     const parsed = CommandSchema.safeParse(input);
     if (!parsed.success) return failure("VALIDATION_ERROR");
     const command = parsed.data;
+    if (
+      command.kind === "schema.list" ||
+      command.kind === "rows.fetch" ||
+      command.kind === "rows.value"
+    )
+      return sessions.request(command);
     // Closing is never queued behind OS credential access or a network handshake.
     if (command.kind === "sessions.close") {
       sessions.close(command.sessionId);
