@@ -191,3 +191,116 @@ it("a newer load wins over a pending parse and other document ids remain indepen
   ).toEqual(["new", "other"]);
   expect(replies.find((r) => r.requestId === "old")?.kind).toBe("cancelled");
 });
+it("worker rejects standalone raw fragment injections before committing", async () => {
+  const replies: JsonReply[] = [];
+  const handle = createJsonWorker(
+    (r) => replies.push(r),
+    async () => {},
+  );
+  for (const [i, text, path, raw] of [
+    [0, '{"a":0}', "/a", '1,"b":2'],
+    [1, "[0]", "/0", "1,2"],
+    [2, "[0]", "/0", '{"a":1,"a":2}'],
+  ] as const) {
+    await handle({ kind: "load", documentId: "raw" + i, revision: 0, requestId: "load" + i, text });
+    await handle({
+      kind: "edit",
+      documentId: "raw" + i,
+      revision: 0,
+      requestId: "edit" + i,
+      operation: { kind: "set", path, value: { kind: "raw", text: raw } },
+    });
+    expect(replies.at(-1)?.kind).toBe("error");
+  }
+});
+it("keeps undo histories worker-side and reports availability and eviction without cloning history", async () => {
+  let latest: JsonReply | undefined;
+  const handle = createJsonWorker(
+    (r) => {
+      latest = structuredClone(r);
+    },
+    async () => {},
+  );
+  const text = '"' + "x".repeat(2 * 1024 * 1024) + '"';
+  await handle({ kind: "load", documentId: "history", revision: 0, requestId: "load", text });
+  for (let i = 0; i < 10; i++)
+    await handle({
+      kind: "edit",
+      documentId: "history",
+      revision: i,
+      requestId: "text" + i,
+      operation: { kind: "text", text: text.slice(0, -1) + i + '"' },
+    });
+  if (latest?.kind !== "document") throw new Error("Missing document");
+  expect("past" in latest.document).toBe(false);
+  expect("future" in latest.document).toBe(false);
+  expect(latest.document.canUndo).toBe(true);
+  expect(latest.document.canRedo).toBe(false);
+  expect(latest.document.historyTruncated).toBe(true);
+  const encoded = JSON.stringify(latest);
+  expect(encoded.length).toBeLessThan(text.length * 3);
+  expect(encoded).not.toContain('"before"');
+  await handle({
+    kind: "edit",
+    documentId: "history",
+    revision: 10,
+    requestId: "undo",
+    operation: { kind: "undo" },
+  });
+  if (latest?.kind !== "document") throw new Error("Missing undo document");
+  expect(latest.document.canRedo).toBe(true);
+  expect(latest.document.text).toBe(text.slice(0, -1) + '8"');
+});
+it("raw fragment validation yields to cancellation before any source splice commits", async () => {
+  const replies: JsonReply[] = [];
+  let shouldCancel = false;
+  let handle: ReturnType<typeof createJsonWorker>;
+  handle = createJsonWorker(
+    (r) => replies.push(r),
+    async () => {
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      if (shouldCancel) {
+        shouldCancel = false;
+        await handle({
+          kind: "cancel",
+          documentId: "fragment",
+          revision: 0,
+          requestId: "cancel",
+          targetRequestId: "fragment-edit",
+        });
+      }
+    },
+  );
+  await handle({
+    kind: "load",
+    documentId: "fragment",
+    revision: 0,
+    requestId: "load",
+    text: "[0]",
+  });
+  shouldCancel = true;
+  await handle({
+    kind: "edit",
+    documentId: "fragment",
+    revision: 0,
+    requestId: "fragment-edit",
+    operation: {
+      kind: "set",
+      path: "/0",
+      value: { kind: "raw", text: "[" + "0,".repeat(10000) + "0]" },
+    },
+  });
+  expect(replies.at(-1)?.kind).toBe("cancelled");
+  await handle({
+    kind: "edit",
+    documentId: "fragment",
+    revision: 0,
+    requestId: "after",
+    operation: { kind: "set", path: "/0", value: { kind: "null" } },
+  });
+  expect(replies.at(-1)).toMatchObject({
+    kind: "document",
+    revision: 1,
+    document: { text: "[null]" },
+  });
+});

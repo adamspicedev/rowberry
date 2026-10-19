@@ -2,12 +2,14 @@ import {
   applyOperation,
   documentSteps,
   redo,
-  resolvePointer,
+  prepareMove,
+  finishMove,
+  recordTextEdit,
   undo,
   type JsonDocument,
   type Operation,
 } from "./document";
-import { commandSchema, type JsonReply } from "./protocol";
+import { commandSchema, documentView, type JsonReply } from "./protocol";
 import { defaultYield, searchDocument } from "./search";
 type Job = { cancelled: boolean; documentId: string; revision: number };
 /** One instance per worker. Load revisions strictly increase for an id, including after release. */
@@ -89,18 +91,18 @@ export function createJsonWorker(post: (reply: JsonReply) => void, schedule = de
         }
         const previous = documents.get(documentId);
         const nextRevision = command.kind === "load" ? revision : revision + 1;
-        const next: JsonDocument = {
-          ...document,
-          revision: nextRevision,
-          past: previous
-            ? [...previous.past, { start: 0, before: previous.text, after: text }]
-            : [],
-          future: [],
-        };
+        const next: JsonDocument = previous
+          ? recordTextEdit(previous, document)
+          : { ...document, revision: nextRevision };
         generations.set(documentId, nextRevision);
         documents.set(documentId, next);
         cancelDocument(documentId);
-        post({ ...identity, revision: nextRevision, kind: "document", document: next });
+        post({
+          ...identity,
+          revision: nextRevision,
+          kind: "document",
+          document: documentView(next),
+        });
       } else {
         const doc = documents.get(documentId);
         if (!doc) return;
@@ -123,25 +125,21 @@ export function createJsonWorker(post: (reply: JsonReply) => void, schedule = de
             operation: Operation,
           ): Promise<JsonDocument | null> => {
             if (operation.kind === "move") {
-              if (operation.from === operation.path) return base;
-              if (operation.path.startsWith(operation.from + "/"))
-                throw new Error("Cannot move into a descendant");
-              const source = resolvePointer(base, operation.from);
-              if (!source) throw new Error("Missing move source");
-              const removed = await transform(base, { kind: "remove", path: operation.from });
+              const move = prepareMove(base, operation);
+              if (!move) return base;
+              const removed = await transform(base, move.remove);
               if (!removed) return null;
-              const added = await transform(removed, {
-                kind: "add",
-                path: operation.path,
-                value: { kind: "raw", text: base.text.slice(source.start, source.end) },
-              });
-              if (!added) return null;
-              return {
-                ...added,
-                revision: base.revision + 1,
-                past: [...base.past, { start: 0, before: base.text, after: added.text }],
-                future: [],
-              };
+              const added = await transform(removed, move.add);
+              return added ? finishMove(base, added) : null;
+            }
+            if (
+              (operation.kind === "set" || operation.kind === "add") &&
+              operation.value.kind === "raw"
+            ) {
+              const fragment = await parse(operation.value.text);
+              if (!fragment) return null;
+              if (!fragment.editable)
+                throw new Error("Raw input must be exactly one valid duplicate-free JSON value");
             }
             const prepared = applyOperation(base, operation, (text) => ({ ...base, text }));
             const result = await parse(prepared.text);
@@ -152,6 +150,8 @@ export function createJsonWorker(post: (reply: JsonReply) => void, schedule = de
               revision: prepared.revision,
               past: prepared.past,
               future: prepared.future,
+              historyBytes: prepared.historyBytes,
+              historyTruncated: prepared.historyTruncated,
             };
           };
           let next: JsonDocument | null;
@@ -164,6 +164,8 @@ export function createJsonWorker(post: (reply: JsonReply) => void, schedule = de
                   revision: prepared.revision,
                   past: prepared.past,
                   future: prepared.future,
+                  historyBytes: prepared.historyBytes,
+                  historyTruncated: prepared.historyTruncated,
                 }
               : null;
           } else next = await transform(doc, op);
@@ -174,7 +176,12 @@ export function createJsonWorker(post: (reply: JsonReply) => void, schedule = de
           cancelDocument(documentId);
           documents.set(documentId, next);
           generations.set(documentId, next.revision);
-          post({ ...identity, revision: next.revision, kind: "document", document: next });
+          post({
+            ...identity,
+            revision: next.revision,
+            kind: "document",
+            document: documentView(next),
+          });
         }
       }
     } catch (cause) {

@@ -114,3 +114,51 @@ it("accepts exactly 32 MiB UTF-8 without truncation", () => {
   expect(doc.root?.end).toBe(MAX_BYTES);
   expect(doc.text).toBe(text);
 });
+it("rejects raw fragments that inject siblings instead of exactly one standalone value", () => {
+  for (const [text, path, raw] of [
+    ['{"a":0}', "/a", '1,"b":2'],
+    ["[0]", "/0", "1,2"],
+    ['{"a":0}', "/a", '{"x":1,"x":2}'],
+  ]) {
+    if (!text || !path || !raw) throw new Error("Fixture missing");
+    expect(() =>
+      applyOperation(parseDocument(text), { kind: "set", path, value: { kind: "raw", text: raw } }),
+    ).toThrow();
+  }
+});
+
+import { MAX_HISTORY_BYTES, recordTextEdit } from "./document";
+it("evicts oldest text and move history by retained bytes while preserving current source", () => {
+  const value = "x".repeat(2 * 1024 * 1024);
+  let textDoc = parseDocument(JSON.stringify(value));
+  for (let i = 0; i < 10; i++)
+    textDoc = recordTextEdit(textDoc, parseDocument(JSON.stringify(value + i)));
+  expect(textDoc.historyBytes).toBeLessThanOrEqual(MAX_HISTORY_BYTES);
+  expect(textDoc.historyTruncated).toBe(true);
+  expect(textDoc.past.length).toBeGreaterThan(0);
+  expect(undo(textDoc).text).toBe(JSON.stringify(value + 8));
+  expect(redo(undo(textDoc)).text).toBe(textDoc.text);
+  let moved = parseDocument('{"a":' + JSON.stringify(value) + ',"b":[]}');
+  for (let i = 0; i < 10; i++)
+    moved = applyOperation(
+      moved,
+      i % 2 === 0
+        ? { kind: "move", from: "/a", path: "/b/-" }
+        : { kind: "move", from: "/b/0", path: "/a" },
+    );
+  expect(moved.historyBytes).toBeLessThanOrEqual(MAX_HISTORY_BYTES);
+  expect(moved.historyTruncated).toBe(true);
+  expect(resolvePointer(moved, "/a")?.kind).toBe("string");
+  expect(redo(undo(moved)).text).toBe(moved.text);
+});
+it("clears undo with visible metadata when one edit exceeds the entire history budget", () => {
+  const text = '"' + "x".repeat(17 * 1024 * 1024) + '"';
+  const doc = parseDocument(text);
+  const edited = recordTextEdit(doc, doc);
+  expect(edited.text).toBe(text);
+  expect(edited.past).toEqual([]);
+  expect(edited.future).toEqual([]);
+  expect(edited.historyTruncated).toBe(true);
+  expect(edited.historyBytes).toBe(0);
+  expect(undo(edited)).toBe(edited);
+});

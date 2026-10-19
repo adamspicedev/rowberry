@@ -36,10 +36,18 @@ export const commandSchema = z.discriminatedUnion("kind", [
   z.object({ ...identity, kind: z.literal("release") }),
 ]);
 export type JsonCommand = z.infer<typeof commandSchema>;
+export type JsonDocumentView = Omit<JsonDocument, "past" | "future"> & {
+  readonly canUndo: boolean;
+  readonly canRedo: boolean;
+};
+export function documentView(doc: JsonDocument): JsonDocumentView {
+  const { past, future, ...view } = doc;
+  return { ...view, canUndo: past.length > 0, canRedo: future.length > 0 };
+}
 type Identity = { documentId: string; revision: number; requestId: string };
 export type JsonReply = Identity &
   (
-    | { kind: "document"; document: JsonDocument }
+    | { kind: "document"; document: JsonDocumentView }
     | { kind: "matches"; matches: SearchMatch[] }
     | { kind: "done" | "cancelled" | "released" }
     | { kind: "error"; message: string }

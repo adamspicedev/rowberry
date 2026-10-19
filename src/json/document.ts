@@ -1,6 +1,8 @@
 import { pointerParts } from "./paths";
 export const MAX_BYTES = 32 * 1024 * 1024;
 export const MAX_DEPTH = 256;
+export const MAX_HISTORY_BYTES = 64 * 1024 * 1024;
+export const MAX_HISTORY_ENTRIES = 1000;
 export type Range = { readonly start: number; readonly end: number };
 export type JsonNode = Range &
   (
@@ -27,9 +29,39 @@ export type JsonDocument = {
   readonly diagnostics: readonly Diagnostic[];
   readonly editable: boolean;
   readonly revision: number;
+  readonly historyBytes: number;
+  readonly historyTruncated: boolean;
   readonly past: readonly SourceEdit[];
   readonly future: readonly SourceEdit[];
 };
+/** Conservative retained string budget: two bytes per UTF-16 code unit, not encoded payload bytes. */
+export function withHistory(
+  doc: JsonDocument,
+  past: readonly SourceEdit[],
+  future: readonly SourceEdit[],
+  truncated = doc.historyTruncated,
+): JsonDocument {
+  const before = [...past],
+    after = [...future];
+  const size = (entry: SourceEdit) => (entry.before.length + entry.after.length) * 2;
+  let bytes =
+    before.reduce((sum, e) => sum + size(e), 0) + after.reduce((sum, e) => sum + size(e), 0);
+  while (bytes > MAX_HISTORY_BYTES || before.length + after.length > MAX_HISTORY_ENTRIES) {
+    const removed = before.length ? before.shift() : after.shift();
+    if (!removed) break;
+    bytes -= size(removed);
+    truncated = true;
+  }
+  return { ...doc, past: before, future: after, historyBytes: bytes, historyTruncated: truncated };
+}
+export function recordTextEdit(previous: JsonDocument, next: JsonDocument): JsonDocument {
+  return withHistory(
+    { ...next, revision: previous.revision + 1 },
+    [...previous.past, { start: 0, before: previous.text, after: next.text }],
+    [],
+    previous.historyTruncated,
+  );
+}
 type Token = Range & { raw: string };
 function* tokens(text: string): Generator<Token | null> {
   let i = 0;
@@ -87,6 +119,8 @@ export function* documentSteps(text: string): Generator<null, JsonDocument> {
     diagnostics,
     editable: root !== null && diagnostics.length === 0,
     revision: 0,
+    historyBytes: 0,
+    historyTruncated: false,
     past: [],
     future: [],
   });
@@ -220,7 +254,10 @@ export function parseDocument(text: string): JsonDocument {
   while (!next.done) next = steps.next();
   return next.value;
 }
-export function resolvePointer(doc: JsonDocument, path: string): JsonNode | undefined {
+export function resolvePointer(
+  doc: Pick<JsonDocument, "root">,
+  path: string,
+): JsonNode | undefined {
   let node = doc.root ?? undefined;
   for (const part of pointerParts(path)) {
     if (node?.kind === "object") node = node.entries.find((e) => e.key === part)?.value;
@@ -240,7 +277,7 @@ export type Operation =
   | { kind: "set" | "add"; path: string; value: JsonValue }
   | { kind: "remove"; path: string }
   | { kind: "move"; from: string; path: string };
-function valueText(v: JsonValue): string {
+function valueText(v: JsonValue, reparse: (text: string) => JsonDocument): string {
   switch (v.kind) {
     case "string":
       return JSON.stringify(v.value);
@@ -253,6 +290,8 @@ function valueText(v: JsonValue): string {
         throw new Error("Invalid numeric lexeme");
       return v.lexeme;
     case "raw":
+      if (!reparse(v.text).editable)
+        throw new Error("Raw input must be exactly one valid duplicate-free JSON value");
       return v.text;
   }
 }
@@ -266,7 +305,12 @@ function change(
   const edit = { start, before: doc.text.slice(start, end), after };
   const result = reparse(doc.text.slice(0, start) + after + doc.text.slice(end));
   if (!result.editable) throw new Error(result.diagnostics[0]?.message ?? "Invalid edit");
-  return { ...result, revision: doc.revision + 1, past: [...doc.past, edit], future: [] };
+  return withHistory(
+    { ...result, revision: doc.revision + 1 },
+    [...doc.past, edit],
+    [],
+    doc.historyTruncated,
+  );
 }
 export function applyOperation(
   doc: JsonDocument,
@@ -275,28 +319,16 @@ export function applyOperation(
 ): JsonDocument {
   if (!doc.editable) throw new Error("Tree edits require valid JSON without duplicate keys");
   if (op.kind === "move") {
-    if (op.from === op.path) return doc;
-    if (op.path.startsWith(op.from + "/")) throw new Error("Cannot move into a descendant");
-    const source = resolvePointer(doc, op.from);
-    if (!source) throw new Error("Missing move source");
-    const removed = applyOperation(doc, { kind: "remove", path: op.from });
-    const added = applyOperation(removed, {
-      kind: "add",
-      path: op.path,
-      value: { kind: "raw", text: doc.text.slice(source.start, source.end) },
-    });
-    return {
-      ...added,
-      revision: doc.revision + 1,
-      past: [...doc.past, { start: 0, before: doc.text, after: added.text }],
-      future: [],
-    };
+    const move = prepareMove(doc, op);
+    if (!move) return doc;
+    const removed = applyOperation(doc, move.remove);
+    return finishMove(doc, applyOperation(removed, move.add));
   }
   const parts = pointerParts(op.path);
   const node = resolvePointer(doc, op.path);
   if (op.kind === "set") {
     if (!node) throw new Error("Missing target");
-    return change(doc, node.start, node.end, valueText(op.value), reparse);
+    return change(doc, node.start, node.end, valueText(op.value, reparse), reparse);
   }
   if (parts.length === 0) throw new Error("Cannot add or remove document root; use set");
   const key = parts.pop();
@@ -319,7 +351,7 @@ export function applyOperation(
     if (parent.kind === "object") index = children.length;
     if (index < 0 || index > children.length) throw new Error("Invalid insertion index");
     const content =
-      (parent.kind === "object" ? JSON.stringify(key) + ":" : "") + valueText(op.value);
+      (parent.kind === "object" ? JSON.stringify(key) + ":" : "") + valueText(op.value, reparse);
     const next = children[index];
     if (next) return change(doc, next.start, next.start, content + ",", reparse);
     return change(
@@ -351,12 +383,15 @@ export function undo(
 ): JsonDocument {
   const e = doc.past.at(-1);
   if (!e) return doc;
-  return {
-    ...reparse(doc.text.slice(0, e.start) + e.before + doc.text.slice(e.start + e.after.length)),
-    revision: doc.revision + 1,
-    past: doc.past.slice(0, -1),
-    future: [...doc.future, e],
-  };
+  return withHistory(
+    {
+      ...reparse(doc.text.slice(0, e.start) + e.before + doc.text.slice(e.start + e.after.length)),
+      revision: doc.revision + 1,
+    },
+    doc.past.slice(0, -1),
+    [...doc.future, e],
+    doc.historyTruncated,
+  );
 }
 export function redo(
   doc: JsonDocument,
@@ -364,10 +399,34 @@ export function redo(
 ): JsonDocument {
   const e = doc.future.at(-1);
   if (!e) return doc;
+  return withHistory(
+    {
+      ...reparse(doc.text.slice(0, e.start) + e.after + doc.text.slice(e.start + e.before.length)),
+      revision: doc.revision + 1,
+    },
+    [...doc.past, e],
+    doc.future.slice(0, -1),
+    doc.historyTruncated,
+  );
+}
+export function prepareMove(
+  doc: JsonDocument,
+  op: Extract<Operation, { kind: "move" }>,
+): { remove: Operation; add: Operation } | null {
+  if (!doc.editable) throw new Error("Tree edits require valid JSON without duplicate keys");
+  if (op.from === op.path) return null;
+  if (op.path.startsWith(op.from + "/")) throw new Error("Cannot move into a descendant");
+  const source = resolvePointer(doc, op.from);
+  if (!source) throw new Error("Missing move source");
   return {
-    ...reparse(doc.text.slice(0, e.start) + e.after + doc.text.slice(e.start + e.before.length)),
-    revision: doc.revision + 1,
-    past: [...doc.past, e],
-    future: doc.future.slice(0, -1),
+    remove: { kind: "remove", path: op.from },
+    add: {
+      kind: "add",
+      path: op.path,
+      value: { kind: "raw", text: doc.text.slice(source.start, source.end) },
+    },
   };
+}
+export function finishMove(original: JsonDocument, changed: JsonDocument): JsonDocument {
+  return recordTextEdit(original, changed);
 }
