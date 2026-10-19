@@ -1,4 +1,5 @@
 /* oxlint-disable jsx-a11y/prefer-tag-over-role -- Virtual rows and columns use ARIA grid semantics with absolute positions. */
+import { JsonInspector, type JsonSaveTarget } from "../json/JsonInspector";
 import { useState, useRef, useEffect } from "react";
 import { RequestIdSchema, type SessionId } from "../../../shared/protocol";
 import { FilterSchema, type Table, type FetchInput } from "../../../shared/browse";
@@ -25,6 +26,9 @@ export function TableView({
   const [value, setValue] = useState("");
   const [scroll, setScroll] = useState({ top: 0, left: 0, width: 1000, height: 500 });
   const [selection, setSelection] = useState({ row: 0, col: 0 });
+  const [jsonTarget, setJsonTarget] = useState<JsonSaveTarget | undefined>();
+  const [jsonDirty, setJsonDirty] = useState(false);
+  const [jsonId, setJsonId] = useState(crypto.randomUUID());
   const [inspected, setInspected] = useState<string | null>(null);
   const [inspectStatus, setInspectStatus] = useState("");
   const grid = useRef<HTMLDivElement>(null);
@@ -50,12 +54,17 @@ export function TableView({
     grid.current?.scrollTo({ top: 0, left: 0 });
   }
   function reset(next: FetchInput) {
+    if (jsonDirty && !window.confirm("Discard unsaved JSON draft before changing table view?"))
+      return false;
     setInput(next);
     setHistory([]);
     resetViewport();
     clearInspection();
+    return true;
   }
   async function inspect(row: number, col: number) {
+    if (jsonDirty && !window.confirm("Discard unsaved JSON draft before inspecting another value?"))
+      return;
     const version = ++inspectionVersion.current;
     if (state.kind !== "ready") return;
     const record = state.page.rows[row],
@@ -63,6 +72,12 @@ export function TableView({
       column = table.columns[col];
     if (!cell || !column || ![114, 3802].includes(cell.typeOid)) return;
     setInspected(null);
+    setJsonId(crypto.randomUUID());
+    setJsonTarget(
+      record?.target && cell.editable
+        ? { target: record.target, column: column.name, sessionId, generation }
+        : undefined,
+    );
     if (cell.kind === "value") {
       setInspected(cell.text);
       setInspectStatus(cell.text === null ? "SQL NULL" : "Raw JSON · read-only inspection");
@@ -85,6 +100,11 @@ export function TableView({
     });
     if (version !== inspectionVersion.current) return;
     if (reply.ok && reply.kind === "rows.value") {
+      setJsonTarget(
+        reply.data.editable && record.target
+          ? { target: record.target, column: column.name, sessionId, generation }
+          : undefined,
+      );
       setInspected(reply.data.text);
       setInspectStatus("Raw JSON · read-only inspection");
     } else
@@ -105,9 +125,7 @@ export function TableView({
         <Button
           variant="default"
           onClick={() => {
-            setInspected(null);
-            reset({ ...input, cursor: null });
-            setReload((n) => n + 1);
+            if (reset({ ...input, cursor: null })) setReload((n) => n + 1);
           }}
         >
           Refresh
@@ -377,6 +395,11 @@ export function TableView({
               variant="default"
               disabled={!history.length}
               onClick={() => {
+                if (
+                  jsonDirty &&
+                  !window.confirm("Discard unsaved JSON draft before changing page?")
+                )
+                  return;
                 const cursor = history.at(-1) ?? null;
                 setHistory((h) => h.slice(0, -1));
                 setInput({ ...input, cursor });
@@ -390,6 +413,11 @@ export function TableView({
               variant="default"
               disabled={!state.page.nextCursor}
               onClick={() => {
+                if (
+                  jsonDirty &&
+                  !window.confirm("Discard unsaved JSON draft before changing page?")
+                )
+                  return;
                 setHistory((h) => [...h, input.cursor ?? null]);
                 setInput({ ...input, cursor: state.page.nextCursor });
                 clearInspection();
@@ -404,16 +432,24 @@ export function TableView({
           </div>
         </>
       )}
-      {inspectStatus && (
-        <section className="raw-inspector" aria-label="JSON inspection">
-          <div>
+      {inspected !== null ? (
+        <JsonInspector
+          key={jsonId}
+          documentId={jsonId}
+          sourceText={inspected}
+          saveTarget={jsonTarget}
+          onClose={clearInspection}
+          onDirtyChange={setJsonDirty}
+        />
+      ) : (
+        inspectStatus && (
+          <section className="raw-inspector" aria-label="JSON inspection">
             <strong>{inspectStatus}</strong>
             <Button variant="ghost" onClick={clearInspection}>
               Close inspection
             </Button>
-          </div>
-          {inspected !== null && <textarea aria-label="Raw JSON" readOnly value={inspected} />}
-        </section>
+          </section>
+        )
       )}
     </section>
   );

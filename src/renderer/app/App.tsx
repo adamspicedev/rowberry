@@ -56,6 +56,11 @@ export function App() {
               generation={session.generation}
               selected={table?.id ?? null}
               onSelect={(table) => {
+                if (
+                  document.querySelector('.json-inspector[data-dirty="true"]') &&
+                  !window.confirm("Discard unsaved JSON draft before changing table?")
+                )
+                  return;
                 setShowSql(false);
                 setSelected({ sessionId: session.sessionId, table });
               }}
@@ -114,8 +119,8 @@ export function App() {
             />
           </div>
         )}
-        {!showSql &&
-          (session?.state === "connected" && table ? (
+        <div className="table-workspace-host" hidden={showSql}>
+          {session?.state === "connected" && table ? (
             <TableView
               key={session.sessionId + table.id}
               table={table}
@@ -140,7 +145,8 @@ export function App() {
                 </div>
               </div>
             </section>
-          ))}
+          )}
+        </div>
         <div className="statusbar">
           <span>PostgreSQL workspace</span>
           <span>{status}</span>

@@ -1,3 +1,4 @@
+import { JsonInspector } from "../json/JsonInspector";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   QueryIdSchema,
@@ -147,6 +148,8 @@ function QueryTab({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const [json, setJson] = useState<{ id: string; text: string } | null>(null);
+  const [jsonDirty, setJsonDirty] = useState(false);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [page, setPage] = useState<SqlPage | null>(null);
@@ -278,6 +281,15 @@ function QueryTab({
   }
   return (
     <div className="query-tab">
+      {json && (
+        <JsonInspector
+          key={json.id}
+          documentId={json.id}
+          sourceText={json.text}
+          onClose={() => setJson(null)}
+          onDirtyChange={setJsonDirty}
+        />
+      )}
       <SqlEditor value={sql} onChange={onChange} onReady={editorReady} tables={tables} />
       <div className="query-toolbar">
         <button
@@ -312,7 +324,14 @@ function QueryTab({
         <button disabled={busy || !page || page.done} onClick={() => setConfirmEnd(true)}>
           End unfinished result…
         </button>
-        <button onClick={onClose}>Close SQL tab (roll back)</button>
+        <button
+          onClick={() => {
+            if (!jsonDirty || window.confirm("Discard unsaved JSON draft and close SQL tab?"))
+              onClose();
+          }}
+        >
+          Close SQL tab (roll back)
+        </button>
         {!ready && (
           <button
             disabled={busy}
@@ -423,7 +442,27 @@ function QueryTab({
                 {page.rows.map((row, index) => (
                   <tr key={index}>
                     {row.map((cell, column) => (
-                      <td key={column}>{cell === null ? <em>NULL</em> : cell}</td>
+                      <td key={column}>
+                        {cell === null ? (
+                          <em>SQL NULL</em>
+                        ) : [114, 3802].includes(page.fields[column]?.typeOid ?? 0) ? (
+                          <button
+                            onClick={() => {
+                              if (
+                                !jsonDirty ||
+                                window.confirm(
+                                  "Discard unsaved JSON draft before opening another value?",
+                                )
+                              )
+                                setJson({ id: crypto.randomUUID(), text: cell });
+                            }}
+                          >
+                            Inspect JSON
+                          </button>
+                        ) : (
+                          cell
+                        )}
+                      </td>
                     ))}
                   </tr>
                 ))}

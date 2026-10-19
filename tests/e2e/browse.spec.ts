@@ -97,22 +97,23 @@ test("live schema navigation, typed virtual grid, filtering, sorting, paging and
     await page.keyboard.press("ArrowRight");
     await page.keyboard.press("ArrowRight");
     await page.keyboard.press("Enter");
-    await expect(page.getByRole("textbox", { name: "Raw JSON", exact: true })).toHaveValue(
-      '{"n":9007199254740993,"n":2}',
-    );
+    const inspector = page.getByRole("region", { name: "JSON inspector", exact: true });
+    async function copiedDraft() {
+      await inspector.getByRole("button", { name: "Copy JSON draft", exact: true }).click();
+      return application.evaluate(({ clipboard }) => clipboard.readText());
+    }
+    await expect(
+      inspector.getByRole("textbox", { name: "JSON text editor", exact: true }),
+    ).toBeVisible();
+    expect(await copiedDraft()).toBe('{"n":9007199254740993,"n":2}');
     await page.screenshot({ path: "/tmp/dbapp-task4-browse.png" });
-    await page.getByRole("button", { name: "Close inspection" }).click();
+    await page.getByRole("button", { name: "Close JSON", exact: true }).click();
     await page.getByLabel("Filter value", { exact: true }).fill("1");
     await page.getByRole("button", { name: "Apply filter", exact: true }).click();
     await expect(grid.getByRole("gridcell").first()).toHaveText("1");
     await grid.getByRole("gridcell").nth(2).dblclick();
-    await expect
-      .poll(
-        async () =>
-          (await page.getByRole("textbox", { name: "Raw JSON", exact: true }).inputValue()).length,
-      )
-      .toBe(1048578);
-    await page.getByRole("button", { name: "Close inspection" }).click();
+    await expect.poll(async () => (await copiedDraft()).length).toBe(1048578);
+    await page.getByRole("button", { name: "Close JSON", exact: true }).click();
     await page.getByLabel("Filter value", { exact: true }).fill("2");
     await page.getByRole("button", { name: "Apply filter", exact: true }).click();
     await expect(grid.getByRole("gridcell").first()).toHaveText("2");
@@ -123,8 +124,8 @@ test("live schema navigation, typed virtual grid, filtering, sorting, paging and
         { exact: true },
       ),
     ).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "Raw JSON", exact: true })).toHaveCount(0);
-    await page.getByRole("button", { name: "Close inspection" }).click();
+    await expect(inspector).toHaveCount(0);
+    await page.getByRole("button", { name: "Close inspection", exact: true }).click();
     await page.getByLabel("Filter value", { exact: true }).fill("1");
     await page.getByRole("button", { name: "Apply filter", exact: true }).click();
     await expect(grid.getByRole("gridcell").first()).toHaveText("1");
@@ -133,13 +134,8 @@ test("live schema navigation, typed virtual grid, filtering, sorting, paging and
     await expect(page.getByRole("button", { name: "Sort by amount", exact: true })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Sort by doc", exact: true })).toBeVisible();
     await grid.getByRole("gridcell").nth(1).dblclick();
-    await expect
-      .poll(
-        async () =>
-          (await page.getByRole("textbox", { name: "Raw JSON", exact: true }).inputValue()).length,
-      )
-      .toBe(1048578);
-    await page.getByRole("button", { name: "Close inspection" }).click();
+    await expect.poll(async () => (await copiedDraft()).length).toBe(1048578);
+    await page.getByRole("button", { name: "Close JSON", exact: true }).click();
     await search.fill("dbapp_desktop_browse.empty");
     await page.getByRole("button", { name: "empty dbapp_desktop_browse · table" }).click();
     await expect(page.getByText("No rows found.", { exact: true })).toBeVisible();
