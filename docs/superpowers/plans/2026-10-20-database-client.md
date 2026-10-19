@@ -6,12 +6,13 @@
 
 **Architecture:** Electron main supervises a database utility process, OS credential storage, and a restricted preload bridge. React owns presentation; a worker handles precision-preserving JSON documents. PostgreSQL integration and packaged desktop checks prove behaviour across process boundaries.
 
-**Tech Stack:** Electron, React, TypeScript, Vite, shadcn/ui, Tailwind, Monaco, node-postgres, Zod, SQLite, Vitest, Playwright. Select supported stable versions at implementation time, verify official compatibility, and pin them in the lockfile. Evaluate a maintained lossless JSON parser against the numeric and duplicate-key fixtures before adopting it.
+**Tech Stack:** Bun, Oxlint, Oxfmt, Electron, React, TypeScript, Vite, shadcn/ui, Tailwind, Monaco, node-postgres, Zod, SQLite, Vitest, Playwright. Select supported stable versions at implementation time, verify official compatibility, and pin them in the lockfile. Evaluate a maintained lossless JSON parser against the numeric and duplicate-key fixtures before adopting it.
 
 **Spec:** `docs/superpowers/specs/2026-10-20-database-client-design.md`
 
 ## Global constraints
 
+- Use Bun for package management and scripts, Oxlint for linting, and Oxfmt for formatting.
 - Every shipped feature is available without a paid tier.
 - Initially support PostgreSQL 14 through 18.
 - First release: macOS Apple Silicon and Intel, Windows x64, Linux x64 AppImage/deb.
@@ -52,11 +53,11 @@ Shared IDs are opaque strings: ConnectionId, SessionId, RequestId, DocumentId. E
 
 **Interfaces:** Produces the request/subscription API above, initially with `app.info` only. No generic IPC channel exposed. All later tasks extend the union.
 
-- [ ] Initialize Git on main. Configure pinned compatible dependencies and scripts: `dev`, `build`, `typecheck`, `lint`, `test`, `test:integration`, `test:e2e`, `package`, `verify:package`.
+- [ ] Initialize Git on main. Configure pinned compatible dependencies and scripts: `dev`, `build`, `typecheck`, `lint`, `format`, `format:check`, `test`, `test:integration`, `test:e2e`, `package`, `verify:package`.
 - [ ] Add failing Electron tests named `renderer cannot access Node`, `untrusted sender rejected`, and `malformed command rejected`: assert `typeof window.require === 'undefined'`, an untrusted frame cannot invoke bridge operations, and malformed inputs return a validation error without dispatch.
-- [ ] Run `pnpm test:e2e tests/e2e/security.spec.ts`; require assertions to fail for the missing bridge/window policy, not an unrelated boot error.
+- [ ] Run `bun run test:e2e tests/e2e/security.spec.ts`; require assertions to fail for the missing bridge/window policy, not an unrelated boot error.
 - [ ] Implement a locally loaded, sandboxed, context-isolated window with restrictive CSP, blocked unexpected navigation/new windows, bounded messages, validated sender identity, and typed preload API. Add a minimal shadcn shell with sidebar, tabs, and empty workspace.
-- [ ] Run `pnpm typecheck`, `pnpm lint`, `pnpm build`, and the security tests. CI builds/packages on all three OS runners. `verify:package` verifies expected executable/assets/architecture and launches an application smoke check where supported. A local macOS result is not a Windows/Linux pass.
+- [ ] Run `bun run typecheck`, `bun run lint`, `bun run format:check`, `bun run build`, and the security tests. CI builds/packages on all three OS runners. `verify:package` verifies expected executable/assets/architecture and launches an application smoke check where supported. A local macOS result is not a Windows/Linux pass.
 - [ ] Commit the shell, documentation, and approved spec/plan with `feat: establish secure desktop application`.
 
 ## Task 2: Persistent connections and secure credentials
@@ -66,9 +67,9 @@ Shared IDs are opaque strings: ConnectionId, SessionId, RequestId, DocumentId. E
 **Interfaces:** `ConnectionProfile = {id,name,host,port,database,user,tls,environmentColor}` with a validated TLS union. `CredentialStore` exposes `get(id):Promise<string|null>`, `set(id,secret):Promise<void>`, `delete(id):Promise<void>`, `available():Promise<boolean>`. Commands `connections.list/save/delete` and `connections.connect` accept passwords only through a dedicated secret submission operation; secret inputs never return in replies/events. UI password input is transient, cleared immediately, and never part of application state or persistence. This is the only renderer credential entry exception; retrieved saved passwords remain outside the renderer.
 
 - [ ] Add failing tests proving migration rollback, metadata-only persistence, redacted errors/logging, deletion of credentials, and session-only behaviour when the OS store is unavailable. Assert a sentinel password is absent from persisted files and responses.
-- [ ] Run `pnpm test tests/integration/store.test.ts` and confirm the specific missing behaviour fails.
+- [ ] Run `bun run test tests/integration/store.test.ts` and confirm the specific missing behaviour fails.
 - [ ] Implement transactional SQLite migrations, profile forms, OS-backed credentials through maintained platform adapters, session-only fallback, TLS choices and explicit insecure-mode explanation. Do not place passwords in connection URLs shown in errors.
-- [ ] Run focused tests and `pnpm test:e2e tests/e2e/connections.spec.ts`. Verify save/restart/delete and unavailable-store behaviour; record native store checks per OS separately.
+- [ ] Run focused tests and `bun run test:e2e tests/e2e/connections.spec.ts`. Verify save/restart/delete and unavailable-store behaviour; record native store checks per OS separately.
 - [ ] Commit with `feat: save connections with secure credentials`.
 
 ## Task 3: Direct PostgreSQL sessions
@@ -78,7 +79,7 @@ Shared IDs are opaque strings: ConnectionId, SessionId, RequestId, DocumentId. E
 **Interfaces:** Commands `sessions.open({profileId})`, `sessions.close({sessionId})`. Produces `{sessionId,generation,serverVersion}` and state events `connecting|connected|disconnected`. Database worker receives resolved credentials privately. `openSession(config:ResolvedConnection):Promise<Session>`; Session includes client, generation, and transaction state.
 
 - [ ] Add real PostgreSQL tests for password failure, trusted TLS, rejected untrusted certificate, client certificate auth, connect timeout, process failure cleanup, and an old session reply arriving after connection switching. Assert old generation events cannot update the current workspace.
-- [ ] Run `pnpm test:integration tests/integration/connections.test.ts`; verify failures correspond to missing connection behaviour.
+- [ ] Run `bun run test:integration tests/integration/connections.test.ts`; verify failures correspond to missing connection behaviour.
 - [ ] Implement utility-process lifecycle, node-postgres sessions with explicit parsers, bounded timeouts, cancellation of pending connects, generation filtering, disconnect cleanup and sanitized errors. Preserve raw bigint/numeric/JSON/time values.
 - [ ] Run integration tests against PostgreSQL 14 and 18. Run TLS fixtures on the same transport used by the packaged application.
 - [ ] Commit with `feat: connect directly to PostgreSQL`.
@@ -90,7 +91,7 @@ Shared IDs are opaque strings: ConnectionId, SessionId, RequestId, DocumentId. E
 **Interfaces:** `schema.list({sessionId}) -> SchemaSnapshot`; `rows.fetch({sessionId,tableId,filter,sort,cursor,pageSize}) -> RowPage`. SchemaSnapshot includes columns, type OIDs, generated/identity flags, PK/unique-key metadata and editability. Filter/sort inputs are typed expressions with bound values. Default 200 rows/page, maximum 1,000; fetch response maximum 16 MiB, with explicit oversized-cell metadata and a separate bounded value fetch operation for JSON inspection.
 
 - [ ] Add failing tests for quoted schema/table/column names, composite keys, views, generated columns, RLS, SQL NULL, empty tables, tables without keys, stable paging and oversized values. Assert browse fetches stay within page and payload limits and never silently truncate editable content.
-- [ ] Run `pnpm test:integration tests/integration/browse.test.ts` and confirm missing behaviour failures.
+- [ ] Run `bun run test:integration tests/integration/browse.test.ts` and confirm missing behaviour failures.
 - [ ] Implement catalog introspection and parameterized browsing. Use stable key ordering where available; explain unstable pagination for keyless tables and keep them read-only. Add schema search and virtualized typed grid with loading/error/empty states.
 - [ ] Run integration tests and an Electron browse test against populated fixtures. Verify the sidebar and table remain keyboard usable.
 - [ ] Commit with `feat: browse PostgreSQL schemas and tables`.
@@ -102,7 +103,7 @@ Shared IDs are opaque strings: ConnectionId, SessionId, RequestId, DocumentId. E
 **Interfaces:** `queries.start({sessionId,sql}) -> {queryId}`, `queries.fetch({queryId,pageSize}) -> ResultPage`, `queries.cancel({queryId})`, `queries.close({queryId})`; events report completion/errors and transaction status. Dedicated execution clients belong to SQL tabs. Results retain OIDs and text values; initial page 200, maximum 1,000 rows and 16 MiB per page.
 
 - [ ] Add failing tests for SELECT, multiple statements, statement errors, BEGIN/ROLLBACK, aborted transactions, cancellation of `pg_sleep`, large results, tab closure, driver failure and unknown mutation outcome. Assert cancellation permits subsequent work and transactions are never silently committed/retried. Select a cursor/protocol strategy that supports bounded SELECT fetching and explicitly reject unsupported batching before execution.
-- [ ] Run `pnpm test:integration tests/integration/queries.test.ts` and observe expected failures.
+- [ ] Run `bun run test:integration tests/integration/queries.test.ts` and observe expected failures.
 - [ ] Implement dedicated tab sessions, Monaco SQL editor, catalog completion, explicit run/selected-text execution, bounded fetching, accurate duration/status, cancellation and transaction controls. Arbitrary SQL results remain read-only. Saved SQL never auto-executes after restart.
 - [ ] Run integration and Electron query tests. Inspect memory while fetching a large generated result and verify bounded retained pages.
 - [ ] Commit with `feat: add cancellable SQL workspace`.
@@ -114,9 +115,9 @@ Shared IDs are opaque strings: ConnectionId, SessionId, RequestId, DocumentId. E
 **Interfaces:** `parseDocument(text:string):JsonDocument` retains token/source ranges, duplicate-key diagnostics and numeric lexemes. `applyOperation(doc,operation):JsonDocument` supports set/add/remove/move; paths use JSON Pointer. Worker commands `load/edit/search/cancel/release` carry documentId and revision; replies preserve them. Search returns matching paths and text ranges in bounded batches. Undo/redo stores reversible operations or source edits without coercing numbers.
 
 - [ ] Add failing tests asserting `9007199254740993`, `1e400`, and `-0` survive untouched edits; `/a~1b/~0key` resolves correctly; duplicate keys block structural edits; invalid text remains recoverable; 100-level nesting and Unicode work. Add a stale-revision reply test.
-- [ ] Run `pnpm test src/json` and confirm feature-specific failures.
+- [ ] Run `bun run test src/json` and confirm feature-specific failures.
 - [ ] Implement the lossless model, pointer escaping, reversible edits, iterative traversal, cancellable search, source ranges, worker revision checks and explicit limits. Maximum editable UTF-8 input is initially 32 MiB; larger values offer a clear limit error and copy/export guidance, never partial save. Indexing must yield to cancellation.
-- [ ] Run unit tests and `pnpm exec tsx scripts/benchmark-json.ts` on the 10 MiB/100,000 scalar fixture. Record machine and timings; target search within 2 seconds after indexing, with cancellation verified.
+- [ ] Run unit tests and `bunx tsx scripts/benchmark-json.ts` on the 10 MiB/100,000 scalar fixture. Record machine and timings; target search within 2 seconds after indexing, with cancellation verified.
 - [ ] Commit with `feat: add lossless JSON editing model`.
 
 ## Task 7: JSON inspector and editing UI
@@ -126,7 +127,7 @@ Shared IDs are opaque strings: ConnectionId, SessionId, RequestId, DocumentId. E
 **Interfaces:** `JsonInspector({documentId,sourceText,saveTarget?})` consumes Task 6's worker API. Emits a validated draft plus original source/version; saveTarget is absent for arbitrary SQL results. Invalid drafts disable tree mutations and save while keeping text editable.
 
 - [ ] Add failing Electron tests for collapsed-branch search, key/value matching, tree-to-text selection, valid text-to-tree sync, invalid text retention, undo/redo, array reorder, JSON null versus SQL NULL, copied pointer escaping, duplicate-key guidance, stale replies, and closing a dirty inspector. Assert no edit is lost when changing view.
-- [ ] Run `pnpm test:e2e tests/e2e/json.spec.ts` and confirm expected behaviour failures.
+- [ ] Run `bun run test:e2e tests/e2e/json.spec.ts` and confirm expected behaviour failures.
 - [ ] Implement the resizable/expandable panel, virtual flattened tree, typed editors, Monaco diagnostics, search navigation, copy actions, diff preview and explicit save/discard. Clearly mark untargeted query-result drafts as copy-only.
 - [ ] Run JSON tests and measure normal expand/select actions on the large fixture, targeting 100 ms. Check keyboard navigation and light/dark/system themes; record any unmet performance requirement.
 - [ ] Commit with `feat: inspect and edit nested JSON`.
@@ -138,7 +139,7 @@ Shared IDs are opaque strings: ConnectionId, SessionId, RequestId, DocumentId. E
 **Interfaces:** `rows.save({sessionId,changes:RowChange[]}) -> SaveResult`. RowChange contains an introspected target ID, original key values, original xmin token and changed column text/null values. Worker resolves identifiers/types from its own catalog, validates editability and wraps the batch in a transaction. Results distinguish committed, conflict, failed, and unknown; committed returns refreshed rows/tokens.
 
 - [ ] Add failing real database tests for two-client conflicts, deletion, composite/changed keys, quoted names, RLS denying an update, generated columns, precise JSON numbers, SQL NULL, atomic batch rollback, and connection loss before/during COMMIT. Assert exactly one intended row changes, zero rows is a conflict, uncertain commits are never automatically retried, and drafts remain available.
-- [ ] Run `pnpm test:integration tests/integration/writes.test.ts` and confirm required failures.
+- [ ] Run `bun run test:integration tests/integration/writes.test.ts` and confirm required failures.
 - [ ] Implement parameterized, key-and-xmin guarded writes with exactly-one-row checks and atomic rollback. Refresh returned rows after success. Add preview, save/discard and reload/compare conflict UI. Require reload after uncertain outcomes before another save. Do not offer automatic merge/overwrite in v1.
 - [ ] Run integration tests on PostgreSQL 14/18 and Electron save/conflict tests. Query the target row independently to verify saved values and unchanged neighbours.
 - [ ] Commit with `feat: save edits with concurrency protection`.
@@ -150,7 +151,7 @@ Shared IDs are opaque strings: ConnectionId, SessionId, RequestId, DocumentId. E
 **Interfaces:** `workspace.load/save` uses a versioned schema containing layout, tab SQL and optional draft recovery. Excludes credentials and result caches. `settings.recoveryEnabled` controls draft persistence and removes persisted drafts when disabled.
 
 - [ ] Add failing tests for restart restoration without query execution, invalid JSON recovery, close/discard/cancel, corrupted state, failed migration, disk-full save errors, and disabling recovery. Assert a failed persistence operation reports failure without destroying the live draft.
-- [ ] Run `pnpm test:e2e tests/e2e/recovery.spec.ts` and confirm expected failures.
+- [ ] Run `bun run test:e2e tests/e2e/recovery.spec.ts` and confirm expected failures.
 - [ ] Implement debounced transactional state persistence, dirty-close handling, explicit recovery choices, saved-query organization, connection identity, system theme, focus management, accessible labels and command shortcuts. Document recovery data sensitivity and file locations.
 - [ ] Run focused recovery/accessibility checks and all completed behavioural suites. Manually inspect the actual app against the Prisma Studio visual direction with realistic data.
 - [ ] Commit with `feat: restore workspaces and recover drafts`.
@@ -164,7 +165,7 @@ Shared IDs are opaque strings: ConnectionId, SessionId, RequestId, DocumentId. E
 - [ ] Add package smoke checks for starting the production executable, local renderer loading, worker/Monaco assets, profile persistence, database connection, query cancellation and guarded JSON save. A missing executable, worker asset or enabled renderer Node integration must fail the check.
 - [ ] Run these against unsigned development packages and confirm deliberately missing worker assets fail verification.
 - [ ] Finish packaging for the specified architectures; verify Electron OS floors from official docs and document them. Add PostgreSQL 14–18 CI coverage, with full core integration coverage on 14/18. Document native credential-store verification and supported Linux desktop requirements.
-- [ ] Run `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm test:integration`, `pnpm test:e2e`, `pnpm build`, `pnpm package`, `pnpm verify:package`. Record actual platform results and pending checks separately. Re-run large JSON benchmarks on production builds.
+- [ ] Run `bun run typecheck`, `bun run lint`, `bun run test`, `bun run test:integration`, `bun run test:e2e`, `bun run build`, `bun run package`, `bun run verify:package`. Record actual platform results and pending checks separately. Re-run large JSON benchmarks on production builds.
 - [ ] Obtain product name, license selection, signing credentials and required platform evidence before release. Verify Windows signatures and macOS notarization, generate checksums and release notes, and complete a fresh-install/upgrade smoke check. Missing signing or OS evidence blocks public release, not local development.
 - [ ] Commit with `build: qualify cross-platform desktop releases`. Report local checks, CI, signing, and publication as separate states.
 

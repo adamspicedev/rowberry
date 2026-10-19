@@ -1,0 +1,213 @@
+@import "tailwindcss";
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+}
+:root {
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color-scheme: light;
+  --background: #fff;
+  --foreground: #20242b;
+  --muted: #eef0f3;
+  --border: #e3e6eb;
+  --subtle: #747b87;
+  --sidebar: #f8f9fb;
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 13px;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #181a1f;
+  --foreground: #e4e7ec;
+  --muted: #272b33;
+  --border: #30343d;
+  --subtle: #9ba3b1;
+  --sidebar: #1d2026;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --background: #181a1f;
+    --foreground: #e4e7ec;
+    --muted: #272b33;
+    --border: #30343d;
+    --subtle: #9ba3b1;
+    --sidebar: #1d2026;
+  }
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+.app {
+  display: flex;
+  height: 100vh;
+}
+aside {
+  width: 256px;
+  background: var(--sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+header {
+  height: 62px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+}
+header strong {
+  font-size: 16px;
+  letter-spacing: -0.5px;
+}
+.brand-mark {
+  font-size: 24px;
+}
+.badge {
+  font-size: 9px;
+  letter-spacing: 1px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 4px;
+  color: var(--subtle);
+  margin-left: auto;
+}
+.sidebar-content {
+  padding: 20px 16px;
+  flex: 1;
+}
+input {
+  width: 100%;
+  background: var(--background);
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  border-radius: 6px;
+  font: inherit;
+  outline-offset: 3px;
+}
+.section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--subtle);
+  display: flex;
+  justify-content: space-between;
+  margin-top: 28px;
+}
+.sidebar-empty {
+  color: var(--subtle);
+  margin-top: 16px;
+  font-size: 12px;
+}
+footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--subtle);
+}
+select {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 4px;
+}
+main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+nav {
+  height: 45px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+.active-tab {
+  border-radius: 0;
+  border-bottom: 2px solid var(--foreground);
+  height: 45px !important;
+  font-size: 12px !important;
+}
+.connection-state {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--subtle);
+}
+i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--subtle);
+}
+.workspace {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+}
+.welcome {
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+}
+.database-icon {
+  display: grid;
+  place-items: center;
+  margin: auto auto 22px;
+  width: 56px;
+  height: 56px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 32px;
+  background: var(--sidebar);
+}
+h1 {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.7px;
+  margin: 0 0 12px;
+}
+.welcome > p {
+  line-height: 1.7;
+  color: var(--subtle);
+  margin: 0;
+}
+.empty-card {
+  border: 1px solid var(--border);
+  background: var(--sidebar);
+  border-radius: 8px;
+  margin-top: 32px;
+  padding: 24px;
+}
+.empty-card strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+.empty-card p {
+  color: var(--subtle);
+  font-size: 12px;
+  margin: 8px 0 0;
+  line-height: 1.6;
+}
+.statusbar {
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  color: var(--subtle);
+  font-size: 10px;
+  padding: 7px 12px;
+}

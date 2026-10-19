@@ -1,0 +1,62 @@
+name: Package verification
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            architecture: arm64
+            directory: release/mac-arm64/dbapp.app
+            build: --mac --arm64
+          - os: macos-15-intel
+            architecture: x64
+            directory: release/mac/dbapp.app
+            build: --mac --x64
+          - os: windows-latest
+            architecture: x64
+            directory: release/win-unpacked
+            build: --win --x64
+          - os: ubuntu-latest
+            architecture: x64
+            directory: release/linux-unpacked
+            build: --linux --x64
+    runs-on: ${{ matrix.os }}
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - if: runner.os == 'Linux'
+        name: Allow Chromium sandbox user namespaces on the ephemeral runner
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun run format:check
+      - run: bun run build
+      - run: bun x --no-install electron-builder ${{ matrix.build }} --publish never
+      - if: runner.os != 'Linux'
+        run: bun run test:e2e
+      - if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum bun run test:e2e
+      - if: runner.os != 'Linux'
+        run: bun run verify:package '${{ matrix.directory }}' '${{ matrix.architecture }}'
+      - if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum bun run verify:package '${{ matrix.directory }}' '${{ matrix.architecture }}'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-${{ runner.os }}-${{ matrix.architecture }}
+          path: |
+            release/*.dmg
+            release/*.exe
+            release/*.AppImage
+            release/*.deb

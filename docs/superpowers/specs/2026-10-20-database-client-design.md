@@ -43,7 +43,7 @@ Initial acceptance fixtures include a 10 MiB document, 100,000 searchable scalar
 
 ## Runtime architecture
 
-Use Electron, React, TypeScript, and Monaco for SQL and JSON text editing.
+Use Bun for package management and scripts, Oxlint for linting, and Oxfmt for formatting. Use Electron, React, TypeScript, and Monaco for SQL and JSON text editing.
 
 1. The sandboxed renderer owns presentation and drafts, with Node integration disabled and context isolation enabled.
 2. A narrow preload bridge exposes explicit, validated operations. The main process validates the calling window and owns application lifecycle, OS credential access, and worker supervision.
