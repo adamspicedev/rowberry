@@ -2,12 +2,23 @@ import { app, BrowserWindow } from "electron";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { installBridge } from "./bridge";
+import { mkdirSync } from "node:fs";
+import { ConnectionStore } from "./store";
+import { NativeCredentialStore } from "./credentials";
+import { ConnectionService } from "./connections";
 import { createWindow } from "./windows";
 app.enableSandbox();
+const userDataOverride = app.commandLine.getSwitchValue("user-data-dir");
+if (userDataOverride) app.setPath("userData", path.resolve(userDataOverride));
 let mainWindow: BrowserWindow | null = null;
 const rendererPath = path.join(__dirname, "../renderer/index.html");
 app.whenReady().then(() => {
-  installBridge(() => mainWindow, pathToFileURL(rendererPath).href);
+  const dataPath = app.getPath("userData");
+  mkdirSync(dataPath, { recursive: true, mode: 0o700 });
+  const store = new ConnectionStore(path.join(dataPath, "profiles.sqlite"));
+  const connections = new ConnectionService(store, new NativeCredentialStore());
+  app.once("will-quit", () => store.close());
+  installBridge(() => mainWindow, pathToFileURL(rendererPath).href, connections);
   const open = () => {
     mainWindow = createWindow(rendererPath);
     mainWindow.on("closed", () => {

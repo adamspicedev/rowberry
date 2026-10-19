@@ -19,7 +19,9 @@ test("main rejects malformed commands even when preload validation is bypassed",
       (await readFile(preloadPath, "utf8")) +
         "\nrequire('electron').contextBridge.exposeInMainWorld('rawRequest',input=>require('electron').ipcRenderer.invoke('dbapp:request',input));\n",
     );
-    const application = await electron.launch({ args: [directory] });
+    const application = await electron.launch({
+      args: [directory, `--user-data-dir=${path.join(directory, "user-data")}`],
+    });
     try {
       const page = await application.firstWindow();
       const result = await page.evaluate(async () => {

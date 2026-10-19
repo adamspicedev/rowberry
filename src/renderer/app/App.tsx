@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { RequestIdSchema } from "../../shared/protocol";
+import { ConnectionList } from "../features/connections/ConnectionList";
 import { Button } from "../components/ui/button";
 export function App() {
   const [status, setStatus] = useState("Starting");
@@ -7,7 +8,15 @@ export function App() {
   useEffect(() => {
     void window.dbapp
       .request({ kind: "app.info", requestId: RequestIdSchema.parse(crypto.randomUUID()) })
-      .then((reply) => setStatus(reply.ok ? `v${reply.data.version}` : reply.error.message));
+      .then((reply) =>
+        setStatus(
+          reply.ok && reply.kind === "app.info"
+            ? `v${reply.data.version}`
+            : !reply.ok
+              ? reply.error.message
+              : "Ready",
+        ),
+      );
   }, []);
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -21,14 +30,7 @@ export function App() {
           <span className="badge">LOCAL</span>
         </header>
         <div className="sidebar-content">
-          <label htmlFor="schema-search" className="sr-only">
-            Search connections and schemas
-          </label>
-          <input id="schema-search" placeholder="Search connections…" type="search" />
-          <div className="section-label">
-            CONNECTIONS <span>0</span>
-          </div>
-          <p className="sidebar-empty">No saved connections</p>
+          <ConnectionList />
         </div>
         <footer>
           <label htmlFor="appearance">Appearance</label>
@@ -57,7 +59,10 @@ export function App() {
             <p>Browse tables, write SQL, and inspect JSON in one place.</p>
             <div className="empty-card">
               <strong>No database connected</strong>
-              <p>Connection setup will be available in the next milestone.</p>
+              <p>
+                Save a connection from the sidebar. Database connectivity will follow in the next
+                milestone.
+              </p>
             </div>
           </div>
         </section>

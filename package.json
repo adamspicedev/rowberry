@@ -11,8 +11,8 @@
     "build": "bun scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint --deny-warnings src tests scripts *.ts",
-    "test": "vitest run",
-    "test:integration": "vitest run tests/integration --passWithNoTests",
+    "test": "bun scripts/test.mjs",
+    "test:integration": "bun scripts/test.mjs tests/integration",
     "test:e2e": "playwright test",
     "package": "bun run build && electron-builder --publish never",
     "verify:package": "bun scripts/verify-package.mjs",
@@ -20,6 +20,7 @@
     "format:check": "oxfmt --check ."
   },
   "dependencies": {
+    "@napi-rs/keyring": "2.1.2",
     "@radix-ui/react-slot": "1.5.0",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",

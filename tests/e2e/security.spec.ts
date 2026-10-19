@@ -1,15 +1,20 @@
 import { test, expect, _electron as electron, type ElectronApplication } from "@playwright/test";
 import path from "node:path";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 let application: ElectronApplication;
+let directory: string;
 test.beforeEach(async () => {
+  directory = mkdtempSync(path.join(tmpdir(), "dbapp-security-"));
   application = await electron.launch({
-    args: [path.resolve(".")],
+    args: [path.resolve("."), `--user-data-dir=${directory}`],
     env: { ...process.env, ELECTRON_ENABLE_LOGGING: "1" },
   });
   await application.firstWindow();
 });
 test.afterEach(async () => {
   await application.close();
+  rmSync(directory, { recursive: true, force: true });
 });
 test("renderer cannot access Node", async () => {
   const page = await application.firstWindow();

@@ -5,7 +5,7 @@ await build({
   outfile: "dist/main/index.cjs",
   bundle: true,
   platform: "node",
-  external: ["electron"],
+  external: ["electron", "@napi-rs/keyring"],
   format: "cjs",
 });
 await build({
