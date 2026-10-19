@@ -1,8 +1,13 @@
+import { parseDocument } from "../json/document";
 import { randomUUID } from "node:crypto";
 import type { Session } from "./connections";
 import { introspect, quote } from "./introspection";
 import {
   FetchSchema,
+  SaveSchema,
+  SAVE_BYTES,
+  type SaveInput,
+  type SaveResult,
   ValueInputSchema,
   PAGE_BYTES,
   VALUE_BYTES,
@@ -24,10 +29,27 @@ export class BrowseColumnLimitError extends Error {}
 // Values and cursors are opaque handles; callers never supply row predicates.
 // Only the latest page's identities remain live and at most 64 cursors survive.
 export class RowBrowser {
+  private queue: Promise<void> = Promise.resolve();
+  private refreshRequired = false;
+  private serialize<T>(operation: () => Promise<T>): Promise<T> {
+    const result = this.queue.then(operation);
+    this.queue = result.then(
+      () => {},
+      () => {},
+    );
+    return result;
+  }
   private targets = new Map<string, Identity>();
   private cursors = new Map<string, Cursor>();
   constructor(private readonly session: Session) {}
-  async fetch(input: FetchInput): Promise<RowPage> {
+  fetch(input: FetchInput): Promise<RowPage> {
+    return this.serialize(async () => {
+      const page = await this.fetchPage(input);
+      this.refreshRequired = false;
+      return page;
+    });
+  }
+  private async fetchPage(input: FetchInput): Promise<RowPage> {
     const args = FetchSchema.parse(input);
     const table = (await introspect(this.session)).tables.find((t) => t.id === args.tableId);
     if (!table) throw new Error("Table unavailable.");
@@ -158,7 +180,214 @@ export class RowBrowser {
       throw new Error("Page exceeds supported limits.");
     return page;
   }
-  async value(input: { target: string; column: string }) {
+  save(input: SaveInput): Promise<SaveResult> {
+    return this.serialize(() => this.saveBatch(input));
+  }
+  private async saveBatch(input: SaveInput): Promise<SaveResult> {
+    if (this.refreshRequired)
+      return {
+        kind: "unknown",
+        message:
+          "The previous commit outcome is unknown. Refresh or reconnect before saving again.",
+      };
+    let began = false;
+    let committing = false;
+    try {
+      const args = SaveSchema.parse(input);
+      if (this.session.transaction !== "idle")
+        throw new Error("Finish the SQL transaction before saving table edits.");
+      if (new Set(args.changes.map((c) => c.target)).size !== args.changes.length)
+        throw new Error("Duplicate row target in save batch.");
+      let bytes = 0;
+      const identities = args.changes.map((change) => {
+        const identity = this.targets.get(change.target);
+        if (!identity)
+          throw new Error("Row target expired. Reload the table; retain or copy your draft first.");
+        for (const value of Object.values(change.values))
+          bytes += value === null ? 0 : Buffer.byteLength(value);
+        if (!Object.keys(change.values).length || Object.keys(change.values).length > 800)
+          throw new Error("Save requires between 1 and 800 changed columns per row.");
+        return identity;
+      });
+      if (bytes > SAVE_BYTES)
+        throw new Error(
+          "Save batch exceeds the 32 MiB raw UTF-8 text limit. Reduce the draft or batch size.",
+        );
+      const first = identities[0];
+      if (!first || identities.some((i) => i.table.id !== first.table.id))
+        throw new Error("Save one table at a time.");
+      await this.session.client.query("BEGIN");
+      began = true;
+      // Prevent catalog changes between permission/type validation and UPDATE.
+      await this.session.client.query(
+        `LOCK TABLE ${quote(first.table.schema)}.${quote(first.table.name)} IN ROW EXCLUSIVE MODE`,
+      );
+      const table = (await introspect(this.session)).tables.find(
+        (t) =>
+          t.id === first.table.id && t.schema === first.table.schema && t.name === first.table.name,
+      );
+      if (
+        !table ||
+        !table.editable ||
+        table.kind !== "table" ||
+        JSON.stringify(table.key) !== JSON.stringify(first.table.key)
+      )
+        throw new Error("Table identity or editability changed. Reload the table before saving.");
+      const cellLimit = Math.max(
+        1,
+        Math.min(
+          8192,
+          Math.floor((PAGE_BYTES - 1024 * 1024) / 8 / args.changes.length / table.columns.length),
+        ),
+      );
+      const updated: {
+        previousTarget: string;
+        row: RowPage["rows"][number];
+        identity: Identity;
+      }[] = [];
+      for (const [index, change] of args.changes.entries()) {
+        const original = identities[index];
+        if (!original?.version) throw new Error("Row version unavailable. Reload the table.");
+        const parameters: (string | null)[] = [];
+        const bind = (value: string | null) => {
+          parameters.push(value);
+          return "$" + parameters.length;
+        };
+        const assignments = Object.entries(change.values).map(([name, value]) => {
+          const column = table.columns.find((c) => c.name === name);
+          const oldColumn = original.table.columns.find((c) => c.name === name);
+          if (
+            !column?.editable ||
+            !oldColumn ||
+            column.typeOid !== oldColumn.typeOid ||
+            column.typeName !== oldColumn.typeName
+          )
+            throw new Error(
+              "Column unavailable, generated, or changed type. Reload before saving.",
+            );
+          if (
+            value !== null &&
+            [114, 3802].includes(column.typeOid) &&
+            !parseDocument(value).editable
+          )
+            throw new Error("JSON must be valid, duplicate-free, and within the 32 MiB limit.");
+          return `${quote(name)} = ${bind(value)}`;
+        });
+        const where = table.key.map(
+          (key, i) => `${quote(key)} = ${bind(original.values[i] ?? null)}`,
+        );
+        where.push(`xmin::text = ${bind(original.version)}`);
+        const projections = table.columns.flatMap((c, i) => [
+          `CASE WHEN octet_length(${quote(c.name)}::text)<=${cellLimit} THEN ${quote(c.name)}::text ELSE NULL END AS ${quote("v" + i)}`,
+          `octet_length(${quote(c.name)}::text)::text AS ${quote("b" + i)}`,
+        ]);
+        projections.push(
+          'xmin::text AS "version"',
+          ...table.key.map(
+            (key, i) =>
+              `CASE WHEN octet_length(${quote(key)}::text)<=8192 THEN ${quote(key)}::text ELSE NULL END AS ${quote("k" + i)}`,
+          ),
+        );
+        const result = await this.session.client.query<Record<string, string | null>>(
+          `UPDATE ${quote(table.schema)}.${quote(table.name)} SET ${assignments.join(",")} WHERE ${where.join(" AND ")} RETURNING ${projections.join(",")}`,
+          parameters,
+        );
+        if (result.rowCount !== 1 || result.rows.length !== 1) {
+          await this.session.client.query("ROLLBACK");
+          began = false;
+          return {
+            kind: "conflict",
+            message:
+              "A row changed, was deleted, or is no longer writable. No edits were saved. Reload and compare your retained draft.",
+          };
+        }
+        const returned = result.rows[0];
+        if (!returned) throw new Error("Saved row unavailable.");
+        if (table.key.some((_, i) => returned["k" + i] == null))
+          throw new Error(
+            "Updated row key exceeds the 8192 byte identity limit. No edits were saved.",
+          );
+        // AFTER triggers can change values and xmin after UPDATE RETURNING.
+        // Read the transaction's final visible row instead of issuing stale tokens.
+        const final = await this.session.client.query<Record<string, string | null>>(
+          `SELECT ${projections.join(",")} FROM ${quote(table.schema)}.${quote(table.name)} WHERE ${table.key.map((key, i) => `${quote(key)} = $${i + 1}`).join(" AND ")} LIMIT 2`,
+          table.key.map((_, i) => returned["k" + i] ?? null),
+        );
+        const raw = final.rows[0];
+        if (final.rows.length !== 1 || !raw)
+          throw new Error(
+            "Updated row is no longer visible at its returned key. No edits were saved.",
+          );
+        if (table.key.some((_, i) => raw["k" + i] == null))
+          throw new Error(
+            "Updated row key exceeds the 8192 byte identity limit. No edits were saved.",
+          );
+        const target = randomUUID();
+        const cells: RowPage["rows"][number]["cells"] = table.columns.map((c, i) =>
+          raw["b" + i] !== null && Number(raw["b" + i]) > cellLimit
+            ? {
+                kind: "oversized",
+                typeOid: c.typeOid,
+                text: null,
+                bytes: Number(raw["b" + i]),
+                editable: false,
+              }
+            : {
+                kind: "value",
+                typeOid: c.typeOid,
+                text: raw["v" + i] ?? null,
+                editable: c.editable,
+              },
+        );
+        updated.push({
+          previousTarget: change.target,
+          row: { target, cells },
+          identity: {
+            table,
+            values: table.key.map((_, i) => raw["k" + i] ?? null),
+            version: raw.version ?? null,
+          },
+        });
+      }
+      const result: SaveResult = {
+        kind: "committed",
+        table,
+        rows: updated.map(({ previousTarget, row }) => ({ previousTarget, row })),
+      };
+      if (Buffer.byteLength(JSON.stringify(result)) > PAGE_BYTES)
+        throw new Error("Refreshed rows exceed the 16 MiB response limit. Save a smaller batch.");
+      committing = true;
+      await this.session.client.query("COMMIT");
+      began = false;
+      for (const update of updated) {
+        this.targets.delete(update.previousTarget);
+        if (update.row.target) this.targets.set(update.row.target, update.identity);
+      }
+      return result;
+    } catch (error) {
+      if (committing) {
+        this.refreshRequired = true;
+        this.targets.clear();
+        return {
+          kind: "unknown",
+          message:
+            "Connection or server error during COMMIT. The outcome is unknown. Keep your draft and refresh or reconnect before another save; do not retry automatically.",
+        };
+      }
+      if (began) await this.session.client.query("ROLLBACK").catch(() => {});
+      // Database errors may contain draft data or server details. Local validation
+      // messages are safe; PostgreSQL exceptions deliberately use a fixed message.
+      const message =
+        error instanceof Error && !("code" in error)
+          ? error.message
+          : "Save failed. No edits were committed. Check column values and database permissions; your draft is retained.";
+      return { kind: "failed", message: message.slice(0, 1024) };
+    }
+  }
+  value(input: { target: string; column: string }) {
+    return this.serialize(() => this.fetchValue(input));
+  }
+  private async fetchValue(input: { target: string; column: string }) {
     const args = ValueInputSchema.parse(input);
     const identity = this.targets.get(args.target);
     if (!identity) throw new Error("Row expired. Reload the table.");

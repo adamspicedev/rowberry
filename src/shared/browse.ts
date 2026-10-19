@@ -96,3 +96,47 @@ export type RowPage = z.infer<typeof RowPageSchema>;
 export const ValueSchema = z
   .object({ typeOid: z.number().int(), text: z.string(), editable: z.boolean() })
   .strict();
+
+// Raw text and serialized transport budgets are distinct: JSON escaping may
+// expand one source byte to six bytes in the IPC JSON envelope.
+export const SAVE_BYTES = 32 * 1024 * 1024;
+export const SAVE_WIRE_BYTES = SAVE_BYTES * 6 + 1024 * 1024;
+export const SaveSchema = z
+  .object({
+    changes: z
+      .array(
+        z
+          .object({
+            target: z.uuid(),
+            values: z.record(
+              identifier,
+              z
+                .string()
+                .max(SAVE_BYTES, "Save value exceeds the 32 MiB raw text limit.")
+                .nullable(),
+            ),
+          })
+          .strict(),
+      )
+      .min(1)
+      .max(200),
+  })
+  .strict();
+export type SaveInput = z.infer<typeof SaveSchema>;
+export const SaveResultSchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      kind: z.literal("committed"),
+      table: TableSchema,
+      rows: z
+        .array(
+          z.object({ previousTarget: z.uuid(), row: RowPageSchema.shape.rows.element }).strict(),
+        )
+        .max(200),
+    })
+    .strict(),
+  z
+    .object({ kind: z.enum(["conflict", "failed", "unknown"]), message: z.string().max(1024) })
+    .strict(),
+]);
+export type SaveResult = z.infer<typeof SaveResultSchema>;
