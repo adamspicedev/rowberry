@@ -68,10 +68,18 @@ export function TableView({
   }
   function edit(rowIndex: number, columnIndex: number) {
     if (saving || preview || blocked || !page) return;
+    if (editor) {
+      setSaveStatus("Stage or cancel the current cell edit before editing another cell.");
+      return;
+    }
     const row = page.rows[rowIndex],
       column = table.columns[columnIndex],
       cell = row?.cells[columnIndex];
     if (!row?.target || !column || cell?.kind !== "value" || !cell.editable) return;
+    if ([114, 3802].includes(cell.typeOid)) {
+      void inspect(rowIndex, columnIndex);
+      return;
+    }
     const pending = drafts.find((draft) => draft.target === row.target);
     const text =
       pending && Object.hasOwn(pending.values, column.name)
@@ -83,6 +91,25 @@ export function TableView({
       original: cell.text,
       text: text ?? "",
       sqlNull: text === null,
+    });
+  }
+  function stageSelectedNull() {
+    if (saving || preview || blocked || editor || jsonDirty || !page) return;
+    const row = page.rows[selection.row],
+      column = table.columns[selection.col],
+      cell = row?.cells[selection.col];
+    if (!row?.target || !column || cell?.kind !== "value" || !cell.editable) return;
+    const target = row.target;
+    setDrafts((current) => {
+      const next = current.map((change) => ({ ...change, values: { ...change.values } }));
+      let change = next.find((item) => item.target === target);
+      if (!change) {
+        change = { target, values: {} };
+        next.push(change);
+      }
+      if (cell.text === null) delete change.values[column.name];
+      else change.values[column.name] = null;
+      return next.filter((item) => Object.keys(item.values).length);
     });
   }
   async function save() {
@@ -138,6 +165,17 @@ export function TableView({
     setEditor(null);
     setSaveStatus("Changes committed");
     setCompare(null);
+    if (
+      !jsonSaveDraft &&
+      !jsonDirty &&
+      jsonTarget &&
+      result.rows.some((item) => item.previousTarget === jsonTarget.target)
+    ) {
+      clearInspection();
+      setSaveStatus(
+        "Changes committed · clean JSON inspector closed; reopen JSON to edit the refreshed row.",
+      );
+    }
     if (jsonSaveDraft) {
       const saved = result.rows.find(
         (item) => item.previousTarget === jsonSaveDraft.saveTarget.target,
@@ -222,6 +260,11 @@ export function TableView({
     return true;
   }
   async function inspect(row: number, col: number) {
+    if (editor) {
+      setSaveStatus("Stage or cancel the current cell edit before inspecting another value.");
+      return;
+    }
+
     if (jsonDirty && !window.confirm("Discard unsaved JSON draft before inspecting another value?"))
       return;
     const version = ++inspectionVersion.current;
@@ -367,6 +410,18 @@ export function TableView({
           <p>Review all original and pending values. This batch commits atomically.</p>
           {preview.map((change) => (
             <div key={change.target}>
+              <strong>
+                Original row:{" "}
+                {table.key
+                  .map((name) => {
+                    const index = table.columns.findIndex((column) => column.name === name);
+                    const cell = page?.rows.find((row) => row.target === change.target)?.cells[
+                      index
+                    ];
+                    return `${name}=${cell?.kind === "value" ? (cell.text === null ? "SQL NULL" : cell.text) : "Unavailable"}`;
+                  })
+                  .join(", ")}
+              </strong>
               {Object.entries(change.values).map(([name, text]) => {
                 const index = table.columns.findIndex((column) => column.name === name);
                 const original = page?.rows.find((row) => row.target === change.target)?.cells[
@@ -733,6 +788,19 @@ export function TableView({
               onClick={() => edit(selection.row, selection.col)}
             >
               Edit selected cell
+            </Button>
+            <Button
+              disabled={
+                saving ||
+                blocked ||
+                !!editor ||
+                jsonDirty ||
+                !page.rows[selection.row]?.cells[selection.col]?.editable
+              }
+              variant="ghost"
+              onClick={stageSelectedNull}
+            >
+              Stage selected SQL NULL
             </Button>
             <Button variant="ghost" onClick={() => void inspect(selection.row, selection.col)}>
               Inspect selected JSON

@@ -24,6 +24,9 @@ for (const version of [14, 18])
       args: [path.resolve("."), `--user-data-dir=${directory}`],
     });
     const page = await app.firstWindow();
+    await app.evaluate(({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows()[0]?.setSize(1800, 1100),
+    );
     const request = async (command: Record<string, unknown>) =>
       ReplySchema.parse(
         await page.evaluate(
@@ -71,6 +74,19 @@ for (const version of [14, 18])
         else await page.getByRole("textbox", { name: "Cell draft", exact: true }).fill(text);
         await page.getByRole("button", { name: "Stage cell", exact: true }).click();
       }
+      await grid.getByRole("gridcell").nth(1).click();
+      await page.getByRole("button", { name: "Edit selected cell", exact: true }).click();
+      await page.getByRole("textbox", { name: "Cell draft", exact: true }).fill("unstaged source");
+      await page.getByRole("button", { name: "Edit selected cell", exact: true }).click();
+      await expect(page.getByRole("textbox", { name: "Cell draft", exact: true })).toHaveValue(
+        "unstaged source",
+      );
+      await grid.getByRole("gridcell").nth(4).click();
+      await page.getByRole("button", { name: "Edit selected cell", exact: true }).click();
+      await expect(page.getByRole("textbox", { name: "Cell draft", exact: true })).toHaveValue(
+        "unstaged source",
+      );
+      await page.getByRole("button", { name: "Cancel cell edit", exact: true }).click();
       await stage(1, "saved");
       await page.getByRole("button", { name: "Preview changes", exact: true }).click();
       const preview = page.getByRole("dialog", { name: "Confirm database changes" });
@@ -107,7 +123,10 @@ for (const version of [14, 18])
       await expect(grid.getByRole("gridcell").nth(1)).toHaveText("external");
       await stage(1, "must roll back");
       await stage(4, "invalid integer");
+      await stage(5, "second row rollback draft");
       await page.getByRole("button", { name: "Preview changes", exact: true }).click();
+      await expect(preview.getByText("Original row: id=1", { exact: true })).toBeVisible();
+      await expect(preview.getByText("Original row: id=2", { exact: true })).toBeVisible();
       await preview.getByRole("button", { name: "Confirm save" }).click();
       await expect(
         page.getByRole("button", { name: "Preview changes", exact: true }),
@@ -123,11 +142,43 @@ for (const version of [14, 18])
       await grid.getByRole("gridcell").nth(3).click();
       await page.getByRole("button", { name: "Edit selected cell", exact: true }).click();
       await expect(page.getByRole("textbox", { name: "Cell draft" })).toHaveCount(0);
+      // Ordinary Edit routes JSON through the duplicate-free worker, never a raw cell editor.
+      await grid.getByRole("gridcell").nth(2).click();
+      await page.getByRole("button", { name: "Edit selected cell", exact: true }).click();
+      const routedInspector = page.getByRole("region", { name: "JSON inspector", exact: true });
+      await expect(routedInspector).toBeVisible();
+      await expect(page.getByRole("textbox", { name: "Cell draft", exact: true })).toHaveCount(0);
+      const routedText = routedInspector.getByRole("textbox", {
+        name: "JSON text editor",
+        exact: true,
+      });
+      await routedText.focus();
+      await page.keyboard.press("Meta+A");
+      await page.keyboard.type('{"n":1,"n":2}');
+      await expect(routedInspector.getByText(/Duplicate keys:/)).toBeVisible();
+      await expect(
+        routedInspector.getByRole("button", { name: "Save to database", exact: true }),
+      ).toBeDisabled();
+      await expect(page.getByRole("button", { name: "Stage cell", exact: true })).toHaveCount(0);
+      await routedInspector.getByRole("button", { name: "Close JSON", exact: true }).click();
+      await page.getByRole("button", { name: "Discard and close JSON", exact: true }).click();
+      // Keep a clean inspector open while an ordinary same-row change rotates its target.
+      await grid.getByRole("gridcell").nth(2).dblclick();
+      await expect(routedInspector.getByRole("tree")).toBeVisible();
       // SQL NULL differs from the JSON literal null.
-      await stage(1, null);
+      await grid.focus();
+      await page.keyboard.press("ArrowLeft");
+      await page.getByRole("button", { name: "Edit selected cell", exact: true }).focus();
+      await page.keyboard.press("Enter");
+      await page.getByRole("checkbox", { name: "SQL NULL", exact: true }).focus();
+      await page.keyboard.press("Space");
+      await page.getByRole("button", { name: "Stage cell", exact: true }).focus();
+      await page.keyboard.press("Enter");
       await page.getByRole("button", { name: "Preview changes", exact: true }).click();
       await preview.getByRole("button", { name: "Confirm save" }).click();
       await expect(grid.getByRole("gridcell").nth(1)).toHaveText("NULL");
+      await expect(routedInspector).toHaveCount(0);
+      await expect(page.getByText(/clean JSON inspector closed/)).toBeVisible();
       expect(
         (
           await client.query(
@@ -157,6 +208,24 @@ for (const version of [14, 18])
       await expect(
         inspector.getByRole("button", { name: "Save to database", exact: true }),
       ).toBeDisabled();
+      await inspector.getByRole("button", { name: "Close JSON", exact: true }).click();
+      await page.getByRole("button", { name: "Discard and close JSON", exact: true }).click();
+      await grid.getByRole("gridcell").nth(2).click();
+      await page.getByRole("button", { name: "Stage selected SQL NULL", exact: true }).click();
+      await page.getByRole("button", { name: "Preview changes", exact: true }).click();
+      await expect(preview.getByLabel("Pending doc")).toHaveText("SQL NULL");
+      await preview.getByRole("button", { name: "Confirm save", exact: true }).click();
+      await expect(grid.getByRole("gridcell").nth(2)).toHaveText("NULL");
+      expect(
+        (
+          await client.query(
+            "SELECT doc IS NULL AS sql_null,doc::text FROM dbapp_save_ui.records ORDER BY id",
+          )
+        ).rows,
+      ).toEqual([
+        { sql_null: true, doc: null },
+        { sql_null: false, doc: "null" },
+      ]);
     } finally {
       await app.close();
       await client.end();
@@ -215,6 +284,12 @@ test("real IPC transports large save request/reply and rejects aggregate raw ove
     const opened = await request({ kind: "connections.connect", id });
     if (!opened.ok || opened.kind !== "connections.connect") throw Error("No session");
     const owner = { sessionId: opened.data.sessionId, generation: opened.data.generation };
+    await page
+      .getByRole("textbox", { name: "Search schemas and tables" })
+      .fill("dbapp_save_ui.wire");
+    await expect(
+      page.getByRole("button", { name: "wire dbapp_save_ui · table", exact: true }),
+    ).toBeVisible();
     const schema = await request({ kind: "schema.list", ...owner });
     if (!schema.ok || schema.kind !== "schema.list") throw Error("No schema");
     const table = schema.data.tables.find(
