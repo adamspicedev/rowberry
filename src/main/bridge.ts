@@ -58,6 +58,7 @@ export function installBridge(
       command.kind === "schema.list" ||
       command.kind === "rows.fetch" ||
       command.kind === "rows.value" ||
+      command.kind === "rows.save" ||
       "tabId" in command
     )
       return sessions.request(command);

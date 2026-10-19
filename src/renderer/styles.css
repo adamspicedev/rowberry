@@ -670,3 +670,22 @@ textarea:focus-visible {
   flex: 1;
   min-height: 0;
 }
+
+.save-preview {
+  position: fixed;
+  inset: 8% 12%;
+  z-index: 100;
+  overflow: auto;
+  padding: 24px;
+  background: var(--background, Canvas);
+  color: var(--foreground, CanvasText);
+  border: 1px solid currentColor;
+  border-radius: 12px;
+  box-shadow: 0 12px 80px #0006;
+}
+.save-preview pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 240px;
+  overflow: auto;
+}

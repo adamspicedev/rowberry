@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import {
   SessionIdSchema,
   boundedReply,
+  boundedCommand,
   failure,
   type Reply,
   type Command,
@@ -124,6 +125,7 @@ export class DatabaseProcess {
   request(command: BrowseCommand | QueryCommand): Promise<Reply> {
     const active = this.active;
     if (
+      !boundedCommand(command) ||
       !active?.worker ||
       active.sessionId !== command.sessionId ||
       active.generation !== command.generation ||
@@ -134,18 +136,34 @@ export class DatabaseProcess {
       this.pending.has(command.requestId)
     )
       return Promise.resolve(failure("UNAVAILABLE", command.requestId));
+    const unavailable = (): Reply =>
+      command.kind === "rows.save"
+        ? {
+            ok: true,
+            kind: "rows.save",
+            requestId: command.requestId,
+            data: {
+              kind: "unknown",
+              message:
+                "Save acknowledgement unavailable. It may have committed. Preserve your draft and explicitly refresh or reconnect before continuing; do not retry.",
+            },
+          }
+        : failure("UNAVAILABLE", command.requestId);
     return new Promise((resolve) => {
       const timer = setTimeout(() => {
         this.pending.delete(command.requestId);
-        resolve(failure("UNAVAILABLE", command.requestId));
+        resolve(unavailable());
+        if (command.kind === "rows.save") this.stop();
       }, 40000);
       this.pending.set(command.requestId, {
         timer,
         resolve: (reply) =>
           resolve(
-            boundedReply(reply, command.kind) && (!reply.ok || reply.kind === command.kind)
+            boundedReply(reply, command.kind) &&
+              (!reply.ok || reply.kind === command.kind) &&
+              !(command.kind === "rows.save" && !reply.ok)
               ? reply
-              : failure("UNAVAILABLE", command.requestId),
+              : unavailable(),
           ),
       });
       active.worker?.postMessage({ kind: "tabId" in command ? "query" : "browse", command });

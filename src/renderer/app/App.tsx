@@ -56,9 +56,10 @@ export function App() {
               generation={session.generation}
               selected={table?.id ?? null}
               onSelect={(table) => {
+                if (document.querySelector('[data-saving="true"]')) return;
                 if (
-                  document.querySelector('.json-inspector[data-dirty="true"]') &&
-                  !window.confirm("Discard unsaved JSON draft before changing table?")
+                  document.querySelector('[data-dirty="true"]') &&
+                  !window.confirm("Discard unsaved table or JSON drafts before changing table?")
                 )
                   return;
                 setShowSql(false);
@@ -120,7 +121,7 @@ export function App() {
           </div>
         )}
         <div className="table-workspace-host" hidden={showSql}>
-          {session?.state === "connected" && table ? (
+          {session && table ? (
             <TableView
               key={session.sessionId + table.id}
               table={table}

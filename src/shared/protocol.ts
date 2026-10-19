@@ -7,6 +7,10 @@ import {
   ValueSchema,
   PAGE_BYTES,
   VALUE_BYTES,
+  SaveSchema,
+  SaveResultSchema,
+  SAVE_BYTES,
+  SAVE_WIRE_BYTES,
 } from "./browse";
 export const REQUEST_CHANNEL = "dbapp:request";
 export const EVENT_CHANNEL = "dbapp:event";
@@ -47,6 +51,15 @@ export const ConnectionProfileSchema = z
 export type ConnectionProfile = z.infer<typeof ConnectionProfileSchema>;
 export type ConnectionId = ConnectionProfile["id"];
 export const BrowseCommandSchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      kind: z.literal("rows.save"),
+      requestId: RequestIdSchema,
+      sessionId: SessionIdSchema,
+      generation: z.number().int().positive(),
+      ...SaveSchema.shape,
+    })
+    .strict(),
   z
     .object({
       kind: z.literal("schema.list"),
@@ -225,6 +238,7 @@ const sessionData = z
   })
   .strict();
 const SuccessSchema = z.discriminatedUnion("kind", [
+  z.object({ ...successFields, kind: z.literal("rows.save"), data: SaveResultSchema }).strict(),
   z
     .object({
       ...successFields,
@@ -380,12 +394,33 @@ export function boundedReply(value: unknown, kind: Command["kind"]): boolean {
       ? SQL_WIRE_BYTES
       : kind === "rows.value"
         ? VALUE_BYTES
-        : kind === "rows.fetch" || kind === "schema.list" || kind === "queries.fetch"
+        : kind === "rows.save" ||
+            kind === "rows.fetch" ||
+            kind === "schema.list" ||
+            kind === "queries.fetch"
           ? PAGE_BYTES
           : MAX_MESSAGE_BYTES,
   );
 }
 export function boundedCommand(value: unknown): boolean {
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "kind" in value &&
+    value.kind === "rows.save"
+  ) {
+    const parsed = SaveSchema.safeParse({
+      changes: "changes" in value ? value.changes : undefined,
+    });
+    if (!parsed.success) return false;
+    let bytes = 0;
+    for (const change of parsed.data.changes)
+      for (const text of Object.values(change.values)) {
+        if (text !== null) bytes += new TextEncoder().encode(text).length;
+        if (bytes > SAVE_BYTES) return false;
+      }
+    return bounded(value, SAVE_WIRE_BYTES);
+  }
   return bounded(value, SQL_WIRE_BYTES);
 }
 export function bounded(value: unknown, limit = MAX_MESSAGE_BYTES): boolean {

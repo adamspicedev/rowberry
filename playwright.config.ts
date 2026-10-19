@@ -6,9 +6,11 @@ export default defineConfig({
     "**/sessions.spec.ts",
     "**/browse.spec.ts",
     "**/query.spec.ts",
-    ...(process.argv.some((argument) => argument.endsWith("json.spec.ts"))
+    ...(process.argv.some(
+      (argument) => argument.endsWith("json.spec.ts") || argument.endsWith("save.spec.ts"),
+    )
       ? []
-      : ["**/json.spec.ts"]),
+      : ["**/json.spec.ts", "**/save.spec.ts"]),
   ],
   workers: 1,
   timeout: 30000,

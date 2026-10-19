@@ -27,6 +27,9 @@ export function JsonInspector({
   onValidatedDraft,
   onClose,
   onDirtyChange,
+  saving = false,
+  saveBlocked = false,
+  onSaveDraft,
 }: {
   documentId: string;
   sourceText: string;
@@ -34,6 +37,9 @@ export function JsonInspector({
   onValidatedDraft?: (draft: ValidatedJsonDraft | null) => void;
   onClose: () => void;
   onDirtyChange?: (dirty: boolean) => void;
+  saving?: boolean;
+  saveBlocked?: boolean;
+  onSaveDraft?: (draft: ValidatedJsonDraft) => void;
 }) {
   const state = useJsonDocument(documentId, sourceText);
   const panel = useRef<HTMLElement>(null);
@@ -71,7 +77,7 @@ export function JsonInspector({
   const [value, setValue] = useState("");
   const [status, setStatus] = useState("");
   const dirty = state.text !== sourceText;
-  const editable = !!state.document?.editable && !state.pending;
+  const editable = !!state.document?.editable && !state.pending && !saving;
   const limited =
     state.document?.diagnostics.some((diagnostic) => diagnostic.kind === "limit") ?? false;
   useEffect(() => {
@@ -134,13 +140,15 @@ export function JsonInspector({
         <strong>JSON {dirty ? "· unsaved draft" : ""}</strong>
         <span>
           {saveTarget
-            ? "Table draft · database saving unavailable"
+            ? "Table draft · guarded database save"
             : "Untargeted value · copy-only draft"}
         </span>
         <button onClick={() => setExpanded(!expanded)}>
           {expanded ? "Restore panel" : "Expand panel"}
         </button>
-        <button onClick={() => (dirty ? setClosing(true) : onClose())}>Close JSON</button>
+        <button disabled={saving} onClick={() => (dirty ? setClosing(true) : onClose())}>
+          Close JSON
+        </button>
       </header>
       <div className="json-toolbar">
         <label>
@@ -156,13 +164,13 @@ export function JsonInspector({
           </select>
         </label>
         <button
-          disabled={state.pending || !state.document?.canUndo}
+          disabled={saving || state.pending || !state.document?.canUndo}
           onClick={() => state.mutate({ kind: "undo" })}
         >
           Undo JSON
         </button>
         <button
-          disabled={state.pending || !state.document?.canRedo}
+          disabled={saving || state.pending || !state.document?.canRedo}
           onClick={() => state.mutate({ kind: "redo" })}
         >
           Redo JSON
@@ -179,10 +187,22 @@ export function JsonInspector({
         >
           Copy selected value
         </button>
-        <button disabled title="Guarded database writes are not available yet">
+        <button
+          disabled={!editable || !dirty || !saveTarget || !onSaveDraft || saveBlocked}
+          onClick={() => {
+            if (!editable || !state.document || !saveTarget || state.pending || saving) return;
+            onSaveDraft?.({
+              documentId,
+              text: state.text,
+              originalSource: sourceText,
+              revision: state.document.revision,
+              saveTarget,
+            });
+          }}
+        >
           Save to database
         </button>
-        <button disabled={!dirty || state.pending} onClick={() => setClosing(true)}>
+        <button disabled={saving || !dirty || state.pending} onClick={() => setClosing(true)}>
           Discard draft…
         </button>
         <output>{state.pending ? "Parsing…" : status}</output>
@@ -232,7 +252,7 @@ export function JsonInspector({
             onChange={state.changeText}
             diagnostics={state.document?.diagnostics ?? []}
             selection={selection}
-            readOnly={limited || !state.document}
+            readOnly={saving || limited || !state.document}
             onSourceSelection={(offset) => {
               if (!state.document?.root || state.pending) return;
               let node = state.document.root,

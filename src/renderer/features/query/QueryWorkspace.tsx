@@ -326,7 +326,10 @@ function QueryTab({
         </button>
         <button
           onClick={() => {
-            if (!jsonDirty || window.confirm("Discard unsaved JSON draft and close SQL tab?"))
+            if (
+              !(jsonDirty || document.querySelector('.table-workspace[data-dirty="true"]')) ||
+              window.confirm("Close SQL tab while table or JSON drafts are unsaved?")
+            )
               onClose();
           }}
         >

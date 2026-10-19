@@ -4,7 +4,7 @@ import { openSession, type Session } from "./connections";
 import { WorkerCommandSchema } from "./types";
 import { introspect } from "./introspection";
 import { RowBrowser, BrowseColumnLimitError } from "./rows";
-import { boundedReply, failure } from "../shared/protocol";
+import { boundedCommand, boundedReply, failure } from "../shared/protocol";
 let browser: RowBrowser | undefined;
 let busy = false;
 const port = process.parentPort;
@@ -13,6 +13,15 @@ let session: Session | undefined;
 const controller = new AbortController();
 let opening = false;
 port.on("message", async ({ data }: { data: unknown }) => {
+  if (
+    typeof data === "object" &&
+    data !== null &&
+    "command" in data &&
+    !boundedCommand(data.command)
+  ) {
+    port.postMessage({ kind: "failed" });
+    return;
+  }
   const command = WorkerCommandSchema.safeParse(data);
   if (!command.success) {
     port.postMessage({ kind: "failed" });
@@ -52,7 +61,9 @@ port.on("message", async ({ data }: { data: unknown }) => {
       else if (request.kind === "rows.fetch") {
         const { tableId, filter, sort, cursor, pageSize } = request;
         data = await browser.fetch({ tableId, filter, sort, cursor, pageSize });
-      } else data = await browser.value({ target: request.target, column: request.column });
+      } else if (request.kind === "rows.save")
+        data = await browser.save({ changes: request.changes });
+      else data = await browser.value({ target: request.target, column: request.column });
       const reply = { ok: true, kind: request.kind, requestId: request.requestId, data };
       port.postMessage({
         kind: "reply",

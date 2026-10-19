@@ -95,6 +95,14 @@ export function ConnectionList() {
                   variant="ghost"
                   aria-label={`Connect ${profile.name}`}
                   onClick={async () => {
+                    if (document.querySelector('[data-saving="true"]')) return;
+                    if (
+                      document.querySelector('[data-dirty="true"]') &&
+                      !window.confirm(
+                        "Discard unsaved table and JSON drafts before opening another connection?",
+                      )
+                    )
+                      return;
                     const selection = ++connectRequest.current;
                     setMessage("Connecting…");
                     const reply = await window.dbapp.request({
