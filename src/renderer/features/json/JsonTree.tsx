@@ -2,6 +2,7 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import type { JsonNode } from "../../../json/document";
 import { escapePointer } from "../../../json/paths";
+export type RevealRequest = { path: string; token: number };
 export type TreeRow = {
   node: JsonNode;
   path: string;
@@ -17,7 +18,7 @@ export function JsonTree({
 }: {
   root: JsonNode;
   selected: string;
-  reveal: string;
+  reveal: RevealRequest;
   onSelect: (row: TreeRow) => void;
 }) {
   const [expanded, setExpanded] = useState(new Set([""]));
@@ -27,7 +28,7 @@ export function JsonTree({
     queueMicrotask(() =>
       setExpanded((old) => {
         const next = new Set(old);
-        const parts = reveal.split("/");
+        const parts = reveal.path.split("/");
         for (let i = 1; i < parts.length; i++) next.add(parts.slice(0, i).join("/"));
         return next;
       }),
@@ -69,7 +70,7 @@ export function JsonTree({
     return result;
   }, [root, expanded]);
   useEffect(() => {
-    const index = rows.findIndex((row) => row.path === reveal);
+    const index = rows.findIndex((row) => row.path === reveal.path);
     if (index >= 0) host.current?.scrollTo({ top: Math.max(0, index * 28 - 84) });
   }, [rows, reveal]);
   function toggle(path: string) {

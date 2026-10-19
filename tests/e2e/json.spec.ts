@@ -64,6 +64,11 @@ for (const version of [14, 18])
       await expect(panel).toContainText("1 matches");
       await panel.getByRole("button", { name: "Next match" }).click();
       await expect(panel.getByRole("treeitem", { selected: true })).toContainText("a/b~c");
+      await panel.getByRole("button", { name: "Expand hidden", exact: true }).click();
+      await expect(panel.getByRole("tree")).not.toContainText("a/b~c");
+      await panel.getByRole("button", { name: "Next match", exact: true }).click();
+      await expect(panel.getByRole("treeitem", { selected: true })).toContainText("a/b~c");
+
       await expect(panel.getByLabel("JSON edit pointer", { exact: true })).toHaveValue(
         "/hidden/a~1b~0c",
       );
@@ -165,7 +170,20 @@ for (const version of [14, 18])
           );
           return performance.now() - start;
         });
-      console.log("Actual Chromium large JSON UI", JSON.stringify({ expandMs, selectMs }));
+      // Measurement-only: the 100 ms target is evaluated on the documented reference machine.
+      // General CI runners do not enforce a machine-dependent wall-clock threshold.
+      console.log(
+        "Actual Chromium large JSON UI (measurement-only, target 100 ms)",
+        JSON.stringify({ expandMs, selectMs }),
+      );
+      await panel.getByLabel("JSON edit pointer", { exact: true }).fill("/items/99999");
+      await panel.getByRole("button", { name: "Reveal pointer", exact: true }).click();
+      await expect(panel.getByRole("treeitem", { selected: true })).toContainText("99999");
+      await panel.getByRole("tree").evaluate((element) => element.scrollTo({ top: 0 }));
+      await expect(panel.getByRole("treeitem", { selected: true })).toHaveCount(0);
+      await panel.getByRole("button", { name: "Reveal pointer", exact: true }).click();
+      await expect(panel.getByRole("treeitem", { selected: true })).toContainText("99999");
+
       await page.screenshot({ path: "/tmp/rowberry-json-large-task7.png" });
       await page.getByLabel("Appearance", { exact: true }).selectOption("dark");
       await page.screenshot({ path: "/tmp/rowberry-json-dark-task7.png" });

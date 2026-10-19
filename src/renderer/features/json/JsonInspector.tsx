@@ -38,7 +38,7 @@ export function JsonInspector({
   const state = useJsonDocument(documentId, sourceText);
   const panel = useRef<HTMLElement>(null);
   const [selected, setSelected] = useState("");
-  const [reveal, setReveal] = useState("");
+  const [reveal, setReveal] = useState({ path: "", token: 0 });
   const [selection, setSelection] = useState<Range | null>(null);
   const [mode, setMode] = useState("split");
   const [expanded, setExpanded] = useState(false);
@@ -195,7 +195,7 @@ export function JsonInspector({
         reveal={(match) => {
           setSelected(match.path);
           setPath(match.path);
-          setReveal(match.path);
+          setReveal((request) => ({ path: match.path, token: request.token + 1 }));
           setSelection(match.range);
         }}
       />
@@ -261,7 +261,7 @@ export function JsonInspector({
                 } else break;
               }
               setSelected(pointer);
-              setReveal(pointer);
+              setReveal((request) => ({ path: pointer, token: request.token + 1 }));
               setPath(pointer);
             }}
           />
@@ -284,7 +284,7 @@ export function JsonInspector({
               const node = resolvePointer(state.document, path);
               if (node) {
                 setSelected(path);
-                setReveal(path);
+                setReveal((request) => ({ path, token: request.token + 1 }));
                 setSelection(node);
               } else setStatus("Pointer does not exist");
             } catch {
