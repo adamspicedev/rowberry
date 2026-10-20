@@ -56,12 +56,19 @@ export async function retryLegacyMigration() {
         typeof item === "object" && item !== null && "sql" in item ? item.sql : null,
       );
       const legacySql = WorkspaceSchema.shape.sql.parse(values);
-      const migrated = WorkspaceSchema.parse({
-        ...state,
-        sql: [...new Set([...state.sql, ...legacySql])],
-      });
-      // Make recovered SQL part of live state before awaiting storage, so edits
-      // and any queued debounce save already include it. Failure keeps both copies.
+      // Active SQL editors own their tab array and may save it again immediately.
+      // Keep migrated SQL in independent copy-only recovery until explicitly copied
+      // or discarded; never inject it into an editor's stale tab snapshot.
+      const drafts = new Map(state.drafts.map((draft) => [draft.id, draft]));
+      legacySql.forEach((text, index) =>
+        drafts.set(`legacy-sql:${index}`, {
+          id: `legacy-sql:${index}`,
+          kind: "sql",
+          label: `Legacy SQL tab ${index + 1} (copy only; paste into a new SQL tab explicitly)`,
+          text,
+        }),
+      );
+      const migrated = WorkspaceSchema.parse({ ...state, drafts: [...drafts.values()] });
       state = migrated;
       const saved = await window.dbapp.request({
         kind: "workspace.save",

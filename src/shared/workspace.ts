@@ -10,7 +10,7 @@ const RecoveryTextSchema = z
 export const RecoveryDraftSchema = z
   .object({
     id: z.string().max(160),
-    kind: z.enum(["json", "cell", "table"]),
+    kind: z.enum(["json", "cell", "table", "sql"]),
     label: z.string().max(256),
     text: RecoveryTextSchema,
   })

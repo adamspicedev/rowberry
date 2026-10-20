@@ -10,7 +10,10 @@ test("workspace survives reopening and disabling recovery removes SQL and drafts
   const state = {
     ...emptyWorkspace(),
     sql: ["select private"],
-    drafts: [{ id: "j", kind: "json" as const, label: "value", text: "{invalid" }],
+    drafts: [
+      { id: "j", kind: "json" as const, label: "value", text: "{invalid" },
+      { id: "legacy-sql:0", kind: "sql" as const, label: "legacy copy", text: "DELETE NEVER_RUN" },
+    ],
   };
   store.workspaceSave(state);
   expect(store.workspaceLoad()).toEqual(state);

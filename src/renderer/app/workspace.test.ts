@@ -135,20 +135,47 @@ test("legacy migration retry recovers SQL while retaining new local drafts", asy
   await workspace.loadWorkspace();
   expect(workspace.workspaceError()).toContain("Legacy SQL");
   workspace.recordDraft("latest", "json", "closed original editor", "{latest");
-  workspace.updateWorkspace({ sql: ["SELECT newer_editor"] });
+  const editor = await import("../features/query/query-state");
+  editor.saveDrafts(["SELECT newer_editor"]);
+  expect(editor.loadDrafts()).toEqual(["SELECT newer_editor"]);
   failSave = false;
   expect(workspace.canRetryLegacyMigration()).toBe(true);
   expect(workspace.canRetryWorkspaceSave()).toBe(false);
   await workspace.retryLegacyMigration();
-  expect(workspace.workspaceState().sql).toContain("SELECT legacy_private");
-  expect(workspace.workspaceState().sql).toContain("SELECT newer_editor");
-  expect(workspace.workspaceState().drafts[0]?.text).toBe("{latest");
+  expect(workspace.workspaceState().sql).toEqual(["SELECT newer_editor"]);
+  expect(workspace.workspaceState().drafts).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ kind: "sql", text: "SELECT legacy_private" }),
+      expect.objectContaining({ kind: "json", text: "{latest" }),
+    ]),
+  );
   expect(writes).toEqual([
     expect.objectContaining({
-      sql: ["SELECT newer_editor", "SELECT legacy_private"],
-      drafts: [expect.objectContaining({ text: "{latest" })],
+      sql: ["SELECT newer_editor"],
+      drafts: expect.arrayContaining([
+        expect.objectContaining({ kind: "sql", text: "SELECT legacy_private" }),
+        expect.objectContaining({ kind: "json", text: "{latest" }),
+      ]),
     }),
   ]);
   expect(legacy).toBeNull();
   expect(workspace.workspaceError()).toBe("");
+  // The already open editor keeps its own tabs; its next edit must not erase recovery.
+  editor.saveDrafts(["SELECT next_editor_change"]);
+  await workspace.flushWorkspace();
+  expect(workspace.workspaceState().sql).toContain("SELECT next_editor_change");
+  expect(workspace.workspaceState().drafts).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ kind: "sql", text: "SELECT legacy_private" }),
+      expect.objectContaining({ kind: "json", text: "{latest" }),
+    ]),
+  );
+  expect(writes.at(-1)).toEqual(
+    expect.objectContaining({
+      sql: ["SELECT next_editor_change"],
+      drafts: expect.arrayContaining([
+        expect.objectContaining({ kind: "sql", text: "SELECT legacy_private" }),
+      ]),
+    }),
+  );
 });

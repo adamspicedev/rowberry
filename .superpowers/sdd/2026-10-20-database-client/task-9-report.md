@@ -74,3 +74,18 @@ Covering checks:
 - `bun run typecheck`, `bun run lint`, `bun run format:check`, `git diff --check`: **passed**.
 
 No unchanged full/live Electron suites were repeated for this state-machine correction.
+
+## Review fix round 3 (base `dc0502a`)
+
+Chose detached recovery ownership for legacy SQL. Active SQL tabs keep their existing editor/cache contract; migration records each legacy tab as a `kind: sql` copy in the recovery dialog, with an explicit instruction to paste it into a new SQL tab. Recovery never injects SQL into the active editor's tab array. Consequently its next edit/save cannot replace or erase migrated SQL. Copies remain until explicitly discarded, and disabling recovery clears them through the existing privacy boundary. `docs/data-storage.md` documents this decision. Legacy SQL joins the existing 32-copy/1-MiB limits, reporting failure and preserving its browser backup if the migrated state cannot fit.
+
+The regression uses the real SQL editor draft/cache API: opens current SQL via `saveDrafts`/`loadDrafts`, retries failed migration, then edits and saves that still-open editor again and flushes. Both the newer SQL editor text and detached legacy SQL/JSON recovery survive in memory and the saved payload. The real SQLite privacy roundtrip also now includes a SQL recovery copy.
+
+Covering evidence:
+
+- RED `bun run test src/renderer/app/workspace.test.ts`: **1 failed, 3 passed**. The open editor's next save erased the legacy SQL.
+- GREEN `bun run test src/renderer/app/workspace.test.ts src/renderer/features/query/query-state.test.ts tests/integration/workspace.test.ts`: **9 passed**.
+- `bun run test tests/integration/workspace.test.ts` after adding the SQL-copy storage/privacy case: **4 passed**.
+- `bun run typecheck`, `bun run lint`, `bun run format:check`, `git diff --check`: **passed**.
+
+No unchanged full/live suites or unrelated work were performed.
