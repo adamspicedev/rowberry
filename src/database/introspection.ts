@@ -11,7 +11,7 @@ export async function introspect(session: Session): Promise<SchemaSnapshot> {
       c.relkind IN ('r','p') AND has_table_privilege(c.oid,'UPDATE') AND k.key IS NOT NULL AS editable,
       coalesce(k.key,'[]'::json) AS key,
       coalesce(ks.keys,'[]'::json) AS keys,
-      (SELECT json_agg(json_build_object('name',a.attname,'typeOid',a.atttypid::bigint,'typeName',format_type(a.atttypid,a.atttypmod),'nullable',NOT a.attnotnull,'generated',a.attgenerated<>'','identity',a.attidentity<>'','editable',c.relkind IN ('r','p') AND k.key IS NOT NULL AND a.attgenerated='' AND a.attidentity<>'a' AND has_column_privilege(c.oid,a.attnum,'UPDATE')) ORDER BY a.attnum)
+      (SELECT json_agg(json_build_object('name',a.attname,'typeOid',a.atttypid::bigint,'typeName',format_type(a.atttypid,a.atttypmod),'nullable',NOT a.attnotnull,'generated',a.attgenerated<>'','identity',a.attidentity<>'','editable',c.relkind IN ('r','p') AND k.key IS NOT NULL AND a.attgenerated='' AND a.attidentity<>'a' AND has_table_privilege(c.oid,'UPDATE') AND has_column_privilege(c.oid,a.attnum,'UPDATE')) ORDER BY a.attnum)
        FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped AND has_column_privilege(c.oid,a.attnum,'SELECT')) AS columns
     FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
     LEFT JOIN LATERAL (SELECT json_agg(json_build_object('name',x.name,'primary',x.primary,'columns',x.columns,'suitable',x.suitable)) AS keys FROM (

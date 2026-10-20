@@ -47,6 +47,9 @@ export class DatabaseProcess {
       state,
     });
   }
+  isProfileActive(id: ConnectionId): boolean {
+    return this.active?.profileId === id;
+  }
   open(
     profileId: ConnectionId,
     resolve: () => Promise<Pick<ResolvedConnection, "profile" | "password">>,

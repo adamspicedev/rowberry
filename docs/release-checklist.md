@@ -20,27 +20,30 @@ The table below records checked-in local evidence. CI execution, Windows/Linux d
 
 Reference host: Apple Silicon macOS 27.2, Bun 1.4.3, Node 20.20.2, Electron 44.9.0. CI pins Bun 1.4.2 and has not run in this session.
 
-| Gate                                                         | Recorded state                                         |
-| ------------------------------------------------------------ | ------------------------------------------------------ |
-| Typecheck, Oxlint, Oxfmt                                     | Passed locally, including release TypeScript scripts   |
-| Unit and local storage                                       | 51 passed, native vault test skipped by default        |
-| Full PostgreSQL 14/18 integration                            | 117 passed, native vault opt-in skipped                |
-| Native Keychain opt-in                                       | 1 passed, set/get/restart/delete with disposable entry |
-| Development desktop                                          | 11 passed before the additional reopen regression test |
-| Unsigned macOS packages                                      | arm64 and x64 DMGs built; no signing attempted         |
-| Missing worker / enabled Node / missing executable           | All rejected by negative package checks                |
-| Intel macOS runtime                                          | Architecture/assets inspected only; no native x64 run  |
-| CI and PostgreSQL 15–17                                      | Configured, unrun                                      |
-| Windows/Linux desktop, signing/notarization, install/upgrade | Pending; public release blockers                       |
-| Publication                                                  | No release or remote created                           |
+| Gate                                                         | Recorded state                                                |
+| ------------------------------------------------------------ | ------------------------------------------------------------- |
+| Typecheck, Oxlint, Oxfmt                                     | Passed locally, including release TypeScript scripts          |
+| Unit and local storage                                       | 55 passed, native vault test skipped by default               |
+| Full PostgreSQL 14/18 integration                            | 117 passed, native vault opt-in skipped                       |
+| Final-review PG14/18 regressions                             | 22 focused integration passes; 2 desktop save/recovery passes |
+| Native Keychain opt-in                                       | 1 passed, set/get/restart/delete with disposable entry        |
+| Development desktop                                          | 11 passed before the additional reopen regression test        |
+| Unsigned macOS packages                                      | arm64 and x64 DMGs built; no signing attempted                |
+| Missing worker / enabled Node / missing executable           | All rejected by negative package checks                       |
+| Production packaged workflows                                | 18/18 passed on local macOS arm64, including PG14/18          |
+| Packaged native Keychain opt-in                              | 1/1 passed on local macOS arm64; disposable vault entry       |
+| Intel macOS runtime                                          | Architecture/assets inspected only; no native x64 run         |
+| CI and PostgreSQL 15–17                                      | Configured, unrun                                             |
+| Windows/Linux desktop, signing/notarization, install/upgrade | Pending; public release blockers                              |
+| Publication                                                  | No release or remote created                                  |
 
 The cross-built Intel package lacks the host-unavailable x64 native vault optional dependency. Its static pass does not qualify Intel password persistence. Build and test again on the native Intel runner. Electron's unsigned macOS task-port diagnostics and Vite's 3.27 MB Monaco chunk warning remain visible; neither is counted as platform or signature evidence.
 
-Production benchmark on this host used 11,888,891 bytes and 100,000 scalar values: parse 357.9 ms, indexed search 37.3 ms, search cancellation 7.2 ms, parse cancellation 5.7 ms. UI expansion measured 24.7–27.7 ms and selection 11.1–15.0 ms. These are local measurements. The production worker came from the packaged app archive.
+Production benchmark on this host used 11,888,891 bytes and 100,000 scalar values: parse 387.1 ms, indexed search 30.6 ms, search cancellation 7.1 ms, parse cancellation 6.5 ms. UI expansion measured 23.0–23.6 ms and selection 7.6–7.9 ms. These are local measurements. The production worker came from the packaged app archive.
 
 Unsigned development package SHA-256 digests, recompute after signing:
 
 ```text
-50464658fb9c7c55720c4dc554521d890f00e5f6b85d6aa67afeba1b63e5dd09  Rowberry-0.1.0-mac-arm64.dmg
-565f5d451495090cead2297bef74cf6aee9cbf81a8d07cfec2d893705f6b5a02  Rowberry-0.1.0-mac-x64.dmg
+331ae1bc079178cfb3480fb7ba1095e5b8b4ec3417569355c2f08c804a9453fb  Rowberry-0.1.0-mac-arm64.dmg
+c316981d0aa718ac1301e1e8ab424ae787f556af01278810f7dbef7bd089c35e  Rowberry-0.1.0-mac-x64.dmg
 ```

@@ -17,17 +17,17 @@ for (const version of [14, 18])
     });
     await client.connect();
     await client.query(
-      `DROP SCHEMA IF EXISTS dbapp_save_ui CASCADE;CREATE SCHEMA dbapp_save_ui;CREATE TABLE dbapp_save_ui.records(id int PRIMARY KEY,note text,doc json,derived int GENERATED ALWAYS AS (id+1) STORED);INSERT INTO dbapp_save_ui.records(id,note,doc) VALUES(1,'original','{"n":9007199254740993}'),(2,'neighbour','null');`,
+      `DROP SCHEMA IF EXISTS dbapp_save_ui CASCADE;CREATE SCHEMA dbapp_save_ui;CREATE TABLE dbapp_save_ui.other(id int PRIMARY KEY);CREATE TABLE dbapp_save_ui.records(id int PRIMARY KEY,note text,doc json,derived int GENERATED ALWAYS AS (id+1) STORED);INSERT INTO dbapp_save_ui.records(id,note,doc) VALUES(1,'original','{"n":9007199254740993}'),(2,'neighbour','null');`,
     );
     const directory = mkdtempSync(path.join(tmpdir(), "rowberry-save-"));
-    const app = await electron.launch({
+    let app = await electron.launch({
       executablePath: process.env.DBAPP_PACKAGE_EXECUTABLE,
       args: [
         ...(process.env.DBAPP_PACKAGE_EXECUTABLE ? [] : [path.resolve(".")]),
         `--user-data-dir=${directory}`,
       ],
     });
-    const page = await app.firstWindow();
+    let page = await app.firstWindow();
     await app.evaluate(({ BrowserWindow }) =>
       BrowserWindow.getAllWindows()[0]?.setSize(1800, 1100),
     );
@@ -42,6 +42,11 @@ for (const version of [14, 18])
         ),
       );
     try {
+      async function jsonRecoveryCount() {
+        const reply = await request({ kind: "workspace.load" });
+        if (!reply.ok || reply.kind !== "workspace.load") throw new Error("Recovery read failed");
+        return reply.data.drafts.filter((draft) => draft.kind === "json").length;
+      }
       const id = crypto.randomUUID();
       await request({
         kind: "connections.save",
@@ -92,6 +97,33 @@ for (const version of [14, 18])
       );
       await page.getByRole("button", { name: "Cancel cell edit", exact: true }).click();
       await stage(1, "saved");
+      await expect(
+        page.getByRole("button", { name: "Edit Save fixture", exact: true }),
+      ).toBeDisabled();
+      expect(
+        await request({
+          kind: "connections.save",
+          profile: {
+            id,
+            name: "Wrong database",
+            host: "localhost",
+            port: 55400 + version,
+            user: "fixture",
+            database: "postgres",
+            tls: { kind: "disable", acknowledged: true },
+            environmentColor: "#ff0000",
+          },
+        }),
+      ).toMatchObject({ ok: false });
+      await expect(
+        page.getByRole("button", { name: "Connect Save fixture", exact: true }),
+      ).toBeVisible();
+      const profiles = await request({ kind: "connections.list", offset: 0 });
+      expect(profiles).toMatchObject({
+        ok: true,
+        data: { profiles: [{ name: "Save fixture", database: "fixture" }] },
+      });
+
       await page.getByRole("button", { name: "Preview changes", exact: true }).click();
       const preview = page.getByRole("dialog", { name: "Confirm database changes" });
       await expect(preview.getByLabel("Original note")).toHaveText("original");
@@ -205,6 +237,7 @@ for (const version of [14, 18])
       expect(
         (await client.query("SELECT doc::text FROM dbapp_save_ui.records WHERE id=1")).rows[0].doc,
       ).toContain("99999999999999999999");
+      await expect.poll(jsonRecoveryCount).toBe(0);
       const text = inspector.getByRole("textbox", { name: "JSON text editor", exact: true });
       await expect(text).toBeEditable();
       await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.focus());
@@ -217,6 +250,7 @@ for (const version of [14, 18])
       ).toBeDisabled();
       await inspector.getByRole("button", { name: "Close JSON", exact: true }).click();
       await page.getByRole("button", { name: "Discard and close JSON", exact: true }).click();
+      await expect.poll(jsonRecoveryCount).toBe(0);
       await grid.getByRole("gridcell").nth(2).click();
       await page.getByRole("button", { name: "Stage selected SQL NULL", exact: true }).click();
       await page.getByRole("button", { name: "Preview changes", exact: true }).click();
@@ -304,6 +338,90 @@ for (const version of [14, 18])
         { sql_null: false, doc: "null" },
         { sql_null: false, doc: "null" },
       ]);
+      // Repeated acknowledged replacements must not accumulate outgoing recovery IDs.
+      for (let cycle = 0; cycle < 34; cycle++) {
+        await inspector.getByLabel("JSON edit pointer", { exact: true }).fill("");
+        await inspector.getByLabel("JSON value type", { exact: true }).selectOption("number");
+        await inspector.getByLabel("JSON new value", { exact: true }).fill(String(cycle));
+        await inspector.getByRole("button", { name: "Set value", exact: true }).click();
+        await expect(inspector).toHaveAttribute("data-dirty", "true");
+        await inspector.getByRole("button", { name: "Save to database", exact: true }).click();
+        await preview.getByRole("button", { name: "Confirm save", exact: true }).click();
+        await expect(inspector).toHaveAttribute("data-dirty", "false");
+      }
+      await expect.poll(jsonRecoveryCount).toBe(0);
+      await inspector.getByLabel("JSON new value", { exact: true }).fill("888");
+      await inspector.getByRole("button", { name: "Set value", exact: true }).click();
+      await expect(inspector).toHaveAttribute("data-dirty", "true");
+      await expect.poll(jsonRecoveryCount).toBe(1);
+      page.once("dialog", (dialog) => dialog.accept());
+      await grid.getByRole("gridcell").nth(6).focus();
+      await page.keyboard.press("Enter");
+      await expect.poll(jsonRecoveryCount).toBe(0);
+      await inspector.getByLabel("JSON new value", { exact: true }).fill("parent discard");
+      await inspector.getByRole("button", { name: "Set value", exact: true }).click();
+      await expect(inspector).toHaveAttribute("data-dirty", "true");
+      await expect.poll(jsonRecoveryCount).toBe(1);
+      page.once("dialog", (dialog) => dialog.accept());
+      await page.getByRole("button", { name: "other dbapp_save_ui · table", exact: true }).click();
+      await expect(inspector).toHaveCount(0);
+      await expect.poll(jsonRecoveryCount).toBe(0);
+      await app.close();
+      app = await electron.launch({
+        executablePath: process.env.DBAPP_PACKAGE_EXECUTABLE,
+        args: [
+          ...(process.env.DBAPP_PACKAGE_EXECUTABLE ? [] : [path.resolve(".")]),
+          `--user-data-dir=${directory}`,
+        ],
+      });
+      page = await app.firstWindow();
+      await expect(
+        page.getByRole("button", { name: "Connect Save fixture", exact: true }),
+      ).toBeVisible();
+      expect(await jsonRecoveryCount()).toBe(0);
+      await request({
+        kind: "connections.submitSecret",
+        id,
+        secret: "fixture-only-password",
+        persist: false,
+      });
+      await page.getByRole("button", { name: "Connect Save fixture", exact: true }).click();
+      await page.getByRole("textbox", { name: "Search schemas and tables" }).fill("dbapp_save_ui");
+      await page
+        .getByRole("button", { name: "records dbapp_save_ui · table", exact: true })
+        .click();
+      await page.getByRole("grid", { name: "Table rows" }).getByRole("gridcell").nth(2).dblclick();
+      const failedInspector = page.getByRole("region", { name: "JSON inspector", exact: true });
+      await failedInspector.getByLabel("JSON value type", { exact: true }).selectOption("number");
+      await failedInspector.getByLabel("JSON new value", { exact: true }).fill("777");
+      await failedInspector.getByRole("button", { name: "Set value", exact: true }).click();
+      await expect(failedInspector).toHaveAttribute("data-dirty", "true");
+      await client.query("UPDATE dbapp_save_ui.records SET doc='456' WHERE id=1");
+      await failedInspector.getByRole("button", { name: "Save to database", exact: true }).click();
+      await page
+        .getByRole("dialog", { name: "Confirm database changes" })
+        .getByRole("button", { name: "Confirm save", exact: true })
+        .click();
+      await expect(
+        page.getByText(
+          "A row changed, was deleted, or is no longer writable. No edits were saved. Reload and compare your retained draft.",
+          { exact: true },
+        ),
+      ).toBeVisible();
+      await expect(failedInspector).toHaveAttribute("data-dirty", "true");
+      await expect.poll(jsonRecoveryCount).toBe(1);
+      // Unexpected window destruction emits no explicit draft-discard event.
+      await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.destroy());
+      await app.close();
+      app = await electron.launch({
+        executablePath: process.env.DBAPP_PACKAGE_EXECUTABLE,
+        args: [
+          ...(process.env.DBAPP_PACKAGE_EXECUTABLE ? [] : [path.resolve(".")]),
+          `--user-data-dir=${directory}`,
+        ],
+      });
+      page = await app.firstWindow();
+      await expect(page.getByLabel("Recovered json draft")).toHaveValue("777");
     } finally {
       // Test teardown explicitly discards live editors; user close remains guarded.
       await app.evaluate(({ BrowserWindow }) =>
@@ -404,6 +522,22 @@ test("real IPC transports large save request/reply and rejects aggregate raw ove
       changes: [{ target: crypto.randomUUID(), values: { note: "😀".repeat(9 * 1024 * 1024) } }],
     });
     expect(overflow.ok).toBe(false);
+    // Full-value reads cross utility worker, main and preload with encoded overhead.
+    for (const character of ['"', "\\", "\u0001"]) {
+      const text = JSON.stringify(
+        character.repeat(character === "\u0001" ? 5 * 1024 * 1024 : 9 * 1024 * 1024),
+      );
+      await client.query("UPDATE dbapp_save_ui.wire SET doc=$1 WHERE id=1", [text]);
+      const refreshed = await request({ kind: "rows.fetch", ...owner, tableId: table.id });
+      if (!refreshed.ok || refreshed.kind !== "rows.fetch") throw Error("No refreshed rows");
+      const value = await request({
+        kind: "rows.value",
+        ...owner,
+        target: refreshed.data.rows[0]?.target,
+        column: "doc",
+      });
+      expect(value.ok && value.kind === "rows.value" && value.data.text === text).toBe(true);
+    }
   } finally {
     // Test teardown explicitly discards live editors; user close remains guarded.
     await app.evaluate(({ BrowserWindow }) =>

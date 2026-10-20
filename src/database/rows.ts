@@ -420,7 +420,13 @@ export class RowBrowser {
       params,
     );
     const row = result.rows[0];
-    if (result.rows.length !== 1 || !row || row.text === null || Number(row.bytes) > VALUE_BYTES)
+    if (
+      result.rows.length !== 1 ||
+      !row ||
+      row.text === null ||
+      Number(row.bytes) > VALUE_BYTES ||
+      Buffer.byteLength(row.text, "utf8") > VALUE_BYTES
+    )
       throw new Error("Value unavailable, changed, or exceeds the 32 MiB limit.");
     return { typeOid: c.typeOid, text: row.text, editable: c.editable };
   }

@@ -147,6 +147,8 @@ export function installBridge(
               data: await connections.list(command.offset),
             });
           case "connections.save":
+            if (sessions.isProfileActive(command.profile.id))
+              return failure("UNAVAILABLE", command.requestId);
             return ReplySchema.parse({
               ok: true,
               requestId: command.requestId,

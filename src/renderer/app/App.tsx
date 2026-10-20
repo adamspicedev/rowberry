@@ -1,7 +1,7 @@
 import { CommandMenu } from "./CommandMenu";
 import { applyTheme } from "./theme";
 import { RecoveryControls } from "./recovery";
-import { loadWorkspace, updateWorkspace } from "./workspace";
+import { discardLiveJsonDrafts, loadWorkspace, updateWorkspace } from "./workspace";
 import { QueryWorkspace } from "../features/query/QueryWorkspace";
 import mark from "../assets/rowberry-mark.svg";
 import { useEffect, useState } from "react";
@@ -74,7 +74,7 @@ export function App() {
         </header>
         <div className="sidebar-content">
           <ConnectionList
-            activeId={session?.state === "connected" ? session.profileId : undefined}
+            activeId={session && session.state !== "disconnected" ? session.profileId : undefined}
           />
           {session?.state === "connected" && (
             <SchemaSidebar
@@ -83,12 +83,17 @@ export function App() {
               generation={session.generation}
               selected={table?.id ?? null}
               onSelect={(table) => {
+                if (selected?.sessionId === session.sessionId && selected.table.id === table.id) {
+                  setShowSql(false);
+                  return;
+                }
                 if (document.querySelector('[data-saving="true"]')) return;
                 if (
                   document.querySelector('[data-dirty="true"]') &&
                   !window.confirm("Discard unsaved table or JSON drafts before changing table?")
                 )
                   return;
+                discardLiveJsonDrafts();
                 setShowSql(false);
                 setSelected({ sessionId: session.sessionId, table });
               }}
@@ -143,6 +148,7 @@ export function App() {
                   !window.confirm("Discard unsaved drafts before disconnecting?")
                 )
                   return;
+                discardLiveJsonDrafts();
                 void window.dbapp.request({
                   kind: "sessions.close",
                   sessionId: session.sessionId,

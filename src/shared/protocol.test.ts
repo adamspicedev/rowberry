@@ -30,7 +30,6 @@ describe("operation payload limits", () => {
     const overPage = "x".repeat(16 * 1024 * 1024);
     expect(boundedReply(overPage, "rows.fetch")).toBe(false);
     expect(boundedReply(overPage, "rows.value")).toBe(true);
-    expect(boundedReply("x".repeat(32 * 1024 * 1024), "rows.value")).toBe(false);
   });
   it("rejects renderer-authored predicates, oversized pages, and absent session generations", () => {
     const base = {
@@ -45,4 +44,33 @@ describe("operation payload limits", () => {
     expect(CommandSchema.safeParse({ ...base, where: "true" }).success).toBe(false);
     expect(CommandSchema.safeParse({ ...base, generation: undefined }).success).toBe(false);
   });
+});
+
+for (const character of ['"', "\\", "\u0001"])
+  it(`accepts escaped full JSON and independently rejects oversized raw text (${character.charCodeAt(0)})`, () => {
+    const reply = (text: string) => ({
+      ok: true,
+      kind: "rows.value",
+      requestId: "value-boundary",
+      data: { text, typeOid: 114, editable: true },
+    });
+    const text = JSON.stringify(
+      character.repeat((9 * 1024 * 1024) / (character === "\u0001" ? 3 : 1)),
+    );
+    expect(boundedReply(reply(text), "rows.value")).toBe(true);
+    expect(boundedReply(reply("é".repeat(16 * 1024 * 1024 + 1)), "rows.value")).toBe(false);
+  });
+
+it("accepts exactly 32 MiB raw full-value text before envelope encoding", () => {
+  expect(
+    boundedReply(
+      {
+        ok: true,
+        kind: "rows.value",
+        requestId: "exact",
+        data: { text: "x".repeat(32 * 1024 * 1024), typeOid: 114, editable: true },
+      },
+      "rows.value",
+    ),
+  ).toBe(true);
 });

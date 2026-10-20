@@ -1,6 +1,8 @@
 import { z } from "zod";
 export const PAGE_BYTES = 16 * 1024 * 1024;
 export const VALUE_BYTES = 32 * 1024 * 1024;
+// One raw byte may require six bytes in the outer IPC JSON envelope.
+export const VALUE_WIRE_BYTES = VALUE_BYTES * 6 + 1024 * 1024;
 const identifier = z.string().min(1).max(63);
 export const ColumnSchema = z
   .object({

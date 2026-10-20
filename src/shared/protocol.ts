@@ -8,6 +8,7 @@ import {
   ValueSchema,
   PAGE_BYTES,
   VALUE_BYTES,
+  VALUE_WIRE_BYTES,
   SaveSchema,
   SaveResultSchema,
   SAVE_BYTES,
@@ -401,6 +402,22 @@ export interface DesktopBridge {
 }
 const SQL_WIRE_BYTES = 6 * 1024 * 1024 + 2048;
 export function boundedReply(value: unknown, kind: Command["kind"]): boolean {
+  if (
+    kind === "rows.value" &&
+    typeof value === "object" &&
+    value !== null &&
+    "ok" in value &&
+    value.ok === true
+  ) {
+    const parsed = ReplySchema.safeParse(value);
+    if (
+      !parsed.success ||
+      !parsed.data.ok ||
+      parsed.data.kind !== "rows.value" ||
+      new TextEncoder().encode(parsed.data.data.text).length > VALUE_BYTES
+    )
+      return false;
+  }
   return bounded(
     value,
     kind === "workspace.load"
@@ -408,7 +425,7 @@ export function boundedReply(value: unknown, kind: Command["kind"]): boolean {
       : kind === "queries.saved.get"
         ? SQL_WIRE_BYTES
         : kind === "rows.value"
-          ? VALUE_BYTES
+          ? VALUE_WIRE_BYTES
           : kind === "rows.save" ||
               kind === "rows.fetch" ||
               kind === "schema.list" ||

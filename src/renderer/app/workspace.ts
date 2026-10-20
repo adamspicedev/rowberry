@@ -137,3 +137,8 @@ export function recordDraft(
   if (text !== null) drafts.push({ id, kind, label, text });
   updateWorkspace({ drafts });
 }
+
+// Only mounted inspectors participate; detached recovered copies remain untouched.
+export function discardLiveJsonDrafts() {
+  window.dispatchEvent(new Event("rowberry:discard-json"));
+}

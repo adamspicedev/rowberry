@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import { openSession } from "../../src/database/connections";
 import { introspect } from "../../src/database/introspection";
+import { boundedReply } from "../../src/shared/protocol";
 import { RowBrowser } from "../../src/database/rows";
 import { ConnectionProfileSchema, SessionIdSchema } from "../../src/shared/protocol";
 import type { Session } from "../../src/database/connections";
@@ -82,6 +83,43 @@ for (const version of [14, 18])
         editable: false,
         keys: [{ columns: [null], suitable: false }],
       });
+    });
+    test("quote-heavy full JSON survives raw and reply budgets", async () => {
+      const text = JSON.stringify('"'.repeat(9 * 1024 * 1024));
+      await session.client.query('UPDATE "browse fixture".large SET doc=$1 WHERE id=1', [text]);
+      try {
+        const page = await browser.fetch({ tableId: (await table("large")).id });
+        const target = page.rows[0]?.target;
+        if (!target) throw new Error("Missing target");
+        const data = await browser.value({ target, column: "doc" });
+        expect(data.text).toBe(text);
+        expect(
+          boundedReply({ ok: true, kind: "rows.value", requestId: "escaped", data }, "rows.value"),
+        ).toBe(true);
+      } finally {
+        await session.client.query('UPDATE "browse fixture".large SET doc=$1 WHERE id=1', [
+          JSON.stringify("x".repeat(1048576)),
+        ]);
+      }
+    });
+    test("column-only UPDATE grants remain read-only under guarded table lock policy", async () => {
+      await session.client.query(
+        `GRANT UPDATE (doc) ON "browse fixture"."quoted table" TO ${role}; SET ROLE ${role}`,
+      );
+      try {
+        const t = await table("quoted table");
+        expect(t.editable).toBe(false);
+        expect(t.columns.every((column) => !column.editable)).toBe(true);
+        const page = await browser.fetch({ tableId: t.id });
+        expect(page.rows[0]?.cells.every((cell) => !cell.editable)).toBe(true);
+        const target = page.rows[0]?.target;
+        if (!target) throw new Error("Expected stable read identity");
+        expect(await browser.save({ changes: [{ target, values: { doc: "{}" } }] })).toMatchObject({
+          kind: "failed",
+        });
+      } finally {
+        await session.client.query("RESET ROLE");
+      }
     });
     test("pages preserve raw values, NULL and composite identity without repeats", async () => {
       const t = await table("quoted table");

@@ -1,3 +1,4 @@
+import { discardLiveJsonDrafts } from "../../app/workspace";
 import { useEffect, useRef, useState } from "react";
 import { RequestIdSchema, type ConnectionProfile } from "../../../shared/protocol";
 import { Button } from "../../components/ui/button";
@@ -87,6 +88,12 @@ export function ConnectionList({ activeId }: { activeId?: string }) {
               <div>
                 <Button
                   variant="ghost"
+                  disabled={activeId === profile.id}
+                  title={
+                    activeId === profile.id
+                      ? "Disconnect before editing this connection. Drafts are retained until you explicitly discard them."
+                      : undefined
+                  }
                   aria-label={`Edit ${profile.name}`}
                   onClick={() => setDialog(profile)}
                 >
@@ -104,6 +111,7 @@ export function ConnectionList({ activeId }: { activeId?: string }) {
                       )
                     )
                       return;
+                    discardLiveJsonDrafts();
                     const selection = ++connectRequest.current;
                     setMessage("Connecting…");
                     const reply = await window.dbapp.request({

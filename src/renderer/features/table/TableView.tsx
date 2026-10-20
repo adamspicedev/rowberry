@@ -193,6 +193,7 @@ export function TableView({
       );
     }
     if (jsonSaveDraft) {
+      recordDraft(`json:${jsonSaveDraft.documentId}`, "json", "", null);
       const saved = result.rows.find(
         (item) => item.previousTarget === jsonSaveDraft.saveTarget.target,
       )?.row;
@@ -252,6 +253,7 @@ export function TableView({
     [],
   );
   function clearInspection() {
+    recordDraft(`json:${jsonId}`, "json", "", null);
     inspectionVersion.current++;
     setInspected(null);
     setOriginalSqlNull(false);
@@ -292,6 +294,7 @@ export function TableView({
       cell = record?.cells[col],
       column = table.columns[col];
     if (!cell || !column || ![114, 3802].includes(cell.typeOid)) return;
+    recordDraft(`json:${jsonId}`, "json", "", null);
     setInspected(null);
     setOriginalSqlNull(false);
     setJsonId(crypto.randomUUID());
@@ -346,7 +349,9 @@ export function TableView({
           {table.schema}.{table.name}
         </strong>
         <span>
-          {table.editable ? "Stable row identity" : "Read-only"}
+          {table.editable
+            ? "Stable row identity"
+            : "Read-only · guarded saves require a suitable key, a writable table and table-level UPDATE permission"}
           {table.rls ? " · RLS" : ""}
         </span>
         <Button

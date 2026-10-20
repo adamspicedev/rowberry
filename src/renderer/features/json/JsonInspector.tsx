@@ -89,6 +89,11 @@ export function JsonInspector({
       dirty ? state.text : null,
     );
   }, [documentId, dirty, state.text]);
+  useEffect(() => {
+    const discard = () => recordDraft(`json:${documentId}`, "json", "", null);
+    window.addEventListener("rowberry:discard-json", discard);
+    return () => window.removeEventListener("rowberry:discard-json", discard);
+  }, [documentId]);
   const editable = !!state.document?.editable && !state.pending && !saving;
   const limited =
     state.document?.diagnostics.some((diagnostic) => diagnostic.kind === "limit") ?? false;
@@ -398,6 +403,7 @@ export function JsonInspector({
           <p>Discard unsaved JSON changes? Copy the draft first if you need it.</p>
           <button
             onClick={() => {
+              recordDraft(`json:${documentId}`, "json", "", null);
               onDirtyChange?.(false);
               onClose();
             }}
