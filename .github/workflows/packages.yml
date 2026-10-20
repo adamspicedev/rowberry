@@ -39,6 +39,8 @@ jobs:
         name: Allow Chromium sandbox user namespaces on the ephemeral runner
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
       - run: bun install --frozen-lockfile
+      - if: runner.os == 'Linux'
+        run: bun x playwright install-deps chromium
       - run: bun run typecheck
       - run: bun run lint
       - run: bun run format:check
@@ -49,9 +51,17 @@ jobs:
       - if: runner.os == 'Linux'
         run: xvfb-run --auto-servernum bun run test:e2e
       - if: runner.os != 'Linux'
-        run: bun run verify:package '${{ matrix.directory }}' '${{ matrix.architecture }}'
+        run: bun run verify:package '${{ matrix.directory }}' '${{ matrix.architecture }}' --assets-only
+      - if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum bun run verify:package '${{ matrix.directory }}' '${{ matrix.architecture }}' --assets-only
+      - run: bun scripts/verify-package-negative.ts '${{ matrix.directory }}'
+      - if: runner.os == 'Linux'
+        run: DBAPP_DOCKER_CONTEXT=default bun run test:postgres:setup
       - if: runner.os == 'Linux'
         run: xvfb-run --auto-servernum bun run verify:package '${{ matrix.directory }}' '${{ matrix.architecture }}'
+      - if: always() && runner.os == 'Linux'
+        run: test ! -f /tmp/dbapp-task3-fixtures.json || DBAPP_DOCKER_CONTEXT=default bun run test:postgres:cleanup
+      - run: bun scripts/checksums.ts
       - uses: actions/upload-artifact@v4
         with:
           name: unsigned-${{ runner.os }}-${{ matrix.architecture }}
@@ -60,3 +70,4 @@ jobs:
             release/*.exe
             release/*.AppImage
             release/*.deb
+            release/SHA256SUMS

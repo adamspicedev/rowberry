@@ -1,18 +1,21 @@
 appId: org.dbapp.desktop
 productName: Rowberry
+artifactName: "${productName}-${version}-${os}-${arch}.${ext}"
 asar: true
 directories:
   output: release
 files:
   - dist/**
   - package.json
+  - LICENSE
 npmRebuild: false
 mac:
   icon: assets/branding/rowberry.icns
   target:
     - target: dmg
       arch: [arm64, x64]
-  identity: null
+  hardenedRuntime: true
+  notarize: true
   minimumSystemVersion: "13.0"
   category: public.app-category.developer-tools
 win:

@@ -1,12 +1,16 @@
 import { BrowserWindow, session } from "electron";
 import path from "node:path";
+const protectedSessions = new WeakSet<Electron.Session>();
 export function createWindow(rendererPath: string): BrowserWindow {
   const applicationSession = session.fromPartition("dbapp");
   applicationSession.setPermissionRequestHandler((_contents, _permission, callback) =>
     callback(false),
   );
   applicationSession.setPermissionCheckHandler(() => false);
-  applicationSession.on("will-download", (event) => event.preventDefault());
+  if (!protectedSessions.has(applicationSession)) {
+    applicationSession.on("will-download", (event) => event.preventDefault());
+    protectedSessions.add(applicationSession);
+  }
   const window = new BrowserWindow({
     width: 1200,
     height: 800,

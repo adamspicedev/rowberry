@@ -1,0 +1,63 @@
+name: Signed release candidates
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  candidate:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            platform: macos
+            build: --mac --arm64
+          - os: macos-15-intel
+            platform: macos
+            build: --mac --x64
+          - os: windows-latest
+            platform: windows
+            build: --win --x64
+    runs-on: ${{ matrix.os }}
+    environment: release-signing-${{ matrix.platform }}
+    env:
+      CSC_LINK: ${{ secrets.CSC_LINK }}
+      CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: bun install --frozen-lockfile
+      - run: bun run build
+      - run: bun x --no-install electron-builder ${{ matrix.build }} --publish never -c.forceCodeSigning=true
+      - if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          for application in release/mac*/Rowberry.app; do
+            codesign --verify --deep --strict --verbose=2 "$application"
+            spctl --assess --type execute --verbose=2 "$application"
+            xcrun stapler validate "$application"
+          done
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Get-ChildItem release -Filter *.exe | ForEach-Object {
+            $signature = Get-AuthenticodeSignature $_.FullName
+            if ($signature.Status -ne 'Valid') { throw "Invalid installer signature" }
+          }
+          if ((Get-AuthenticodeSignature release/win-unpacked/Rowberry.exe).Status -ne 'Valid') { throw 'Invalid executable signature' }
+      - run: bun scripts/checksums.ts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: signed-candidate-${{ runner.os }}-${{ runner.arch }}
+          path: |
+            release/*.dmg
+            release/*.exe
+            release/SHA256SUMS

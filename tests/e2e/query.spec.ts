@@ -7,7 +7,13 @@ import { ReplySchema } from "../../src/shared/protocol";
 for (const version of [14, 18])
   test(`SQL desktop sessions, selection, cancellation, paging and recovery PostgreSQL ${version}`, async () => {
     const userData = mkdtempSync(path.join(tmpdir(), "rowberry-sql-"));
-    let app = await electron.launch({ args: [path.resolve("."), `--user-data-dir=${userData}`] });
+    let app = await electron.launch({
+      executablePath: process.env.DBAPP_PACKAGE_EXECUTABLE,
+      args: [
+        ...(process.env.DBAPP_PACKAGE_EXECUTABLE ? [] : [path.resolve(".")]),
+        `--user-data-dir=${userData}`,
+      ],
+    });
     let page = await app.firstWindow();
     const client = new Client({
       host: "localhost",
@@ -65,7 +71,7 @@ for (const version of [14, 18])
       const editor = page.getByRole("textbox", { name: "SQL editor" });
       async function text(sql: string) {
         await editor.focus();
-        await page.keyboard.press("Meta+A");
+        await page.keyboard.press("ControlOrMeta+A");
         await page.keyboard.type(sql);
       }
       await text("SELECT 12345678901234567890.123456789::numeric AS exact, NULL::text AS absent");
@@ -247,7 +253,13 @@ for (const version of [14, 18])
         BrowserWindow.getAllWindows().forEach((window) => window.destroy()),
       );
       await app.close();
-      app = await electron.launch({ args: [path.resolve("."), `--user-data-dir=${userData}`] });
+      app = await electron.launch({
+        executablePath: process.env.DBAPP_PACKAGE_EXECUTABLE,
+        args: [
+          ...(process.env.DBAPP_PACKAGE_EXECUTABLE ? [] : [path.resolve(".")]),
+          `--user-data-dir=${userData}`,
+        ],
+      });
       page = await app.firstWindow();
       const saved = await request({ kind: "queries.saved.list", offset: 0 });
       expect(

@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Rowberry local PostgreSQL desktop workspace",
+  "license": "GPL-3.0-only",
   "author": "dbapp contributors",
   "type": "module",
   "main": "dist/main/index.cjs",
@@ -17,8 +18,8 @@
     "test:e2e:postgres": "playwright test --config playwright.postgres.config.ts",
     "test:postgres:setup": "bun tests/fixtures/postgres/setup.mjs",
     "test:postgres:cleanup": "bun tests/fixtures/postgres/cleanup.mjs",
-    "package": "bun run build && electron-builder --publish never",
-    "verify:package": "bun scripts/verify-package.mjs",
+    "package": "bun run build && bun scripts/package.ts",
+    "verify:package": "bun scripts/verify-package.ts",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check ."
   },

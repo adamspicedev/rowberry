@@ -20,7 +20,7 @@
 - Credentials never enter renderer state or plaintext persistence; Linux without Secret Service uses session-only passwords.
 - No automatic mutation retries, unbounded query buffering, startup query execution, or telemetry by default.
 - No branch name may contain codex.
-- Name and license remain undecided. Do not create a public release until chosen.
+- Rowberry is the approved name and GPL-3.0-only is the selected license. Public release still requires platform and signing evidence.
 - Repository starts empty and without Git. Initialize locally on `main` during Task 1; do not create a remote or publish.
 
 ## Review focus

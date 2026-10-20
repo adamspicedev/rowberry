@@ -39,7 +39,7 @@ function config(version: number, tls = false): ResolvedConnection {
     }),
   };
 }
-for (const version of [14, 18])
+for (const version of (process.env.DBAPP_POSTGRES_VERSIONS ?? "14,18").split(",").map(Number))
   describe(`PostgreSQL ${version}`, () => {
     test("valid credentials and text parsers retain precision, time, JSON, binary, arrays and NULL", async () => {
       const session = await openSession(config(version));
@@ -205,7 +205,7 @@ describe("real Electron utility-process transport", () => {
     await application?.close();
     if (userData) rmSync(userData, { recursive: true, force: true });
   });
-  for (const version of [14, 18])
+  for (const version of (process.env.DBAPP_POSTGRES_VERSIONS ?? "14,18").split(",").map(Number))
     test(`verified TLS and client authentication through actual utility worker (${version})`, async () => {
       const input = config(version, true);
       const result = await application.evaluate(async (_, input) => {

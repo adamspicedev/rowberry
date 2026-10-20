@@ -1,14 +1,17 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { spawn } from "node:child_process";
+import { tmpdir } from "node:os";
+import { spawn, spawnSync } from "node:child_process";
 import { listPackage, extractFile } from "@electron/asar";
 const [packagePath, architecture = process.arch] = process.argv.slice(2);
-if (!packagePath)
-  throw new Error(
-    "Usage: bun run verify:package <unpacked application directory or .app> [arm64|x64]",
-  );
+const defaultPath =
+  process.platform === "darwin"
+    ? `release/${process.arch === "arm64" ? "mac-arm64" : "mac"}/Rowberry.app`
+    : process.platform === "win32"
+      ? "release/win-unpacked"
+      : "release/linux-unpacked";
 if (!["x64", "arm64"].includes(architecture)) throw new Error("Unsupported architecture");
-const root = path.resolve(packagePath);
+const root = path.resolve(packagePath ?? defaultPath);
 const executable =
   process.platform === "darwin"
     ? path.join(root, "Contents/MacOS/Rowberry")
@@ -43,14 +46,27 @@ function checkArchitecture() {
 }
 checkArchitecture();
 const archive = path.join(resources, "app.asar");
-const entries = listPackage(archive).map((entry) => entry.replaceAll("\\", "/"));
+const entries = listPackage(archive, { isPack: false }).map((entry) => entry.replaceAll("\\", "/"));
 for (const entry of [
+  "/LICENSE",
+  "/dist/renderer/Baloo2-OFL.txt",
   "/dist/main/index.cjs",
   "/dist/database/index.cjs",
   "/dist/preload/index.cjs",
   "/dist/renderer/index.html",
 ])
   if (!entries.includes(entry)) throw new Error(`Missing packaged asset: ${entry}`);
+for (const prefix of ["worker-", "editor.worker-"]) {
+  if (
+    !entries.some(
+      (entry) => entry.startsWith(`/dist/renderer/assets/${prefix}`) && entry.endsWith(".js"),
+    )
+  )
+    throw new Error(`Missing packaged worker asset: ${prefix}`);
+}
+const main = extractFile(archive, "dist/main/index.cjs").toString();
+if (/nodeIntegration(?:InWorker|InSubFrames)?\s*:\s*true/.test(main))
+  throw new Error("Enabled packaged renderer Node integration");
 const html = extractFile(archive, "dist/renderer/index.html").toString();
 if (!html.includes("Content-Security-Policy")) throw new Error("Missing packaged CSP");
 for (const match of html.matchAll(/(?:src|href)="\.\/([^"]+)"/g)) {
@@ -64,30 +80,46 @@ if (architecture !== process.arch) {
   );
   process.exit(0);
 }
-await new Promise((resolve, reject) => {
-  const child = spawn(executable, ["--smoke-test"], {
-    env: { ...process.env, ELECTRON_ENABLE_LOGGING: "1" },
-    stdio: ["ignore", "pipe", "pipe"],
+const profile = await fs.mkdtemp(path.join(tmpdir(), "rowberry-package-"));
+try {
+  await new Promise<void>((resolve, reject) => {
+    const child = spawn(executable, ["--smoke-test", `--user-data-dir=${profile}`], {
+      env: { ...process.env, ELECTRON_ENABLE_LOGGING: "1" },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    let output = "";
+    let diagnostics = "";
+    const timer = setTimeout(() => {
+      child.kill();
+      reject(new Error(`Packaged smoke timed out: ${output} ${diagnostics}`));
+    }, 25000);
+    child.stdout.on("data", (chunk) => {
+      output = (output + chunk).slice(-16000);
+    });
+    child.stderr.on("data", (chunk) => {
+      diagnostics = (diagnostics + chunk).slice(-16000);
+    });
+    child.on("error", (error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
+    child.on("exit", (code) => {
+      clearTimeout(timer);
+      if (code === 0 && output.includes("DBAPP_SMOKE_OK")) resolve();
+      else reject(new Error(`Packaged smoke failed (exit ${code}): ${output} ${diagnostics}`));
+    });
   });
-  let output = "";
-  const timer = setTimeout(() => {
-    child.kill();
-    reject(new Error("Packaged smoke timed out"));
-  }, 25000);
-  child.stdout.on("data", (chunk) => {
-    output += chunk;
-  });
-  child.stderr.on("data", () => {});
-  child.on("error", (error) => {
-    clearTimeout(timer);
-    reject(error);
-  });
-  child.on("exit", (code) => {
-    clearTimeout(timer);
-    if (code === 0 && output.includes("DBAPP_SMOKE_OK")) resolve();
-    else reject(new Error(`Packaged smoke failed (exit ${code}): ${output}`));
-  });
-});
+} finally {
+  await fs.rm(profile, { recursive: true, force: true });
+}
+if (!process.argv.includes("--assets-only")) {
+  const result = spawnSync(
+    "bun",
+    ["x", "--no-install", "playwright", "test", "--config", "playwright.package.config.ts"],
+    { stdio: "inherit", env: { ...process.env, DBAPP_PACKAGE_EXECUTABLE: executable } },
+  );
+  if (result.status !== 0) throw new Error("Packaged production workflow tests failed");
+}
 console.log(
   `Verified executable, ${architecture} architecture, renderer assets, IPC and sandboxed renderer smoke.`,
 );

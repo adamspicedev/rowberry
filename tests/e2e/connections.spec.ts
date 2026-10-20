@@ -6,7 +6,11 @@ let application: ElectronApplication;
 let directory: string;
 async function launch() {
   application = await electron.launch({
-    args: [path.resolve("."), `--user-data-dir=${directory}`],
+    executablePath: process.env.DBAPP_PACKAGE_EXECUTABLE,
+    args: [
+      ...(process.env.DBAPP_PACKAGE_EXECUTABLE ? [] : [path.resolve(".")]),
+      `--user-data-dir=${directory}`,
+    ],
   });
   return application.firstWindow();
 }
@@ -57,6 +61,8 @@ test("unavailable native store clears password input immediately and persists no
       throw new Error(sentinel);
     };
   }, sentinel);
+  // Expire the five-second native capability cache before probing the locked store.
+  await new Promise((resolve) => setTimeout(resolve, 5100));
   // Refresh the list to observe the failed native probe.
   await page.reload();
   await page.getByRole("button", { name: "New connection", exact: true }).click();
@@ -94,4 +100,34 @@ test("unavailable native store clears password input immediately and persists no
   await restarted.getByRole("button", { name: "Delete Session", exact: true }).click();
   await restarted.getByRole("button", { name: "Delete connection", exact: true }).click();
   await expect(restarted.getByText("No saved connections")).toBeVisible();
+});
+
+test("packaged native OS vault survives entry recreation", async () => {
+  test.skip(
+    !process.env.DBAPP_PACKAGE_EXECUTABLE || process.env.DBAPP_NATIVE_CREDENTIAL_TEST !== "1",
+    "Explicit native credential-store qualification only",
+  );
+  await launch();
+  const result = await application.evaluate(async ({ app }) => {
+    if (!app.isPackaged) throw new Error("Expected production executable");
+    const require = process
+      .getBuiltinModule("node:module")
+      .createRequire(`${app.getAppPath()}/package.json`);
+    const { AsyncEntry } = require("@napi-rs/keyring");
+    const id = crypto.randomUUID();
+    const secret = crypto.randomUUID();
+    const entry = new AsyncEntry("org.dbapp.desktop.package-test", id, {
+      linux: { store: "secret-service" },
+    });
+    try {
+      await entry.setPassword(secret);
+      const reopened = new AsyncEntry("org.dbapp.desktop.package-test", id, {
+        linux: { store: "secret-service" },
+      });
+      return (await reopened.getPassword()) === secret;
+    } finally {
+      await entry.deletePassword();
+    }
+  });
+  expect(result).toBe(true);
 });

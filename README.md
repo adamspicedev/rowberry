@@ -1,8 +1,8 @@
 # Rowberry
 
-An early PostgreSQL desktop client built with Electron, React, TypeScript, shadcn/ui controls, and Tailwind. The current build provides saved connections, PostgreSQL sessions, schema navigation, bounded table browsing, and raw JSON inspection. SQL execution and editing remain planned.
+An early PostgreSQL desktop client built with Electron, React, TypeScript, shadcn/ui controls, and Tailwind. The current build provides saved connections, PostgreSQL sessions, schema navigation, bounded table browsing, SQL tabs with cancellation and transactions, lossless JSON editing and guarded saves, saved queries, and local workspace recovery.
 
-The approved product name is Rowberry. Licensing remains undecided. There is no paid tier, telemetry, remote service, release publishing, or automatic updater. Do not distribute publicly until a license is selected.
+The approved product name is Rowberry. Licensed under GPL-3.0-only. There is no paid tier, telemetry, remote service, release publishing, or automatic updater. Public distribution remains blocked on platform qualification and signing.
 
 ## Develop
 
@@ -33,19 +33,19 @@ bun run package
 bun run verify:package release/mac-arm64/Rowberry.app arm64
 ```
 
-The configuration produces unsigned development DMGs for macOS arm64/x64, Windows x64 NSIS installers, and Linux x64 AppImage/deb packages on the appropriate hosts. Use `bun run package --mac`, `--win`, or `--linux` to select a platform. Outputs are in `release/`. Verification accepts an unpacked application directory or a macOS `.app`, checks the actual executable header and bundled assets, then launches a smoke check on the host's architecture. A different architecture receives inspection only and is explicitly reported as not launched. Windows uses `release/win-unpacked x64`; Linux uses `release/linux-unpacked x64`. Linux checks need a graphical session; CI uses Xvfb.
+The configuration produces unsigned development DMGs for macOS arm64/x64, Windows x64 NSIS installers, and Linux x64 AppImage/deb packages on the appropriate hosts. Use `bun run package --mac`, `--win`, or `--linux` to select a platform. Outputs are in `release/`. Verification accepts an unpacked application directory or a macOS `.app`, checks the actual executable header and bundled assets, then launches shell and production behavioural checks on the host's architecture. The complete check requires the disposable PostgreSQL fixtures below. A different architecture receives inspection only and is explicitly reported as not launched. Windows uses `release/win-unpacked x64`; Linux uses `release/linux-unpacked x64`. Linux checks need a graphical session; CI uses Xvfb.
 
 GitHub Actions configures native build/package/smoke jobs for both macOS architectures, Windows x64, and Linux x64. These are configured checks, not evidence that CI has run. Local evidence applies only to the host tested. Windows signing, macOS signing/notarization, Linux desktop coverage, installer fresh-install checks, and public release qualification remain outstanding.
 
-Electron 44 requires macOS 13 or newer. Windows and Linux OS minimums and credential-store coverage will be qualified before release. See the [Electron 44 release notes](https://www.electronjs.org/blog/electron-44-0).
+See [platform requirements](docs/supported-platforms.md), [release checklist](docs/release-checklist.md), [security](docs/security.md), and [candidate release notes](docs/release-notes-0.1.0.md). Rowberry is licensed under [GPL-3.0-only](LICENSE); Baloo 2 retains its OFL license.
 
 ## Security boundary
 
 The renderer loads only local built assets with a restrictive CSP, disabled Node integration, context isolation, and a global process sandbox. Its preload refuses to expose the bridge unless sandboxing and context isolation are active. Navigation, new windows, webviews, permission grants, and downloads are blocked. `window.dbapp` exposes only validated `request`, `subscribe`, and `unsubscribe` operations. Commands cover application info, saved connection metadata, transient secret submission, and opening/closing live database sessions. Retrieved passwords stay in main and its private database worker.
 
-The main process accepts requests only from the registered window's exact main-frame URL and frame identity. Runtime schemas reject unknown fields and commands. Both sides validate responses/events and bound serialized payloads: control replies/events use 64 KiB, SQL requests allow 1 MiB of UTF-8 text plus a bounded envelope, query and browse pages use 16 MiB including metadata/envelope, and individual browse-value reads use 32 MiB. Control errors contain fixed messages, request identifiers, retryability, and failure outcome; SQL result pages carry bounded PostgreSQL errors and explicit completion, cancellation, limit, and unknown-outcome states. Filesystem, shell, credentials, and generic IPC are not exposed. Later document transport will need its own explicit bounded contract rather than increasing this control-message limit blindly.
+The main process accepts requests only from the registered window's exact main-frame URL and frame identity. Runtime schemas reject unknown fields and commands. Both sides validate responses/events and bound serialized payloads: control replies/events use 64 KiB, SQL requests allow 1 MiB of UTF-8 text plus a bounded envelope, query and browse pages use 16 MiB including metadata/envelope, and individual browse-value reads use 32 MiB. Control errors contain fixed messages, request identifiers, retryability, and failure outcome; SQL result pages carry bounded PostgreSQL errors and explicit completion, cancellation, limit, and unknown-outcome states. Filesystem, shell, credentials, and generic IPC are not exposed. Document operations use their own bounded contract.
 
-Connection metadata is saved in local SQLite. Passwords use the native OS credential store when available, otherwise session-only memory. Each live workspace opens a separate database utility process; switching connections invalidates the previous generation and closes its sockets. Verified TLS is the default. Schema/table browsing and SQL execution are available; table editing follows in later milestones.
+Connection metadata is saved in local SQLite. Passwords use the native OS credential store when available, otherwise session-only memory. Each live workspace opens a separate database utility process; switching connections invalidates the previous generation and closes its sockets. Verified TLS is the default. Schema/table browsing and SQL execution are available; guarded table and JSON editing are available for rows with a stable identity.
 
 ## Dependency sources
 
@@ -58,7 +58,7 @@ Dependencies are pinned in `package.json` and `bun.lock`. Selection followed the
 ```sh
 # Uses OrbStack by default. Use DBAPP_DOCKER_CONTEXT=default on Linux Docker.
 bun run test:postgres:setup
-bun run test:integration tests/integration/connections.test.ts
+bun run test:integration
 bun run test:e2e:postgres
 bun run test:postgres:cleanup
 ```
@@ -77,4 +77,4 @@ Open **SQL workspace** after connecting. Each of at most 16 SQL tabs uses its ow
 
 BEGIN, COMMIT and ROLLBACK run explicitly on the tab connection; transaction state includes aborted and unknown. Cancel targets active work. **End unfinished result** requires confirmation because closing a portal can commit an implicit mutation. **Close SQL tab** disconnects its connection and rolls back any open transaction. Unknown cancellation/connection outcomes require explicit session reopening; no SQL is retried automatically. COPY streaming is unsupported.
 
-Named saved queries live in `profiles.sqlite` in the application profile directory (on macOS, `~/Library/Application Support/dbapp/`). They contain SQL text and may contain sensitive values. Lists return at most 20 names per page, and individual saved SQL text is limited to 1 MiB. Opening saved SQL never executes it. Current editor drafts are also kept locally in the renderer's storage for connection-switch recovery; full versioned recovery controls belong to the later workspace-recovery milestone.
+Named saved queries live in `profiles.sqlite` in the application profile directory (on macOS, `~/Library/Application Support/dbapp/`). They contain SQL text and may contain sensitive values. Lists return at most 20 names per page, and individual saved SQL text is limited to 1 MiB. Opening saved SQL never executes it. Current editor drafts are also kept locally in the renderer's storage for connection-switch recovery; versioned recovery controls allow restoring or discarding drafts.

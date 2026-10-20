@@ -33,14 +33,27 @@ export class NativeCredentialStore implements CredentialStore {
       throw new Error("Credential operation failed.");
     }
   }
-  async available(): Promise<boolean> {
+  private availability: { expires: number; result: Promise<boolean> } | undefined;
+  available(): Promise<boolean> {
+    if (this.availability && this.availability.expires > Date.now())
+      return this.availability.result;
+    const result = this.probeAvailability();
+    this.availability = { expires: Date.now() + 5000, result };
+    return result;
+  }
+  private async probeAvailability(): Promise<boolean> {
     const id = `probe-${randomUUID()}`;
+    let cleaned = false;
     try {
       await this.set(id, "availability-check");
       await this.delete(id);
+      cleaned = true;
       return true;
     } catch {
       return false;
+    } finally {
+      // A write can succeed even when its promise rejects; always attempt cleanup.
+      if (!cleaned) await this.delete(id).catch(() => {});
     }
   }
 }

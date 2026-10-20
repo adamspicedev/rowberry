@@ -7,7 +7,11 @@ let directory: string;
 test.beforeEach(async () => {
   directory = mkdtempSync(path.join(tmpdir(), "dbapp-security-"));
   application = await electron.launch({
-    args: [path.resolve("."), `--user-data-dir=${directory}`],
+    executablePath: process.env.DBAPP_PACKAGE_EXECUTABLE,
+    args: [
+      ...(process.env.DBAPP_PACKAGE_EXECUTABLE ? [] : [path.resolve(".")]),
+      `--user-data-dir=${directory}`,
+    ],
     env: { ...process.env, ELECTRON_ENABLE_LOGGING: "1" },
   });
   await application.firstWindow();
@@ -108,4 +112,22 @@ test("Rowberry shell loads Baloo 2 wordmark text and keyboard-accessible light/d
   await page.getByLabel("Appearance").selectOption("light");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await page.screenshot({ animations: "disabled", path: "test-results/rowberry-light.png" });
+});
+
+test("macOS window reopen keeps one session download guard", async () => {
+  test.skip(process.platform !== "darwin", "macOS keeps the application alive after window close");
+  const counts = await application.evaluate(async ({ app, BrowserWindow }) => {
+    const first = BrowserWindow.getAllWindows()[0];
+    if (!first) throw new Error("Missing original window");
+    const session = first.webContents.session;
+    const before = session.listenerCount("will-download");
+    const closed = new Promise<void>((resolve) => first.once("closed", () => resolve()));
+    first.close();
+    await closed;
+    app.emit("activate");
+    const reopened = BrowserWindow.getAllWindows()[0];
+    if (!reopened || reopened === first) throw new Error("Window did not reopen");
+    return { before, after: session.listenerCount("will-download") };
+  });
+  expect(counts).toEqual({ before: 1, after: 1 });
 });

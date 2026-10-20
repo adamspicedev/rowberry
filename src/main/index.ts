@@ -9,13 +9,11 @@ import { DatabaseProcess } from "./database-process";
 import { EVENT_CHANNEL } from "../shared/protocol";
 import { ConnectionService } from "./connections";
 import { createWindow } from "./windows";
+import { profilePath } from "./profile-path";
 app.enableSandbox();
 const userDataOverride = app.commandLine.getSwitchValue("user-data-dir");
 // Preserve the original profile directory when the packaged product name changes.
-app.setPath(
-  "userData",
-  userDataOverride ? path.resolve(userDataOverride) : path.join(app.getPath("appData"), "dbapp"),
-);
+app.setPath("userData", profilePath(app.getPath("appData"), userDataOverride));
 app.setName("Rowberry");
 let mainWindow: BrowserWindow | null = null;
 const rendererPath = path.join(__dirname, "../renderer/index.html");
@@ -105,7 +103,7 @@ app.whenReady().then(() => {
     mainWindow?.webContents.once("did-finish-load", () => {
       void mainWindow?.webContents
         .executeJavaScript(
-          `(async()=>{const reply=await window.dbapp.request({kind:'app.info',requestId:'package-smoke'});return typeof window.require==='undefined' && reply.ok && !!document.querySelector('[data-app-ready]')})()`,
+          `(async()=>{const deadline=Date.now()+10000;while(!document.querySelector('[data-app-ready]')&&Date.now()<deadline)await new Promise(resolve=>setTimeout(resolve,50));const reply=await window.dbapp.request({kind:'app.info',requestId:'package-smoke'});return typeof window.require==='undefined' && typeof window.process==='undefined' && reply.ok && !!document.querySelector('[data-app-ready]')})()`,
         )
         .then((valid) => {
           clearTimeout(timer);

@@ -21,7 +21,11 @@ for (const version of [14, 18])
     );
     const directory = mkdtempSync(path.join(tmpdir(), "rowberry-save-"));
     const app = await electron.launch({
-      args: [path.resolve("."), `--user-data-dir=${directory}`],
+      executablePath: process.env.DBAPP_PACKAGE_EXECUTABLE,
+      args: [
+        ...(process.env.DBAPP_PACKAGE_EXECUTABLE ? [] : [path.resolve(".")]),
+        `--user-data-dir=${directory}`,
+      ],
     });
     const page = await app.firstWindow();
     await app.evaluate(({ BrowserWindow }) =>
@@ -153,7 +157,7 @@ for (const version of [14, 18])
         exact: true,
       });
       await routedText.focus();
-      await page.keyboard.press("Meta+A");
+      await page.keyboard.press("ControlOrMeta+A");
       await page.keyboard.type('{"n":1,"n":2}');
       await expect(routedInspector.getByText(/Duplicate keys:/)).toBeVisible();
       await expect(
@@ -202,9 +206,12 @@ for (const version of [14, 18])
         (await client.query("SELECT doc::text FROM dbapp_save_ui.records WHERE id=1")).rows[0].doc,
       ).toContain("99999999999999999999");
       const text = inspector.getByRole("textbox", { name: "JSON text editor", exact: true });
+      await expect(text).toBeEditable();
+      await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.focus());
       await text.focus();
-      await page.keyboard.press("Meta+A");
+      await page.keyboard.press("ControlOrMeta+A");
       await page.keyboard.type('{"invalid":');
+      await expect(inspector).toHaveAttribute("data-dirty", "true");
       await expect(
         inspector.getByRole("button", { name: "Save to database", exact: true }),
       ).toBeDisabled();
@@ -236,7 +243,7 @@ for (const version of [14, 18])
       await expect(inspector).toContainText("Creating JSON from SQL NULL");
       async function creationText(value: string) {
         await inspector.getByRole("textbox", { name: "JSON text editor", exact: true }).focus();
-        await page.keyboard.press("Meta+A");
+        await page.keyboard.press("ControlOrMeta+A");
         await page.keyboard.type(value);
       }
       await creationText('{"x":1,"x":2}');
@@ -322,7 +329,13 @@ test("real IPC transports large save request/reply and rejects aggregate raw ove
     `CREATE SCHEMA IF NOT EXISTS dbapp_save_ui;CREATE TABLE IF NOT EXISTS dbapp_save_ui.wire(id int PRIMARY KEY,note text,doc json);TRUNCATE dbapp_save_ui.wire;INSERT INTO dbapp_save_ui.wire SELECT i,'before','{}' FROM generate_series(1,30)i;`,
   );
   const directory = mkdtempSync(path.join(tmpdir(), "rowberry-save-wire-"));
-  const app = await electron.launch({ args: [path.resolve("."), `--user-data-dir=${directory}`] });
+  const app = await electron.launch({
+    executablePath: process.env.DBAPP_PACKAGE_EXECUTABLE,
+    args: [
+      ...(process.env.DBAPP_PACKAGE_EXECUTABLE ? [] : [path.resolve(".")]),
+      `--user-data-dir=${directory}`,
+    ],
+  });
   const page = await app.firstWindow();
   async function request(command: Record<string, unknown>) {
     return ReplySchema.parse(
@@ -443,7 +456,13 @@ test("lost real COMMIT acknowledgement preserves table draft and blocks retry", 
   const address = proxy.address();
   if (!address || typeof address === "string") throw Error("No proxy port");
   const directory = mkdtempSync(path.join(tmpdir(), "rowberry-save-unknown-"));
-  const app = await electron.launch({ args: [path.resolve("."), `--user-data-dir=${directory}`] });
+  const app = await electron.launch({
+    executablePath: process.env.DBAPP_PACKAGE_EXECUTABLE,
+    args: [
+      ...(process.env.DBAPP_PACKAGE_EXECUTABLE ? [] : [path.resolve(".")]),
+      `--user-data-dir=${directory}`,
+    ],
+  });
   const page = await app.firstWindow();
   async function request(command: Record<string, unknown>) {
     return ReplySchema.parse(

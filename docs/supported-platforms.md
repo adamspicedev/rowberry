@@ -1,0 +1,11 @@
+# Supported platform targets
+
+Rowberry 0.1.0 targets macOS arm64 and Intel x64 DMGs, Windows x64 NSIS, and Linux x64 AppImage/deb. These are qualification targets. Local success does not establish support on an untested OS.
+
+Electron 44.9.0's [versioned platform support](https://github.com/electron/electron/blob/v44.9.0/README.md#platform-support), checked 20 October 2026, specifies macOS Ventura 13+, Windows 10+, and Linux distributions supported by both Chromium and their vendor without paid support. Linux has no single distribution-independent OS minimum. The builder's macOS deployment floor is 13.0. Qualify Ubuntu 24.04 LTS and Debian 12 or newer supported desktops before release; do not infer compatibility from an Xvfb CI pass.
+
+Linux needs a graphical X11 or Wayland session, working Chromium sandbox user namespaces, GTK/NSS/GBM/audio system libraries required by Electron, and FUSE for AppImage or an extracted AppImage. Prefer the deb package when FUSE is unavailable. Do not run as root or disable the sandbox. A desktop D-Bus session and unlocked Secret Service, such as GNOME Keyring, are required to remember passwords. Headless or locked stores fall back to session-only secrets.
+
+Native credential adapters are macOS Keychain, Windows Credential Manager, and Linux Secret Service. On each real desktop run `DBAPP_NATIVE_CREDENTIAL_TEST=1 bun run test:integration tests/integration/credentials.native.test.ts`, then test remembering a disposable password through the packaged UI, quitting, reopening and connecting without re-entering it. Test locked/unavailable stores and deletion too. The adapter test uses a dedicated service and removes its entry. CI's unlocked or absent keyring is not evidence for every desktop.
+
+The PostgreSQL workflow configures the complete integration and desktop suites on 14 and 18, with connection/authentication/TLS/client-certificate compatibility checks on 15, 16 and 17. The package workflow runs production behavioural smoke with PostgreSQL on Linux; other runners inspect architecture/assets and launch the sandboxed packaged shell. All four native targets still require recorded installation, upgrade, credential-store and behavioural results before public release.

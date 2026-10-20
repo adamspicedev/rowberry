@@ -1,5 +1,5 @@
 import { test, expect, _electron as electron } from "@playwright/test";
-import { mkdtempSync, rmSync, readdirSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { ReplySchema } from "../../src/shared/protocol";
@@ -8,7 +8,11 @@ for (const version of [14, 18])
     test.setTimeout(60000);
     const directory = mkdtempSync(path.join(tmpdir(), "rowberry-json-"));
     const app = await electron.launch({
-      args: [path.resolve("."), `--user-data-dir=${directory}`],
+      executablePath: process.env.DBAPP_PACKAGE_EXECUTABLE,
+      args: [
+        ...(process.env.DBAPP_PACKAGE_EXECUTABLE ? [] : [path.resolve(".")]),
+        `--user-data-dir=${directory}`,
+      ],
     });
     const page = await app.firstWindow();
     async function request(command: Record<string, unknown>) {
@@ -74,7 +78,7 @@ for (const version of [14, 18])
       );
       await panel.getByRole("treeitem", { selected: true }).click();
       await panel.getByRole("textbox", { name: "JSON text editor" }).focus();
-      await page.keyboard.press("Meta+C");
+      await page.keyboard.press("ControlOrMeta+C");
       expect(await app.evaluate(({ clipboard }) => clipboard.readText())).toBe('"needle"');
       await panel.getByRole("button", { name: "Copy JSON pointer" }).click();
       await expect(panel).toContainText("Copied");
@@ -103,7 +107,7 @@ for (const version of [14, 18])
       await expect(panel.getByRole("tree")).not.toContainText("added");
       const editor = panel.getByRole("textbox", { name: "JSON text editor" });
       await editor.focus();
-      await page.keyboard.press("Meta+A");
+      await page.keyboard.press("ControlOrMeta+A");
       await page.keyboard.type('{"invalid":');
       await expect(panel.getByRole("alert")).toBeVisible();
       await expect(panel.locator(".view-lines")).toContainText('{"invalid":');
@@ -111,7 +115,7 @@ for (const version of [14, 18])
       await panel.getByLabel("JSON view", { exact: true }).selectOption("split");
       await expect(panel.getByRole("button", { name: "Set value", exact: true })).toBeDisabled();
       await editor.focus();
-      await page.keyboard.press("Meta+A");
+      await page.keyboard.press("ControlOrMeta+A");
       await page.keyboard.type('{"duplicate":1,"duplicate":2}');
       await expect(panel).toContainText("Duplicate keys");
       await panel.getByRole("button", { name: "Close JSON", exact: true }).click();
@@ -124,7 +128,7 @@ for (const version of [14, 18])
       await panel.getByRole("button", { name: "Expand panel", exact: true }).click();
       await page.screenshot({ path: "/tmp/rowberry-json-task7.png" });
       await editor.focus();
-      await page.keyboard.press("Meta+A");
+      await page.keyboard.press("ControlOrMeta+A");
       await page.keyboard.type('{"fromText":true}');
       await expect(panel.getByRole("tree")).toContainText("fromTexttrue");
       await panel.getByRole("treeitem").first().click();
@@ -138,7 +142,7 @@ for (const version of [14, 18])
       await panel.getByRole("button", { name: "Discard and close JSON" }).click();
       await expect(panel).toHaveCount(0);
       await sql.focus();
-      await page.keyboard.press("Meta+A");
+      await page.keyboard.press("ControlOrMeta+A");
       await page.keyboard.type(
         "SELECT json_build_object('items', json_agg(repeat('x',110))) FROM generate_series(1,100000)",
       );
@@ -200,12 +204,22 @@ for (const version of [14, 18])
 
 test("Chromium JSON worker large parse, search, cancellation and stale identity", async () => {
   const directory = mkdtempSync(path.join(tmpdir(), "rowberry-json-bench-"));
-  const app = await electron.launch({ args: [path.resolve("."), `--user-data-dir=${directory}`] });
+  const app = await electron.launch({
+    executablePath: process.env.DBAPP_PACKAGE_EXECUTABLE,
+    args: [
+      ...(process.env.DBAPP_PACKAGE_EXECUTABLE ? [] : [path.resolve(".")]),
+      `--user-data-dir=${directory}`,
+    ],
+  });
   try {
     const page = await app.firstWindow();
-    const asset = readdirSync("dist/renderer/assets").find(
-      (name) => name.startsWith("worker-") && name.endsWith(".js"),
-    );
+    const asset = await app.evaluate(({ app }) => {
+      const fs = process.getBuiltinModule("node:fs");
+      const path = process.getBuiltinModule("node:path");
+      return fs
+        .readdirSync(path.join(app.getAppPath(), "dist/renderer/assets"))
+        .find((name) => name.startsWith("worker-") && name.endsWith(".js"));
+    });
     if (!asset) throw new Error("Missing built JSON worker");
     const metrics = await page.evaluate(async (asset) => {
       const worker = new Worker(new URL(`assets/${asset}`, location.href), { type: "module" });

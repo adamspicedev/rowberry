@@ -72,7 +72,10 @@ writeFileSync(
 writeFileSync(`${directory}/init.sql`, "CREATE ROLE certfixture LOGIN;\n");
 const containers = [];
 writeFileSync(manifest, JSON.stringify({ directory, containers }));
-for (const version of [14, 18]) {
+const versions = (process.env.DBAPP_POSTGRES_VERSIONS ?? "14,18").split(",").map(Number);
+if (!versions.length || versions.some((v) => ![14, 15, 16, 17, 18].includes(v)))
+  throw new Error("Unsupported fixture PostgreSQL version");
+for (const version of versions) {
   const name = `dbapp-task3-pg${version}-${path.basename(directory).slice("dbapp-postgres-".length)}`;
   run("docker", [
     ...docker,
@@ -95,7 +98,7 @@ for (const version of [14, 18]) {
     "--mount",
     `type=bind,source=${directory}/init.sql,target=/docker-entrypoint-initdb.d/init.sql,readonly`,
     "--tmpfs",
-    version === 18 ? "/var/lib/postgresql" : "/var/lib/postgresql/data",
+    version >= 18 ? "/var/lib/postgresql" : "/var/lib/postgresql/data",
     `postgres:${version}`,
     "bash",
     "-c",

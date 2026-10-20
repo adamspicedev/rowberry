@@ -93,7 +93,7 @@ For initial distribution, target macOS Apple Silicon and Intel, Windows x64, and
 4. Add guarded table/JSON saves, previews, conflicts, and recovery.
 5. Complete accessibility, platform verification, signing, documentation, and release acceptance.
 
-Each milestone must exercise working behaviour. A completed local build is not evidence of a successful cross-platform release. The approved public display name is Rowberry. Licensing must be selected before public distribution. Keep internal dbapp identifiers stable.
+Each milestone must exercise working behaviour. A completed local build is not evidence of a successful cross-platform release. The approved public display name is Rowberry. The selected license is GPL-3.0-only. Keep internal dbapp identifiers stable.
 
 ## Branding appendix, 20 October 2026
 
