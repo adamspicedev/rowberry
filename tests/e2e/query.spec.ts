@@ -148,6 +148,7 @@ for (const version of [14, 18])
       await runButton.click();
       await expect(page.getByRole("alertdialog")).toContainText("commit an implicit mutation");
       await page.getByRole("button", { name: "Keep result" }).click();
+      page.once("dialog", (dialog) => void dialog.accept());
       await page.getByRole("button", { name: "Close SQL tab (roll back)" }).click();
       await page.getByRole("button", { name: "New SQL tab" }).click();
       await expect(runButton).toBeEnabled();
@@ -168,6 +169,7 @@ for (const version of [14, 18])
         generation: sessionReply.data.generation,
       };
       await expect(runButton).toBeEnabled();
+      page.once("dialog", (dialog) => void dialog.accept());
       await page.getByRole("button", { name: "Close SQL tab (roll back)" }).click();
       const a = crypto.randomUUID(),
         b = crypto.randomUUID();
@@ -240,6 +242,10 @@ for (const version of [14, 18])
         (await request({ kind: "queries.start", ...closingOwner, sql: "SELECT pg_sleep(20)" })).ok,
       ).toBe(true);
       // App quit must drain cancellation, not just kill a socket while SQL runs.
+      // Test teardown explicitly discards live editors; user close remains guarded.
+      await app.evaluate(({ BrowserWindow }) =>
+        BrowserWindow.getAllWindows().forEach((window) => window.destroy()),
+      );
       await app.close();
       app = await electron.launch({ args: [path.resolve("."), `--user-data-dir=${userData}`] });
       page = await app.firstWindow();
@@ -270,6 +276,10 @@ for (const version of [14, 18])
       );
       expect(metrics).not.toContain("Database session");
     } finally {
+      // Test teardown explicitly discards live editors; user close remains guarded.
+      await app.evaluate(({ BrowserWindow }) =>
+        BrowserWindow.getAllWindows().forEach((window) => window.destroy()),
+      );
       await app.close();
       await client.query(`DROP SCHEMA "${schema}" CASCADE`);
       await client.end();

@@ -1,3 +1,4 @@
+import { recordDraft } from "../../app/workspace";
 /* oxlint-disable jsx-a11y/prefer-tag-over-role -- Virtual rows and columns use ARIA grid semantics with absolute positions. */
 import { JsonInspector, type ValidatedJsonDraft, type JsonSaveTarget } from "../json/JsonInspector";
 import { useState, useRef, useEffect } from "react";
@@ -38,6 +39,21 @@ export function TableView({
     text: string;
     sqlNull: boolean;
   } | null>(null);
+  useEffect(() => {
+    const copies = drafts.map((draft) => ({ values: draft.values }));
+    recordDraft(
+      `table:${sessionId}:${initialTable.id}`,
+      "table",
+      `${initialTable.name} staged values (copy only)`,
+      copies.length ? JSON.stringify(copies) : null,
+    );
+    recordDraft(
+      `cell:${sessionId}:${initialTable.id}`,
+      "cell",
+      `${initialTable.name} cell ${editor?.column ?? ""} (copy only)`,
+      editor ? editor.text : null,
+    );
+  }, [drafts, editor, sessionId, initialTable.id, initialTable.name]);
   const [preview, setPreview] = useState<SaveInput["changes"] | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState("");

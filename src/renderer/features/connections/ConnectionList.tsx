@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { RequestIdSchema, type ConnectionProfile } from "../../../shared/protocol";
 import { Button } from "../../components/ui/button";
 import { ConnectionDialog } from "./ConnectionDialog";
-export function ConnectionList() {
+export function ConnectionList({ activeId }: { activeId?: string }) {
   const connectRequest = useRef(0);
   const [profiles, setProfiles] = useState<ConnectionProfile[]>([]);
   const [secureStorage, setSecureStorage] = useState(false);
@@ -73,12 +73,13 @@ export function ConnectionList() {
         {profiles
           .filter((profile) => profile.name.toLowerCase().includes(search.toLowerCase()))
           .map((profile) => (
-            <li key={profile.id}>
+            <li key={profile.id} aria-current={activeId === profile.id ? "true" : undefined}>
               <strong>
                 <span style={{ color: profile.environmentColor }} aria-hidden="true">
                   ●{" "}
                 </span>
                 {profile.name}
+                {activeId === profile.id && <span className="badge">Connected</span>}
               </strong>
               <small>
                 {profile.host}:{profile.port} / {profile.database}

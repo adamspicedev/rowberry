@@ -1,3 +1,4 @@
+import { WorkspaceSchema } from "./workspace";
 import { z } from "zod";
 import {
   FetchSchema,
@@ -171,6 +172,14 @@ export const CommandSchema = z.discriminatedUnion("kind", [
       sessionId: SessionIdSchema,
     })
     .strict(),
+  z.object({ kind: z.literal("workspace.load"), requestId: RequestIdSchema }).strict(),
+  z
+    .object({
+      kind: z.literal("workspace.save"),
+      requestId: RequestIdSchema,
+      state: WorkspaceSchema,
+    })
+    .strict(),
   z.object({ kind: z.literal("app.info"), requestId: RequestIdSchema }).strict(),
   z
     .object({
@@ -292,6 +301,10 @@ const SuccessSchema = z.discriminatedUnion("kind", [
     .strict(),
   z.object({ ...successFields, kind: z.literal("rows.fetch"), data: RowPageSchema }).strict(),
   z.object({ ...successFields, kind: z.literal("rows.value"), data: ValueSchema }).strict(),
+  z.object({ ...successFields, kind: z.literal("workspace.load"), data: WorkspaceSchema }).strict(),
+  z
+    .object({ ...successFields, kind: z.literal("workspace.save"), data: z.object({}).strict() })
+    .strict(),
   z.object({ ...successFields, kind: z.literal("sessions.open"), data: sessionData }).strict(),
   z
     .object({ ...successFields, kind: z.literal("connections.connect"), data: sessionData })
@@ -390,16 +403,18 @@ const SQL_WIRE_BYTES = 6 * 1024 * 1024 + 2048;
 export function boundedReply(value: unknown, kind: Command["kind"]): boolean {
   return bounded(
     value,
-    kind === "queries.saved.get"
-      ? SQL_WIRE_BYTES
-      : kind === "rows.value"
-        ? VALUE_BYTES
-        : kind === "rows.save" ||
-            kind === "rows.fetch" ||
-            kind === "schema.list" ||
-            kind === "queries.fetch"
-          ? PAGE_BYTES
-          : MAX_MESSAGE_BYTES,
+    kind === "workspace.load"
+      ? 64 * 1024 * 1024
+      : kind === "queries.saved.get"
+        ? SQL_WIRE_BYTES
+        : kind === "rows.value"
+          ? VALUE_BYTES
+          : kind === "rows.save" ||
+              kind === "rows.fetch" ||
+              kind === "schema.list" ||
+              kind === "queries.fetch"
+            ? PAGE_BYTES
+            : MAX_MESSAGE_BYTES,
   );
 }
 export function boundedCommand(value: unknown): boolean {
@@ -421,7 +436,15 @@ export function boundedCommand(value: unknown): boolean {
       }
     return bounded(value, SAVE_WIRE_BYTES);
   }
-  return bounded(value, SQL_WIRE_BYTES);
+  return bounded(
+    value,
+    typeof value === "object" &&
+      value !== null &&
+      "kind" in value &&
+      value.kind === "workspace.save"
+      ? 64 * 1024 * 1024
+      : SQL_WIRE_BYTES,
+  );
 }
 export function bounded(value: unknown, limit = MAX_MESSAGE_BYTES): boolean {
   try {

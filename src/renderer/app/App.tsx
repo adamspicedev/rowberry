@@ -1,3 +1,7 @@
+import { CommandMenu } from "./CommandMenu";
+import { applyTheme } from "./theme";
+import { RecoveryControls } from "./recovery";
+import { loadWorkspace, updateWorkspace } from "./workspace";
 import { QueryWorkspace } from "../features/query/QueryWorkspace";
 import mark from "../assets/rowberry-mark.svg";
 import { useEffect, useState } from "react";
@@ -9,6 +13,7 @@ import { SchemaSidebar } from "../features/schema/SchemaSidebar";
 import { TableView } from "../features/table/TableView";
 import type { Table } from "../../shared/browse";
 export function App() {
+  const [loaded, setLoaded] = useState(false);
   const [sqlOpened, setSqlOpened] = useState(false);
   const [showSql, setShowSql] = useState(false);
   const [selected, setSelected] = useState<{ sessionId: string; table: Table } | null>(null);
@@ -22,7 +27,7 @@ export function App() {
   );
   const table = selected?.sessionId === session?.sessionId ? (selected?.table ?? null) : null;
   const [status, setStatus] = useState("Starting");
-  const [theme, setTheme] = useState("system");
+  const [theme, setTheme] = useState<"system" | "light" | "dark">("system");
   useEffect(() => {
     void window.dbapp
       .request({ kind: "app.info", requestId: RequestIdSchema.parse(crypto.randomUUID()) })
@@ -37,8 +42,28 @@ export function App() {
       );
   }, []);
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
+    void loadWorkspace().then((state) => {
+      setTheme(state.theme);
+      setSqlOpened(state.layout.sqlOpened);
+      setShowSql(state.layout.showSql);
+      setLoaded(true);
+    });
+    const protect = (event: BeforeUnloadEvent) => {
+      if (document.querySelector('[data-dirty="true"], [data-saving="true"]')) {
+        event.preventDefault();
+        event.returnValue = "Unsaved drafts";
+      }
+    };
+    window.addEventListener("beforeunload", protect);
+    return () => window.removeEventListener("beforeunload", protect);
+  }, []);
+  useEffect(() => {
+    applyTheme(theme);
   }, [theme]);
+  useEffect(() => {
+    if (loaded) updateWorkspace({ layout: { sqlOpened, showSql } });
+  }, [loaded, sqlOpened, showSql]);
+  if (!loaded) return <output>Loading local workspace…</output>;
   return (
     <div className="app" data-app-ready>
       <aside aria-label="Connections and schemas">
@@ -48,7 +73,9 @@ export function App() {
           <span className="badge">LOCAL</span>
         </header>
         <div className="sidebar-content">
-          <ConnectionList />
+          <ConnectionList
+            activeId={session?.state === "connected" ? session.profileId : undefined}
+          />
           {session?.state === "connected" && (
             <SchemaSidebar
               key={session.sessionId}
@@ -70,7 +97,17 @@ export function App() {
         </div>
         <footer>
           <label htmlFor="appearance">Appearance</label>
-          <select id="appearance" value={theme} onChange={(event) => setTheme(event.target.value)}>
+          <select
+            id="appearance"
+            value={theme}
+            onChange={(event) => {
+              const value = event.target.value;
+              if (value === "system" || value === "light" || value === "dark") {
+                setTheme(value);
+                updateWorkspace({ theme: value });
+              }
+            }}
+          >
             <option value="system">System</option>
             <option value="light">Light</option>
             <option value="dark">Dark</option>
@@ -99,13 +136,19 @@ export function App() {
           {session && session.state !== "disconnected" && (
             <Button
               variant="ghost"
-              onClick={() =>
+              onClick={() => {
+                if (document.querySelector('[data-saving="true"]')) return;
+                if (
+                  document.querySelector('[data-dirty="true"]') &&
+                  !window.confirm("Discard unsaved drafts before disconnecting?")
+                )
+                  return;
                 void window.dbapp.request({
                   kind: "sessions.close",
                   sessionId: session.sessionId,
                   requestId: RequestIdSchema.parse(crypto.randomUUID()),
-                })
-              }
+                });
+              }}
             >
               Disconnect
             </Button>
@@ -147,6 +190,10 @@ export function App() {
               </div>
             </section>
           )}
+        </div>
+        <div className="workspace-utilities">
+          <CommandMenu />
+          <RecoveryControls />
         </div>
         <div className="statusbar">
           <span>PostgreSQL workspace</span>

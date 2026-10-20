@@ -95,6 +95,21 @@ export function installBridge(
     try {
       return await serialize(async () => {
         switch (command.kind) {
+          case "workspace.load":
+            return ReplySchema.parse({
+              ok: true,
+              kind: command.kind,
+              requestId: command.requestId,
+              data: store.workspaceLoad(),
+            });
+          case "workspace.save":
+            store.workspaceSave(command.state);
+            return ReplySchema.parse({
+              ok: true,
+              kind: command.kind,
+              requestId: command.requestId,
+              data: {},
+            });
           case "queries.saved.list":
             return ReplySchema.parse({
               ok: true,

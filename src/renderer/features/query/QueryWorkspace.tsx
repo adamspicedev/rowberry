@@ -280,7 +280,7 @@ function QueryTab({
     }
   }
   return (
-    <div className="query-tab">
+    <div className="query-tab" data-dirty={!!sql.trim() || jsonDirty}>
       {json && (
         <JsonInspector
           key={json.id}
@@ -327,8 +327,12 @@ function QueryTab({
         <button
           onClick={() => {
             if (
-              !(jsonDirty || document.querySelector('.table-workspace[data-dirty="true"]')) ||
-              window.confirm("Close SQL tab while table or JSON drafts are unsaved?")
+              !(
+                sql.trim() ||
+                jsonDirty ||
+                document.querySelector('.table-workspace[data-dirty="true"]')
+              ) ||
+              window.confirm("Close SQL tab while SQL, table or JSON drafts are unsaved?")
             )
               onClose();
           }}

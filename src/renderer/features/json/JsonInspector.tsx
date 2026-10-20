@@ -1,3 +1,4 @@
+import { recordDraft } from "../../app/workspace";
 import { useEffect, useRef, useState } from "react";
 import type { JsonValue, Range } from "../../../json/document";
 import { escapePointer } from "../../../json/paths";
@@ -80,6 +81,14 @@ export function JsonInspector({
   const [value, setValue] = useState("");
   const [status, setStatus] = useState("");
   const dirty = originalSqlNull || state.text !== sourceText;
+  useEffect(() => {
+    recordDraft(
+      `json:${documentId}`,
+      "json",
+      "JSON value (copy only; reopen and compare the current database value)",
+      dirty ? state.text : null,
+    );
+  }, [documentId, dirty, state.text]);
   const editable = !!state.document?.editable && !state.pending && !saving;
   const limited =
     state.document?.diagnostics.some((diagnostic) => diagnostic.kind === "limit") ?? false;

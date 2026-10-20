@@ -298,6 +298,10 @@ for (const version of [14, 18])
         { sql_null: false, doc: "null" },
       ]);
     } finally {
+      // Test teardown explicitly discards live editors; user close remains guarded.
+      await app.evaluate(({ BrowserWindow }) =>
+        BrowserWindow.getAllWindows().forEach((window) => window.destroy()),
+      );
       await app.close();
       await client.end();
       rmSync(directory, { recursive: true, force: true });
@@ -388,6 +392,10 @@ test("real IPC transports large save request/reply and rejects aggregate raw ove
     });
     expect(overflow.ok).toBe(false);
   } finally {
+    // Test teardown explicitly discards live editors; user close remains guarded.
+    await app.evaluate(({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows().forEach((window) => window.destroy()),
+    );
     await app.close();
     await client.end();
     rmSync(directory, { recursive: true, force: true });
@@ -508,6 +516,10 @@ test("lost real COMMIT acknowledgement preserves table draft and blocks retry", 
     );
     await expect(preview.getByRole("button", { name: "Confirm save" })).toBeDisabled();
   } finally {
+    // Test teardown explicitly discards live editors; user close remains guarded.
+    await app.evaluate(({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows().forEach((window) => window.destroy()),
+    );
     await app.close();
     for (const socket of sockets) socket.destroy();
     await new Promise<void>((resolve) => proxy.close(() => resolve()));

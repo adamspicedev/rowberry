@@ -1,3 +1,4 @@
+import { WorkspaceSchema, emptyWorkspace, type Workspace } from "../shared/workspace";
 import { DatabaseSync } from "node:sqlite";
 import {
   ConnectionProfileSchema,
@@ -7,6 +8,7 @@ import {
 const migrations = [
   "CREATE TABLE connections (id TEXT PRIMARY KEY, profile TEXT NOT NULL, credential_ref INTEGER NOT NULL DEFAULT 0, credential_enabled INTEGER NOT NULL DEFAULT 0)",
   "CREATE TABLE saved_queries (id TEXT PRIMARY KEY, name TEXT NOT NULL, sql TEXT NOT NULL)",
+  "CREATE TABLE workspace (id INTEGER PRIMARY KEY CHECK(id=1), state TEXT NOT NULL)",
 ];
 export function migrate(db: DatabaseSync, steps: readonly string[] = migrations): void {
   db.exec("BEGIN IMMEDIATE");
@@ -21,20 +23,45 @@ export function migrate(db: DatabaseSync, steps: readonly string[] = migrations)
     }
     db.exec("COMMIT");
   } catch {
-    db.exec("ROLLBACK");
+    if (db.isTransaction) db.exec("ROLLBACK");
     throw new Error("Local storage could not be updated.");
   }
 }
 export class ConnectionStore {
   private readonly db: DatabaseSync;
-  constructor(filename: string) {
-    this.db = new DatabaseSync(filename);
+  constructor(filename: string, openDatabase = (name: string) => new DatabaseSync(name)) {
+    this.db = openDatabase(filename);
     try {
-      this.db.exec("PRAGMA busy_timeout = 3000");
+      this.db.exec("PRAGMA busy_timeout = 3000; PRAGMA secure_delete = ON");
       migrate(this.db);
     } catch {
       this.db.close();
       throw new Error("Local storage could not be updated.");
+    }
+  }
+  workspaceLoad(): Workspace {
+    const row = this.db.prepare("SELECT state FROM workspace WHERE id=1").get();
+    return row ? WorkspaceSchema.parse(JSON.parse(String(row.state))) : emptyWorkspace();
+  }
+  workspaceSave(input: unknown): void {
+    const state = WorkspaceSchema.parse(input);
+    if (!state.recoveryEnabled) {
+      state.sql = [];
+      state.drafts = [];
+    }
+    this.db.exec("BEGIN IMMEDIATE");
+    try {
+      this.db
+        .prepare(
+          "INSERT INTO workspace(id,state) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state",
+        )
+        .run(JSON.stringify(state));
+      this.db.exec("COMMIT");
+    } catch {
+      if (this.db.isTransaction) this.db.exec("ROLLBACK");
+      throw new Error(
+        "Workspace could not be saved. Free disk space and retry; keep this window open to preserve drafts.",
+      );
     }
   }
   savedList(offset: number) {

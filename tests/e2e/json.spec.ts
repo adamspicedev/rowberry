@@ -189,6 +189,10 @@ for (const version of [14, 18])
       await page.screenshot({ path: "/tmp/rowberry-json-dark-task7.png" });
       await page.getByLabel("Appearance", { exact: true }).selectOption("system");
     } finally {
+      // Test teardown explicitly discards live editors; user close remains guarded.
+      await app.evaluate(({ BrowserWindow }) =>
+        BrowserWindow.getAllWindows().forEach((window) => window.destroy()),
+      );
       await app.close();
       rmSync(directory, { recursive: true, force: true });
     }
@@ -357,6 +361,10 @@ test("Chromium JSON worker large parse, search, cancellation and stale identity"
     expect(metrics.matches).toBe(1);
     expect(metrics.searchMs).toBeLessThan(2000);
   } finally {
+    // Test teardown explicitly discards live editors; user close remains guarded.
+    await app.evaluate(({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows().forEach((window) => window.destroy()),
+    );
     await app.close();
     rmSync(directory, { recursive: true, force: true });
   }
