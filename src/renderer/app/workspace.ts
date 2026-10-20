@@ -6,10 +6,14 @@ let pendingInitialUpdates: Partial<Workspace> = {};
 let timer: ReturnType<typeof setTimeout> | undefined;
 const listeners = new Set<() => void>();
 let error = "";
+let migrationError = "";
+let migrationPending = false;
 const notify = () => listeners.forEach((listener) => listener());
 export const workspaceState = () => state;
-export const workspaceError = () => error;
+export const workspaceError = () => [error, migrationError].filter(Boolean).join(" ");
+export const canRetryLegacyMigration = () => !!migrationError;
 export const canReadWorkspace = () => !initialized;
+export const canRetryWorkspaceSave = () => initialized && !!error;
 export const subscribeWorkspace = (listener: () => void) => {
   listeners.add(listener);
   return () => {
@@ -34,32 +38,49 @@ export async function loadWorkspace() {
     error =
       "Workspace recovery could not be read. Your stored data was left untouched. Use Retry to read it again, or continue with local drafts and export them before closing.";
   initialized = reply.ok;
-  // Migrate legacy SQL only when recovery is enabled, and remove the old key
-  // only after a successful transactional write. Disabled recovery never reads it.
+  if (initialized) await retryLegacyMigration();
+  notify();
+  return state;
+}
+export async function retryLegacyMigration() {
+  if (!initialized || migrationPending) return false;
+  migrationPending = true;
   try {
+    // Read only the legacy key, never replace live state from the SQLite snapshot.
+    // Disabled recovery removes the key without reading its sensitive contents.
     const legacy = state.recoveryEnabled ? localStorage.getItem("rowberry.sql.drafts") : null;
-    if (legacy && !state.sql.length && initialized) {
+    if (legacy) {
       const raw: unknown = JSON.parse(legacy);
       if (!Array.isArray(raw)) throw new Error("Invalid legacy SQL drafts");
-      const sql = raw.map((item: unknown) =>
+      const values = raw.map((item: unknown) =>
         typeof item === "object" && item !== null && "sql" in item ? item.sql : null,
       );
-      const migrated = WorkspaceSchema.parse({ ...state, sql });
+      const legacySql = WorkspaceSchema.shape.sql.parse(values);
+      const migrated = WorkspaceSchema.parse({
+        ...state,
+        sql: [...new Set([...state.sql, ...legacySql])],
+      });
+      // Make recovered SQL part of live state before awaiting storage, so edits
+      // and any queued debounce save already include it. Failure keeps both copies.
+      state = migrated;
       const saved = await window.dbapp.request({
         kind: "workspace.save",
         requestId: requestId(),
         state: migrated,
       });
       if (!saved.ok) throw new Error("Legacy SQL migration failed");
-      state = migrated;
     }
-    if (initialized) localStorage.removeItem("rowberry.sql.drafts");
+    localStorage.removeItem("rowberry.sql.drafts");
+    migrationError = "";
+    return true;
   } catch {
-    error =
-      "Legacy SQL drafts could not be migrated or removed. They were left in browser storage. Free disk space and Retry before clearing storage.";
+    migrationError =
+      "Legacy SQL drafts could not be migrated or removed. They were left in browser storage. Free disk space and Retry legacy SQL migration before clearing storage.";
+    return false;
+  } finally {
+    migrationPending = false;
+    notify();
   }
-  notify();
-  return state;
 }
 export async function flushWorkspace() {
   if (!initialized) return false;
@@ -71,9 +92,7 @@ export async function flushWorkspace() {
     state: snapshot,
   });
   error = reply.ok
-    ? error.startsWith("Legacy")
-      ? error
-      : ""
+    ? ""
     : "Workspace could not be saved. Free disk space and Retry. Keep this window open or copy your drafts before closing.";
   notify();
   return reply.ok;
@@ -84,8 +103,9 @@ export function updateWorkspace(update: Partial<Workspace>) {
   if (update.recoveryEnabled === false) {
     try {
       localStorage.removeItem("rowberry.sql.drafts");
+      migrationError = "";
     } catch {
-      error =
+      migrationError =
         "Legacy SQL drafts could not be removed. Clear browser storage before considering recovery disabled on this device.";
     }
   }

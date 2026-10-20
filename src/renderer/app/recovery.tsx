@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import {
   canReadWorkspace,
+  canRetryLegacyMigration,
+  canRetryWorkspaceSave,
+  retryLegacyMigration,
   flushWorkspace,
   loadWorkspace,
   subscribeWorkspace,
@@ -35,9 +38,13 @@ export function RecoveryControls() {
       {workspaceError() && (
         <div role="alert">
           {workspaceError()}{" "}
-          {canReadWorkspace() ? (
+          {canRetryLegacyMigration() && (
+            <button onClick={() => void retryLegacyMigration()}>Retry legacy SQL migration</button>
+          )}
+          {canReadWorkspace() && (
             <button onClick={() => void loadWorkspace()}>Retry reading recovery</button>
-          ) : (
+          )}
+          {canRetryWorkspaceSave() && (
             <button onClick={() => void flushWorkspace()}>Retry saving workspace</button>
           )}
         </div>

@@ -61,3 +61,16 @@ Covering evidence only; unchanged live/full suites were not repeated:
 - `bun run build`: **passed**, retaining the existing Monaco bundle warning.
 - `bun run test:e2e tests/e2e/recovery.spec.ts`: **2 passed**, including modal focus/restoration and native close cancel/discard.
 - `bun run typecheck`, `bun run lint`, `bun run format:check`, `git diff --check`: **passed**.
+
+## Review fix round 2 (base `805c889`)
+
+Separated legacy migration failures from workspace read/save errors. A failed legacy migration now exposes **Retry legacy SQL migration**, which retries only the legacy key against the current live workspace; it never rereads the older SQLite snapshot. Existing SQL and newly created local drafts are retained. Recovered legacy SQL is merged into live state before awaiting its transactional save, so edits and debounce saves during that request include the recovered SQL. Failed storage keeps both the in-memory recovery and original browser key. The key is removed only on success; disabled recovery still removes it without reading its contents. Read/save retry buttons are now limited to their corresponding error states.
+
+Covering checks:
+
+- RED `bun run test src/renderer/app/workspace.test.ts`: **1 failed, 3 passed**. A failed legacy migration followed by retry did not recover legacy SQL.
+- GREEN same command with the dedicated migration retry, newer SQL and closed-editor JSON copy regression: **4 passed**. The test proves both current and legacy SQL are saved with the latest local draft, clears the browser key only after success, and checks that a migration failure does not incorrectly offer a save retry.
+- `bun run test src/renderer/app/workspace.test.ts src/renderer/features/query/query-state.test.ts`: **5 passed**.
+- `bun run typecheck`, `bun run lint`, `bun run format:check`, `git diff --check`: **passed**.
+
+No unchanged full/live Electron suites were repeated for this state-machine correction.

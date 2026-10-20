@@ -100,3 +100,55 @@ test("retrying an initial read failure merges pending local copies with stored r
   ]);
   expect(workspace.canReadWorkspace()).toBe(false);
 });
+
+test("legacy migration retry recovers SQL while retaining new local drafts", async () => {
+  vi.useFakeTimers();
+  let failSave = true;
+  let legacy: string | null = JSON.stringify([{ sql: "SELECT legacy_private" }]);
+  const writes: unknown[] = [];
+  vi.stubGlobal("localStorage", {
+    getItem: () => legacy,
+    removeItem: () => {
+      legacy = null;
+    },
+  });
+  vi.stubGlobal("window", {
+    dbapp: {
+      request: async (command: Command): Promise<Reply> => {
+        if (command.kind === "workspace.load")
+          return {
+            ok: true,
+            kind: command.kind,
+            requestId: command.requestId,
+            data: emptyWorkspace(),
+          };
+        if (command.kind === "workspace.save") {
+          if (failSave) return failure("INTERNAL_ERROR", command.requestId);
+          writes.push(command.state);
+          return { ok: true, kind: command.kind, requestId: command.requestId, data: {} };
+        }
+        return failure("VALIDATION_ERROR", command.requestId);
+      },
+    },
+  });
+  const workspace = await import("./workspace");
+  await workspace.loadWorkspace();
+  expect(workspace.workspaceError()).toContain("Legacy SQL");
+  workspace.recordDraft("latest", "json", "closed original editor", "{latest");
+  workspace.updateWorkspace({ sql: ["SELECT newer_editor"] });
+  failSave = false;
+  expect(workspace.canRetryLegacyMigration()).toBe(true);
+  expect(workspace.canRetryWorkspaceSave()).toBe(false);
+  await workspace.retryLegacyMigration();
+  expect(workspace.workspaceState().sql).toContain("SELECT legacy_private");
+  expect(workspace.workspaceState().sql).toContain("SELECT newer_editor");
+  expect(workspace.workspaceState().drafts[0]?.text).toBe("{latest");
+  expect(writes).toEqual([
+    expect.objectContaining({
+      sql: ["SELECT newer_editor", "SELECT legacy_private"],
+      drafts: [expect.objectContaining({ text: "{latest" })],
+    }),
+  ]);
+  expect(legacy).toBeNull();
+  expect(workspace.workspaceError()).toBe("");
+});
