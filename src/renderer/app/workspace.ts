@@ -2,12 +2,14 @@ import { emptyWorkspace, WorkspaceSchema, type Workspace } from "../../shared/wo
 import { RequestIdSchema } from "../../shared/protocol";
 let state = emptyWorkspace();
 let initialized = false;
+let pendingInitialUpdates: Partial<Workspace> = {};
 let timer: ReturnType<typeof setTimeout> | undefined;
 const listeners = new Set<() => void>();
 let error = "";
 const notify = () => listeners.forEach((listener) => listener());
 export const workspaceState = () => state;
 export const workspaceError = () => error;
+export const canReadWorkspace = () => !initialized;
 export const subscribeWorkspace = (listener: () => void) => {
   listeners.add(listener);
   return () => {
@@ -16,9 +18,19 @@ export const subscribeWorkspace = (listener: () => void) => {
 };
 const requestId = () => RequestIdSchema.parse(crypto.randomUUID());
 export async function loadWorkspace() {
+  // Reading is only an initial-load recovery action. A failed write must retry
+  // saving the live snapshot, never replace it with an older disk snapshot.
+  if (initialized) return state;
   const reply = await window.dbapp.request({ kind: "workspace.load", requestId: requestId() });
-  if (reply.ok && reply.kind === "workspace.load") state = reply.data;
-  else
+  if (initialized) return state;
+  if (reply.ok && reply.kind === "workspace.load") {
+    const drafts = new Map(reply.data.drafts.map((draft) => [draft.id, draft]));
+    for (const draft of pendingInitialUpdates.drafts ?? []) drafts.set(draft.id, draft);
+    state = { ...reply.data, ...pendingInitialUpdates, drafts: [...drafts.values()] };
+    if (!state.recoveryEnabled) state = { ...state, sql: [], drafts: [] };
+    pendingInitialUpdates = {};
+    error = "";
+  } else
     error =
       "Workspace recovery could not be read. Your stored data was left untouched. Use Retry to read it again, or continue with local drafts and export them before closing.";
   initialized = reply.ok;
@@ -67,6 +79,7 @@ export async function flushWorkspace() {
   return reply.ok;
 }
 export function updateWorkspace(update: Partial<Workspace>) {
+  if (!initialized) pendingInitialUpdates = { ...pendingInitialUpdates, ...update };
   state = { ...state, ...update };
   if (update.recoveryEnabled === false) {
     try {

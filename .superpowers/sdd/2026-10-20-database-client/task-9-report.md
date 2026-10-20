@@ -45,3 +45,19 @@ Launched the actual application against disposable PG18 with a temporary `task9_
 - SQLite secure deletion cannot remove external backups/filesystem snapshots. Disabling recovery leaves explicitly named saved queries intact.
 - Recovery read errors require a successful Retry before persistence resumes, preserving unreadable stored state rather than silently replacing it. A temporary workspace cannot permanently persist profiles/queries/drafts.
 - `RESUME.md` is controller-owned and deliberately excluded from this task's commit.
+
+## Review fix round 1 (base `e30dae2`)
+
+Addressed both Important findings and the dialog focus improvement:
+
+1. Rereading a stored workspace after a failed save could replace newer local copies with older disk content. Reads are now restricted to initial-load recovery; save failures expose only Retry saving. The load API also refuses a subsequent reread after initialization, so stale callers cannot destroy local work. When an initial read failed and editing continued, the eventual successful read merges pending local drafts with stored copies and preserves newer local values. Concurrent initial reads cannot replace an already initialized workspace.
+2. The original raw-file deletion assertion was a false positive: its sentinel had never been written. Corrected the test to save the actual invalid-JSON sentinel, assert that its bytes are present before disabling, and then assert their removal. The earlier report's secure-deletion evidence should be read as superseded by this positive-control test.
+3. Recovery now uses the native modal-dialog focus lifecycle, closes with Keep/Escape, restores focus to its opener and blocks background actions while open. The covering Electron test checks initial/reopened textarea focus and restoration to the Review button before changing the privacy setting.
+
+Covering evidence only; unchanged live/full suites were not repeated:
+
+- RED `bun run test src/renderer/app/workspace.test.ts tests/integration/workspace.test.ts`: **1 failed, 5 passed**. The failed-save → newer local copy → read retry regression lost the newer text before the fix. The corrected real SQLite sentinel test passed with both presence/removal assertions.
+- GREEN same command after the merge/retry fixes and initial-load regression: **7 passed**.
+- `bun run build`: **passed**, retaining the existing Monaco bundle warning.
+- `bun run test:e2e tests/e2e/recovery.spec.ts`: **2 passed**, including modal focus/restoration and native close cancel/discard.
+- `bun run typecheck`, `bun run lint`, `bun run format:check`, `git diff --check`: **passed**.

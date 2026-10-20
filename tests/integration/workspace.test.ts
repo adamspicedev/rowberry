@@ -50,9 +50,17 @@ test("versioned workspace is restored from the same file after reopening", () =>
     const store = new ConnectionStore(file);
     const draft = {
       ...emptyWorkspace(),
-      drafts: [{ id: "invalid", kind: "json" as const, label: "local", text: "{" }],
+      drafts: [
+        {
+          id: "invalid",
+          kind: "json" as const,
+          label: "local",
+          text: "{UNIQUE_INVALID_RECOVERY_SENTINEL",
+        },
+      ],
     };
     store.workspaceSave(draft);
+    expect(readFileSync(file).includes(Buffer.from("UNIQUE_INVALID_RECOVERY_SENTINEL"))).toBe(true);
     store.close();
     const reopened = new ConnectionStore(file);
     expect(reopened.workspaceLoad()).toEqual(draft);

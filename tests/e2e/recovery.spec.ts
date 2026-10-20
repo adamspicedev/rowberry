@@ -31,8 +31,15 @@ test("restart recovers invalid JSON as a detached copy with no connection or que
     await expect(page.getByLabel("Recovered json draft")).toHaveValue('{"invalid');
     await expect(page.getByText("No database connected", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Run SQL / selection" })).toHaveCount(0);
+    await expect(page.getByLabel("Recovered json draft")).toBeFocused();
+    await page.getByRole("button", { name: "Keep local copies", exact: true }).click();
+    const review = page.getByRole("button", { name: "Review recovered drafts (1)", exact: true });
+    await review.click();
+    await expect(page.getByLabel("Recovered json draft")).toBeFocused();
+    await page.getByRole("button", { name: "Keep local copies", exact: true }).click();
+    await expect(review).toBeFocused();
     await page.getByLabel("Recover drafts on this device").uncheck();
-    await expect(page.getByRole("dialog", { name: "Recovered drafts" })).toHaveCount(0);
+    await expect(page.getByRole("dialog", { name: "Recovered drafts" })).toBeHidden();
     const stored = await page.evaluate(() =>
       window.dbapp.request({ kind: "workspace.load", requestId: "read" as never }),
     );
