@@ -25,7 +25,7 @@ Reference host: Apple Silicon macOS 27.2, Bun 1.4.3, Node 20.20.2, Electron 44.9
 | Typecheck, Oxlint, Oxfmt                                     | Passed locally, including release TypeScript scripts          |
 | Unit and local storage                                       | 55 passed, native vault test skipped by default               |
 | Full PostgreSQL 14/18 integration                            | 117 passed, native vault opt-in skipped                       |
-| Final-review PG14/18 regressions                             | 22 focused integration passes; 2 desktop save/recovery passes |
+| Final-review PG14/18 regressions                             | 22 focused integration passes; 4 desktop JSON recovery checks |
 | Native Keychain opt-in                                       | 1 passed, set/get/restart/delete with disposable entry        |
 | Development desktop                                          | 11 passed before the additional reopen regression test        |
 | Unsigned macOS packages                                      | arm64 and x64 DMGs built; no signing attempted                |
@@ -44,6 +44,6 @@ Production benchmark on this host used 11,888,891 bytes and 100,000 scalar value
 Unsigned development package SHA-256 digests, recompute after signing:
 
 ```text
-331ae1bc079178cfb3480fb7ba1095e5b8b4ec3417569355c2f08c804a9453fb  Rowberry-0.1.0-mac-arm64.dmg
-c316981d0aa718ac1301e1e8ab424ae787f556af01278810f7dbef7bd089c35e  Rowberry-0.1.0-mac-x64.dmg
+4f0af42334d9394ef27909abe5df47645a96b4e663a79afd84588d675b091b24  Rowberry-0.1.0-mac-arm64.dmg
+d4103607eb6262cf31b6fa56f73f12edec18a40b0b2a43813ffdf2c194ea6be7  Rowberry-0.1.0-mac-x64.dmg
 ```

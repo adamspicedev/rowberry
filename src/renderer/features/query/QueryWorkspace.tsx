@@ -1,3 +1,4 @@
+import { recordDraft } from "../../app/workspace";
 import { JsonInspector } from "../json/JsonInspector";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -460,8 +461,10 @@ function QueryTab({
                                 window.confirm(
                                   "Discard unsaved JSON draft before opening another value?",
                                 )
-                              )
+                              ) {
+                                if (json) recordDraft(`json:${json.id}`, "json", "", null);
                                 setJson({ id: crypto.randomUUID(), text: cell });
+                              }
                             }}
                           >
                             Inspect JSON

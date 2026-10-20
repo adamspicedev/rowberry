@@ -162,6 +162,39 @@ for (const version of [14, 18])
       await page.keyboard.press("Control+Space");
       await expect(page.locator(".suggest-widget.visible")).toContainText(schema);
       await page.keyboard.press("Escape");
+      // Explicit SQL-result JSON replacement clears only the confirmed outgoing draft.
+      await text(`SELECT '"first"'::json AS first, '"second"'::json AS second`);
+      await runButton.click();
+      const inspectButtons = page.getByRole("button", { name: "Inspect JSON", exact: true });
+      await inspectButtons.first().click();
+      const inspector = page.getByRole("region", { name: "JSON inspector", exact: true });
+      await inspector.getByLabel("JSON new value", { exact: true }).fill("retained until discard");
+      await inspector.getByRole("button", { name: "Set value", exact: true }).click();
+      await expect(inspector).toHaveAttribute("data-dirty", "true");
+      async function jsonRecovery() {
+        const reply = await request({ kind: "workspace.load" });
+        if (!reply.ok || reply.kind !== "workspace.load") throw new Error("Workspace unavailable");
+        return reply.data.drafts.filter((draft) => draft.kind === "json");
+      }
+      await expect
+        .poll(async () => (await jsonRecovery()).map((draft) => draft.text))
+        .toEqual(['"retained until discard"']);
+      page.once("dialog", (dialog) => dialog.dismiss());
+      await inspectButtons.nth(1).focus();
+      await page.keyboard.press("Enter");
+      await expect(inspector).toHaveAttribute("data-dirty", "true");
+      // Let recovery writes settle before checking durable cancellation retention.
+      await page.waitForTimeout(400);
+      expect((await jsonRecovery()).map((draft) => draft.text)).toEqual([
+        '"retained until discard"',
+      ]);
+      page.once("dialog", (dialog) => dialog.accept());
+      await inspectButtons.nth(1).focus();
+      await page.keyboard.press("Enter");
+      await expect(inspector).toHaveAttribute("data-dirty", "false");
+      await expect(inspector.getByRole("tree")).toContainText("second");
+      await expect.poll(async () => (await jsonRecovery()).length).toBe(0);
+      await inspector.getByRole("button", { name: "Close JSON", exact: true }).click();
       await text("SELECT 777");
       await page.getByRole("textbox", { name: "Saved query name" }).fill("Never auto execute");
       await page.getByRole("button", { name: "Save query", exact: true }).click();
@@ -261,6 +294,8 @@ for (const version of [14, 18])
         ],
       });
       page = await app.firstWindow();
+      expect(await jsonRecovery()).toEqual([]);
+      await expect(page.getByLabel("Recovered json draft")).toHaveCount(0);
       const saved = await request({ kind: "queries.saved.list", offset: 0 });
       expect(
         saved.ok &&

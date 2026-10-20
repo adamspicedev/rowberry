@@ -74,6 +74,7 @@ export function App() {
         </header>
         <div className="sidebar-content">
           <ConnectionList
+            connecting={session?.state === "connecting"}
             activeId={session && session.state !== "disconnected" ? session.profileId : undefined}
           />
           {session?.state === "connected" && (

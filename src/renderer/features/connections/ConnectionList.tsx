@@ -3,7 +3,13 @@ import { useEffect, useRef, useState } from "react";
 import { RequestIdSchema, type ConnectionProfile } from "../../../shared/protocol";
 import { Button } from "../../components/ui/button";
 import { ConnectionDialog } from "./ConnectionDialog";
-export function ConnectionList({ activeId }: { activeId?: string }) {
+export function ConnectionList({
+  activeId,
+  connecting = false,
+}: {
+  activeId?: string;
+  connecting?: boolean;
+}) {
   const connectRequest = useRef(0);
   const [profiles, setProfiles] = useState<ConnectionProfile[]>([]);
   const [secureStorage, setSecureStorage] = useState(false);
@@ -80,7 +86,9 @@ export function ConnectionList({ activeId }: { activeId?: string }) {
                   ●{" "}
                 </span>
                 {profile.name}
-                {activeId === profile.id && <span className="badge">Connected</span>}
+                {activeId === profile.id && (
+                  <span className="badge">{connecting ? "Connecting" : "Connected"}</span>
+                )}
               </strong>
               <small>
                 {profile.host}:{profile.port} / {profile.database}
