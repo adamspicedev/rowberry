@@ -9,7 +9,10 @@ test("restart recovers invalid JSON as a detached copy with no connection or que
   let app = await launch();
   try {
     let page = await app.firstWindow();
+    await page.clock.install();
     await expect(page.getByLabel("Workspace recovery", { exact: true })).toBeVisible();
+    // Drain the initial debounced layout save before seeding recovery out of band.
+    await page.clock.runFor(300);
     const reply = await page.evaluate(() =>
       window.dbapp.request({
         kind: "workspace.save",
@@ -60,7 +63,9 @@ test("closing recovered unsaved work can cancel or explicitly discard", async ()
   let app = await launch();
   try {
     let page = await app.firstWindow();
+    await page.clock.install();
     await expect(page.getByLabel("Workspace recovery", { exact: true })).toBeVisible();
+    await page.clock.runFor(300);
     await page.evaluate(() =>
       window.dbapp.request({
         kind: "workspace.save",
