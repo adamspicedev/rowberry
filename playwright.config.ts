@@ -11,6 +11,7 @@ export default defineConfig({
     )
       ? []
       : ["**/json.spec.ts", "**/save.spec.ts"]),
+    "**/json-viewer.spec.ts",
   ],
   workers: 1,
   timeout: 30000,

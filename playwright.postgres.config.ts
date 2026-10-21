@@ -8,6 +8,7 @@ export default defineConfig({
     "**/browse.spec.ts",
     "**/query.spec.ts",
     "**/json.spec.ts",
+    "**/json-viewer.spec.ts",
     "**/save.spec.ts",
   ],
 });
