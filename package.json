@@ -19,6 +19,7 @@
     "test:postgres:setup": "bun tests/fixtures/postgres/setup.mjs",
     "test:postgres:cleanup": "bun tests/fixtures/postgres/cleanup.mjs",
     "package": "bun run build && bun scripts/package.ts",
+    "verify:upgrade": "bun scripts/verify-upgrade.ts",
     "verify:package": "bun scripts/verify-package.ts",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check ."

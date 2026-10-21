@@ -24,6 +24,8 @@ This is partial release qualification: fresh-account installation, installer upg
 
 Before this QA pass, all nine required CI jobs passed at `e5f8cbf`: [checks](https://github.com/adamspicedev/rowberry/actions/runs/39532511031), [PostgreSQL and version compatibility](https://github.com/adamspicedev/rowberry/actions/runs/39532511170), and [four-platform package verification](https://github.com/adamspicedev/rowberry/actions/runs/39532511102). Those results supersede the historical “CI unrun” entries below; they do not qualify fresh-account installation or native credential behavior on every platform.
 
+A repeatable [packaged profile upgrade test](upgrade-testing.md) now verifies connection metadata, saved queries, SQL drafts, detached JSON and optional native credentials across two distinct builds and a candidate restart. The recorded macOS run passed; installer replacement and versioned-release upgrades remain separate gates.
+
 ## Local evidence, 20 October 2026
 
 Reference host: Apple Silicon macOS 27.2, Bun 1.4.3, Node 20.20.2, Electron 44.9.0. CI pins Bun 1.4.2 and has not run in this session.
