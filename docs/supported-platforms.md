@@ -1,5 +1,7 @@
 # Supported platform targets
 
+See [desktop QA host setup](desktop-qa-hosts.md) for adding Windows and Linux test environments.
+
 Rowberry 0.1.0 targets macOS arm64 and Intel x64 DMGs, Windows x64 NSIS, and Linux x64 AppImage/deb. These are qualification targets. Local success does not establish support on an untested OS.
 
 Electron 44.9.0's [versioned platform support](https://github.com/electron/electron/blob/v44.9.0/README.md#platform-support), checked 20 October 2026, specifies macOS Ventura 13+, Windows 10+, and Linux distributions supported by both Chromium and their vendor without paid support. Linux has no single distribution-independent OS minimum. The builder's macOS deployment floor is 13.0. Qualify Ubuntu 24.04 LTS and Debian 12 or newer supported desktops before release; do not infer compatibility from an Xvfb CI pass.

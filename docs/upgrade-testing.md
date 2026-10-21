@@ -1,5 +1,7 @@
 # Packaged profile upgrade test
 
+Use the [upgrade baseline register and release gate](upgrade-baselines.md) to select and retain accepted packages.
+
 Run two different native packages sequentially against a new temporary profile:
 
 ```sh
