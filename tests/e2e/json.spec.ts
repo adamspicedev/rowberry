@@ -61,10 +61,11 @@ for (const version of [14, 18])
       const panel = page.getByRole("region", { name: "JSON inspector", exact: true });
       await expect(panel.getByRole("tree")).toBeVisible();
       await expect(panel).toContainText("copy-only draft");
+      await panel.getByRole("button", { name: "Edit JSON", exact: true }).click();
       await expect(panel.getByRole("button", { name: "Save to database" })).toBeDisabled();
       await expect(page.getByRole("table", { name: "SQL results" })).toContainText("SQL NULL");
       await panel.getByRole("textbox", { name: "Search JSON keys and values" }).fill("needle");
-      await panel.getByRole("button", { name: "Search JSON", exact: true }).click();
+      await panel.getByRole("textbox", { name: "Search JSON keys and values" }).press("Enter");
       await expect(panel).toContainText("1 matches");
       await panel.getByRole("button", { name: "Next match" }).click();
       await expect(panel.getByRole("treeitem", { selected: true })).toContainText("a/b~c");
@@ -73,6 +74,7 @@ for (const version of [14, 18])
       await panel.getByRole("button", { name: "Next match", exact: true }).click();
       await expect(panel.getByRole("treeitem", { selected: true })).toContainText("a/b~c");
 
+      await panel.getByRole("textbox", { name: "Search JSON keys and values" }).fill("");
       await expect(panel.getByLabel("JSON edit pointer", { exact: true })).toHaveValue(
         "/hidden/a~1b~0c",
       );
@@ -80,7 +82,9 @@ for (const version of [14, 18])
       await panel.getByRole("textbox", { name: "JSON text editor" }).focus();
       await page.keyboard.press("ControlOrMeta+C");
       expect(await app.evaluate(({ clipboard }) => clipboard.readText())).toBe('"needle"');
+      await panel.getByLabel("JSON viewer actions", { exact: true }).click();
       await panel.getByRole("button", { name: "Copy JSON pointer" }).click();
+      await panel.getByLabel("JSON viewer actions", { exact: true }).click();
       await expect(panel).toContainText("Copied");
       expect(await app.evaluate(({ clipboard }) => clipboard.readText())).toBe("/hidden/a~1b~0c");
       await panel.getByRole("textbox", { name: "JSON edit pointer" }).fill("/exact");
@@ -102,7 +106,7 @@ for (const version of [14, 18])
       await panel.getByLabel("JSON edit pointer", { exact: true }).fill("/added");
       await panel.getByLabel("JSON value type", { exact: true }).selectOption("null");
       await panel.getByRole("button", { name: "Add value", exact: true }).click();
-      await expect(panel.getByRole("tree")).toContainText("addednull");
+      await expect(panel.getByRole("tree")).toContainText('"added":null');
       await panel.getByRole("button", { name: "Remove value", exact: true }).click();
       await expect(panel.getByRole("tree")).not.toContainText("added");
       const editor = panel.getByRole("textbox", { name: "JSON text editor" });
@@ -111,8 +115,12 @@ for (const version of [14, 18])
       await page.keyboard.type('{"invalid":');
       await expect(panel.getByRole("alert")).toBeVisible();
       await expect(panel.locator(".view-lines")).toContainText('{"invalid":');
+      await panel.getByLabel("JSON viewer actions", { exact: true }).click();
       await panel.getByLabel("JSON view", { exact: true }).selectOption("tree");
+      await panel.getByLabel("JSON viewer actions", { exact: true }).click();
+      await panel.getByLabel("JSON viewer actions", { exact: true }).click();
       await panel.getByLabel("JSON view", { exact: true }).selectOption("split");
+      await panel.getByLabel("JSON viewer actions", { exact: true }).click();
       await expect(panel.getByRole("button", { name: "Set value", exact: true })).toBeDisabled();
       await editor.focus();
       await page.keyboard.press("ControlOrMeta+A");
@@ -122,15 +130,21 @@ for (const version of [14, 18])
       await expect(panel.getByRole("alertdialog")).toBeVisible();
       await panel.getByRole("button", { name: "Keep editing JSON" }).click();
       await expect(panel.locator(".view-lines")).toContainText('{"duplicate":1,"duplicate":2}');
+      await panel.getByLabel("JSON viewer actions", { exact: true }).click();
       await panel.getByLabel("JSON view", { exact: true }).selectOption("text");
+      await panel.getByLabel("JSON viewer actions", { exact: true }).click();
+      await panel.getByLabel("JSON viewer actions", { exact: true }).click();
       await panel.getByLabel("JSON view", { exact: true }).selectOption("split");
+      await panel.getByLabel("JSON viewer actions", { exact: true }).click();
       await expect(panel.locator(".view-lines")).toContainText('{"duplicate":1,"duplicate":2}');
+      await panel.getByLabel("JSON viewer actions", { exact: true }).click();
       await panel.getByRole("button", { name: "Expand panel", exact: true }).click();
+      await panel.getByLabel("JSON viewer actions", { exact: true }).click();
       await page.screenshot({ path: "/tmp/rowberry-json-task7.png" });
       await editor.focus();
       await page.keyboard.press("ControlOrMeta+A");
       await page.keyboard.type('{"fromText":true}');
-      await expect(panel.getByRole("tree")).toContainText("fromTexttrue");
+      await expect(panel.getByRole("tree")).toContainText('"fromText":true');
       await panel.getByRole("treeitem").first().click();
       await panel.getByRole("tree").focus();
       await page.keyboard.press("ArrowDown");
@@ -180,6 +194,7 @@ for (const version of [14, 18])
         "Actual Chromium large JSON UI (measurement-only, target 100 ms)",
         JSON.stringify({ expandMs, selectMs }),
       );
+      await panel.getByRole("button", { name: "Edit JSON", exact: true }).click();
       await panel.getByLabel("JSON edit pointer", { exact: true }).fill("/items/99999");
       await panel.getByRole("button", { name: "Reveal pointer", exact: true }).click();
       await expect(panel.getByRole("treeitem", { selected: true })).toContainText("99999");

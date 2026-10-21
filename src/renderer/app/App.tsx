@@ -4,7 +4,7 @@ import { RecoveryControls } from "./recovery";
 import { discardLiveJsonDrafts, loadWorkspace, updateWorkspace } from "./workspace";
 import { QueryWorkspace } from "../features/query/QueryWorkspace";
 import mark from "../assets/rowberry-mark.svg";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { acceptSessionEvent, type SessionState } from "./session-state";
 import { RequestIdSchema } from "../../shared/protocol";
 import { ConnectionList } from "../features/connections/ConnectionList";
@@ -13,6 +13,29 @@ import { SchemaSidebar } from "../features/schema/SchemaSidebar";
 import { TableView } from "../features/table/TableView";
 import type { Table } from "../../shared/browse";
 export function App() {
+  const [managerVisible, setManagerVisible] = useState(true);
+  const [editorHost, setEditorHost] = useState<HTMLDivElement | null>(null);
+  const connectionFlags = useRef({ dirty: false, busy: false });
+  const [connectionDirty, setConnectionDirty] = useState(false);
+  const [connectionBusy, setConnectionBusy] = useState(false);
+  function markConnectionDirty(value: boolean) {
+    connectionFlags.current.dirty = value;
+    setConnectionDirty(value);
+  }
+  function markConnectionBusy(value: boolean) {
+    connectionFlags.current.busy = value;
+    setConnectionBusy(value);
+  }
+  const [connectionReset, setConnectionReset] = useState(0);
+  function leaveManager() {
+    if (connectionFlags.current.busy) return false;
+    if (connectionFlags.current.dirty && !window.confirm("Discard unsaved connection changes?"))
+      return false;
+    markConnectionDirty(false);
+    setConnectionReset((current) => current + 1);
+    setManagerVisible(false);
+    return true;
+  }
   const [loaded, setLoaded] = useState(false);
   const [sqlOpened, setSqlOpened] = useState(false);
   const [showSql, setShowSql] = useState(false);
@@ -49,7 +72,11 @@ export function App() {
       setLoaded(true);
     });
     const protect = (event: BeforeUnloadEvent) => {
-      if (document.querySelector('[data-dirty="true"], [data-saving="true"]')) {
+      if (
+        document.querySelector(
+          '[data-dirty="true"], [data-saving="true"], [data-connection-dirty="true"], [data-connection-saving="true"]',
+        )
+      ) {
         event.preventDefault();
         event.returnValue = "Unsaved drafts";
       }
@@ -74,6 +101,14 @@ export function App() {
         </header>
         <div className="sidebar-content">
           <ConnectionList
+            editorHost={editorHost}
+            onDirty={markConnectionDirty}
+            onBusy={markConnectionBusy}
+            onShow={() => setManagerVisible(true)}
+            onConnected={() => {
+              leaveManager();
+            }}
+            resetKey={connectionReset}
             connecting={session?.state === "connecting"}
             activeId={session && session.state !== "disconnected" ? session.profileId : undefined}
           />
@@ -84,6 +119,7 @@ export function App() {
               generation={session.generation}
               selected={table?.id ?? null}
               onSelect={(table) => {
+                if (!leaveManager()) return;
                 if (selected?.sessionId === session.sessionId && selected.table.id === table.id) {
                   setShowSql(false);
                   return;
@@ -122,18 +158,35 @@ export function App() {
       </aside>
       <main>
         <nav aria-label="Workspace tabs">
-          <Button variant="ghost" className="active-tab" aria-current="page">
-            {session?.state === "connected" && table ? table.name : "Overview"}
+          <Button
+            variant="ghost"
+            className={managerVisible ? "active-tab" : undefined}
+            aria-current={managerVisible ? "page" : undefined}
+            onClick={() => setManagerVisible(true)}
+          >
+            Connections
           </Button>
           {session?.state === "connected" && (
             <Button
               variant="ghost"
+              className={!managerVisible && !showSql ? "active-tab" : undefined}
               onClick={() => {
-                setSqlOpened(true);
-                setShowSql((current) => !current);
+                if (leaveManager()) setShowSql(false);
               }}
             >
-              {showSql ? "Table workspace" : "SQL workspace"}
+              {table?.name ?? "Database"}
+            </Button>
+          )}
+          {session?.state === "connected" && (
+            <Button
+              variant="ghost"
+              onClick={() => {
+                if (!leaveManager()) return;
+                setSqlOpened(true);
+                setShowSql((current) => managerVisible || !current);
+              }}
+            >
+              {!managerVisible && showSql ? "Table workspace" : "SQL workspace"}
             </Button>
           )}
           <span className="connection-state">
@@ -161,8 +214,15 @@ export function App() {
             </Button>
           )}
         </nav>
+        <div
+          className="connection-manager-host"
+          ref={setEditorHost}
+          hidden={!managerVisible}
+          data-connection-dirty={connectionDirty}
+          data-connection-saving={connectionBusy}
+        />
         {sqlOpened && session?.state === "connected" && (
-          <div hidden={!showSql}>
+          <div hidden={managerVisible || !showSql}>
             <QueryWorkspace
               key={session.sessionId}
               sessionId={session.sessionId}
@@ -170,7 +230,7 @@ export function App() {
             />
           </div>
         )}
-        <div className="table-workspace-host" hidden={showSql}>
+        <div className="table-workspace-host" hidden={managerVisible || showSql}>
           {session && table ? (
             <TableView
               key={session.sessionId + table.id}

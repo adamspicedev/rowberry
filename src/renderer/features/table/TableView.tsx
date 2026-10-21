@@ -1,3 +1,4 @@
+import { rowJson } from "../../../json/viewer";
 import { recordDraft } from "../../app/workspace";
 /* oxlint-disable jsx-a11y/prefer-tag-over-role -- Virtual rows and columns use ARIA grid semantics with absolute positions. */
 import { JsonInspector, type ValidatedJsonDraft, type JsonSaveTarget } from "../json/JsonInspector";
@@ -242,6 +243,7 @@ export function TableView({
   const [jsonDirty, setJsonDirty] = useState(false);
   const [originalSqlNull, setOriginalSqlNull] = useState(false);
   const [jsonId, setJsonId] = useState(crypto.randomUUID());
+  const [rowInspection, setRowInspection] = useState(false);
   const [inspected, setInspected] = useState<string | null>(null);
   const [inspectStatus, setInspectStatus] = useState("");
   const grid = useRef<HTMLDivElement>(null);
@@ -256,6 +258,7 @@ export function TableView({
     recordDraft(`json:${jsonId}`, "json", "", null);
     inspectionVersion.current++;
     setInspected(null);
+    setRowInspection(false);
     setOriginalSqlNull(false);
     setJsonSaveDraft(null);
     setJsonDirty(false);
@@ -280,6 +283,32 @@ export function TableView({
     clearInspection();
     return true;
   }
+  function inspectRow(rowIndex = selection.row) {
+    if (!page || saving || preview || editor) return;
+    const row = page.rows[rowIndex];
+    if (!row) return;
+    if (row.cells.some((cell) => cell.kind === "oversized")) {
+      setSaveStatus(
+        "This row contains omitted values. Inspect the JSON cell to fetch its full value.",
+      );
+      return;
+    }
+    if (jsonDirty && !window.confirm("Discard unsaved JSON draft before inspecting another value?"))
+      return;
+    clearInspection();
+    setJsonTarget(undefined);
+    setRowInspection(true);
+    setJsonId(crypto.randomUUID());
+    setInspected(
+      rowJson(
+        row.cells.map((cell, index) => ({
+          name: table.columns[index]?.name ?? String(index),
+          text: cell.text,
+          typeOid: cell.typeOid,
+        })),
+      ),
+    );
+  }
   async function inspect(row: number, col: number) {
     if (editor) {
       setSaveStatus("Stage or cancel the current cell edit before inspecting another value.");
@@ -296,6 +325,7 @@ export function TableView({
     if (!cell || !column || ![114, 3802].includes(cell.typeOid)) return;
     recordDraft(`json:${jsonId}`, "json", "", null);
     setInspected(null);
+    setRowInspection(false);
     setOriginalSqlNull(false);
     setJsonId(crypto.randomUUID());
     setJsonTarget(
@@ -339,7 +369,7 @@ export function TableView({
   }
   return (
     <section
-      className="table-workspace"
+      className={`table-workspace ${inspected !== null ? "has-json-panel" : ""}`}
       aria-label={`Table ${table.name}`}
       data-dirty={!!(drafts.length || editor || jsonDirty)}
       data-saving={saving}
@@ -641,6 +671,7 @@ export function TableView({
                 ),
               };
               setSelection(next);
+              if (rowInspection && next.row !== selection.row) inspectRow(next.row);
               grid.current?.scrollTo({
                 top: Math.max(0, (next.row - 2) * HEIGHT),
                 left: Math.max(0, (next.col - 2) * WIDTH),
@@ -736,6 +767,8 @@ export function TableView({
                       }}
                       onClick={() => {
                         setSelection({ row: firstRow + i, col: firstColumn + j });
+                        if (rowInspection && firstRow + i !== selection.row)
+                          inspectRow(firstRow + i);
                         grid.current?.focus();
                       }}
                       onDoubleClick={() =>
@@ -834,6 +867,13 @@ export function TableView({
             >
               Stage selected SQL NULL
             </Button>
+            <Button
+              variant="ghost"
+              disabled={saving || !!preview || !!editor}
+              onClick={() => inspectRow()}
+            >
+              Inspect selected row
+            </Button>
             <Button variant="ghost" onClick={() => void inspect(selection.row, selection.col)}>
               Inspect selected JSON
             </Button>
@@ -845,6 +885,8 @@ export function TableView({
           key={jsonId}
           documentId={jsonId}
           sourceText={inspected}
+          readOnly={rowInspection}
+          title={rowInspection ? "Row as JSON" : "JSON viewer"}
           originalSqlNull={originalSqlNull}
           saveTarget={jsonTarget}
           onClose={clearInspection}

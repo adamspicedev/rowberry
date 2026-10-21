@@ -154,6 +154,8 @@ for (const action of ["Disconnect", "Reload"])
       await page.reload();
       await page.getByRole("button", { name: "Connect Stalled fixture", exact: true }).click();
       await expect(page.locator(".connection-state")).toHaveText("connecting");
+      await page.getByRole("button", { name: "Select Stalled fixture", exact: true }).click();
+      await expect(page.getByLabel("Name", { exact: true })).toBeDisabled();
       await expect.poll(() => sockets.size).toBe(1);
       const start = Date.now();
       if (action === "Reload") {
@@ -238,6 +240,49 @@ test("renderer reload closes a connected database backend and does not reconnect
   } finally {
     await application.close();
     await observer.end();
+    rmSync(userData, { recursive: true, force: true });
+  }
+});
+
+test("Save & connect opens a real session and locks its profile", async () => {
+  const userData = mkdtempSync(path.join(tmpdir(), "rowberry-manager-session-"));
+  const application = await electron.launch({
+    executablePath: process.env.DBAPP_PACKAGE_EXECUTABLE,
+    args: [
+      ...(process.env.DBAPP_PACKAGE_EXECUTABLE ? [] : [path.resolve(".")]),
+      `--user-data-dir=${userData}`,
+    ],
+  });
+  try {
+    const page = await application.firstWindow();
+    await page.getByRole("button", { name: "New connection", exact: true }).click();
+    await page.getByLabel("Name", { exact: true }).fill("Manager fixture");
+    await page.getByLabel("Port", { exact: true }).fill("55418");
+    await page.getByLabel("Database", { exact: true }).fill("fixture");
+    await page.getByLabel("User", { exact: true }).fill("fixture");
+    await page.getByLabel("Password", { exact: true }).fill("fixture-only-password");
+    if (await page.getByLabel("Save password in OS credential store").isEnabled())
+      await page.getByLabel("Save password in OS credential store").uncheck();
+    await page.getByText("SSL settings", { exact: false }).click();
+    await page
+      .getByLabel("CA certificate", { exact: true })
+      .fill(path.join(fixture.directory, "ca.crt"));
+    await page.getByRole("button", { name: "Save & connect", exact: true }).click();
+    await expect(page.locator(".connection-state")).toHaveText("connected");
+    await expect(page.getByText("Database connected", { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Select Manager fixture", exact: true }),
+    ).toHaveAccessibleDescription("localhost:55418 / fixture Connected");
+    await page.getByRole("button", { name: "Select Manager fixture", exact: true }).click();
+    await expect(page.getByLabel("Name", { exact: true })).toBeDisabled();
+    await expect(page.getByLabel("Password", { exact: true })).toHaveValue("");
+    await expect(
+      page.getByRole("button", { name: "Delete Manager fixture", exact: true }),
+    ).toBeDisabled();
+    await page.getByRole("button", { name: "Disconnect", exact: true }).click();
+    await expect(page.getByLabel("Name", { exact: true })).toBeEnabled();
+  } finally {
+    await application.close();
     rmSync(userData, { recursive: true, force: true });
   }
 });

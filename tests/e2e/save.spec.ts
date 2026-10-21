@@ -1,10 +1,16 @@
-import { test, expect, _electron as electron } from "@playwright/test";
+import { test, expect, _electron as electron, type Locator } from "@playwright/test";
 import { Client } from "pg";
 import { createServer, connect as connectSocket, type Socket } from "node:net";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { ReplySchema } from "../../src/shared/protocol";
+async function openJsonEditing(panel: Locator) {
+  await expect(panel).toBeVisible();
+  const edit = panel.getByRole("button", { name: "Edit JSON", exact: true });
+  if (await edit.isVisible()) await edit.click();
+}
+
 for (const version of [14, 18])
   test(`guarded cell batch and JSON preview save conflict PG${version}`, async () => {
     test.setTimeout(60000);
@@ -97,9 +103,10 @@ for (const version of [14, 18])
       );
       await page.getByRole("button", { name: "Cancel cell edit", exact: true }).click();
       await stage(1, "saved");
-      await expect(
-        page.getByRole("button", { name: "Edit Save fixture", exact: true }),
-      ).toBeDisabled();
+      await page.getByRole("button", { name: "Select Save fixture", exact: true }).click();
+      await expect(page.getByLabel("Name", { exact: true })).toBeDisabled();
+      await expect(page.getByText("Disconnect to edit this connection.")).toBeVisible();
+      await page.getByRole("button", { name: "records", exact: true }).click();
       expect(
         await request({
           kind: "connections.save",
@@ -188,6 +195,7 @@ for (const version of [14, 18])
         name: "JSON text editor",
         exact: true,
       });
+      await openJsonEditing(routedInspector);
       await routedText.focus();
       await page.keyboard.press("ControlOrMeta+A");
       await page.keyboard.type('{"n":1,"n":2}');
@@ -225,6 +233,7 @@ for (const version of [14, 18])
       await grid.getByRole("gridcell").nth(2).dblclick();
       const inspector = page.getByRole("region", { name: "JSON inspector", exact: true });
       await expect(inspector.getByRole("tree")).toBeVisible();
+      await openJsonEditing(inspector);
       await inspector.getByLabel("JSON edit pointer", { exact: true }).fill("/n");
       await inspector.getByLabel("JSON value type", { exact: true }).selectOption("number");
       await inspector.getByLabel("JSON new value", { exact: true }).fill("99999999999999999999");
@@ -239,6 +248,7 @@ for (const version of [14, 18])
       ).toContain("99999999999999999999");
       await expect.poll(jsonRecoveryCount).toBe(0);
       const text = inspector.getByRole("textbox", { name: "JSON text editor", exact: true });
+      await openJsonEditing(inspector);
       await expect(text).toBeEditable();
       await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.focus());
       await text.focus();
@@ -273,9 +283,11 @@ for (const version of [14, 18])
         sqlNullPanel.getByRole("button", { name: "Create JSON value", exact: true }),
       ).toBeVisible();
       await sqlNullPanel.getByRole("button", { name: "Create JSON value", exact: true }).click();
+      await openJsonEditing(inspector);
       await expect(inspector.getByRole("tree")).toBeVisible();
       await expect(inspector).toContainText("Creating JSON from SQL NULL");
       async function creationText(value: string) {
+        await openJsonEditing(inspector);
         await inspector.getByRole("textbox", { name: "JSON text editor", exact: true }).focus();
         await page.keyboard.press("ControlOrMeta+A");
         await page.keyboard.type(value);
@@ -306,6 +318,7 @@ for (const version of [14, 18])
       ).toBe(true);
       await grid.getByRole("gridcell").nth(2).dblclick();
       await sqlNullPanel.getByRole("button", { name: "Create JSON value", exact: true }).click();
+      await openJsonEditing(inspector);
       await expect(inspector.getByRole("tree")).toBeVisible();
       await creationText('{"created":true}');
       await inspector.getByRole("button", { name: "Save to database", exact: true }).click();
@@ -322,6 +335,7 @@ for (const version of [14, 18])
       await expect(grid.getByRole("gridcell").nth(2)).toHaveText("NULL");
       await grid.getByRole("gridcell").nth(2).dblclick();
       await sqlNullPanel.getByRole("button", { name: "Create JSON value", exact: true }).click();
+      await openJsonEditing(inspector);
       await expect(inspector.getByRole("tree")).toBeVisible();
       await inspector.getByRole("button", { name: "Save to database", exact: true }).click();
       await expect(preview.getByLabel("Original doc")).toHaveText("SQL NULL");
@@ -340,6 +354,7 @@ for (const version of [14, 18])
       ]);
       // Repeated acknowledged replacements must not accumulate outgoing recovery IDs.
       for (let cycle = 0; cycle < 34; cycle++) {
+        await openJsonEditing(inspector);
         await inspector.getByLabel("JSON edit pointer", { exact: true }).fill("");
         await inspector.getByLabel("JSON value type", { exact: true }).selectOption("number");
         await inspector.getByLabel("JSON new value", { exact: true }).fill(String(cycle));
@@ -350,6 +365,7 @@ for (const version of [14, 18])
         await expect(inspector).toHaveAttribute("data-dirty", "false");
       }
       await expect.poll(jsonRecoveryCount).toBe(0);
+      await openJsonEditing(inspector);
       await inspector.getByLabel("JSON new value", { exact: true }).fill("888");
       await inspector.getByRole("button", { name: "Set value", exact: true }).click();
       await expect(inspector).toHaveAttribute("data-dirty", "true");
@@ -358,6 +374,7 @@ for (const version of [14, 18])
       await grid.getByRole("gridcell").nth(6).focus();
       await page.keyboard.press("Enter");
       await expect.poll(jsonRecoveryCount).toBe(0);
+      await openJsonEditing(inspector);
       await inspector.getByLabel("JSON new value", { exact: true }).fill("parent discard");
       await inspector.getByRole("button", { name: "Set value", exact: true }).click();
       await expect(inspector).toHaveAttribute("data-dirty", "true");
@@ -392,6 +409,7 @@ for (const version of [14, 18])
         .click();
       await page.getByRole("grid", { name: "Table rows" }).getByRole("gridcell").nth(2).dblclick();
       const failedInspector = page.getByRole("region", { name: "JSON inspector", exact: true });
+      await openJsonEditing(failedInspector);
       await failedInspector.getByLabel("JSON value type", { exact: true }).selectOption("number");
       await failedInspector.getByLabel("JSON new value", { exact: true }).fill("777");
       await failedInspector.getByRole("button", { name: "Set value", exact: true }).click();

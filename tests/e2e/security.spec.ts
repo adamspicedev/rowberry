@@ -87,7 +87,9 @@ test("unexpected navigation and new windows are blocked", async () => {
 
 test("Rowberry shell loads Baloo 2 wordmark text and keyboard-accessible light/dark appearance", async () => {
   const page = await application.firstWindow();
-  await expect(page.getByRole("heading", { name: "Your database workspace" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Your databases. In a good place." }),
+  ).toBeVisible();
   await expect(page).toHaveTitle("Rowberry");
   const wordmark = page.getByText("rowberry", { exact: true });
   await expect(wordmark).toBeVisible();
@@ -106,7 +108,7 @@ test("Rowberry shell loads Baloo 2 wordmark text and keyboard-accessible light/d
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   await page.screenshot({ animations: "disabled", path: "test-results/rowberry-dark.png" });
   await page.getByRole("button", { name: "New connection", exact: true }).click();
-  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByRole("region", { name: "New connection" })).toBeVisible();
   await page.screenshot({ animations: "disabled", path: "test-results/rowberry-dark-dialog.png" });
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await page.getByLabel("Appearance").selectOption("light");

@@ -1,3 +1,4 @@
+import { rowJson } from "../../../json/viewer";
 import { recordDraft } from "../../app/workspace";
 import { JsonInspector } from "../json/JsonInspector";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -149,7 +150,7 @@ function QueryTab({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [json, setJson] = useState<{ id: string; text: string } | null>(null);
+  const [json, setJson] = useState<{ id: string; text: string; row?: boolean } | null>(null);
   const [jsonDirty, setJsonDirty] = useState(false);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -281,12 +282,17 @@ function QueryTab({
     }
   }
   return (
-    <div className="query-tab" data-dirty={!!sql.trim() || jsonDirty}>
+    <div
+      className={`query-tab ${json ? "has-json-panel" : ""}`}
+      data-dirty={!!sql.trim() || jsonDirty}
+    >
       {json && (
         <JsonInspector
           key={json.id}
           documentId={json.id}
           sourceText={json.text}
+          readOnly={json.row}
+          title={json.row ? "Row as JSON" : "JSON viewer"}
           onClose={() => setJson(null)}
           onDirtyChange={setJsonDirty}
         />
@@ -438,6 +444,7 @@ function QueryTab({
             <table aria-label="SQL results">
               <thead>
                 <tr>
+                  <th aria-label="Row actions" />
                   {page.fields.map((field, index) => (
                     <th key={index}>
                       {field.name}
@@ -449,6 +456,34 @@ function QueryTab({
               <tbody>
                 {page.rows.map((row, index) => (
                   <tr key={index}>
+                    <td>
+                      <button
+                        aria-label={`Inspect row ${index + 1} as JSON`}
+                        onClick={() => {
+                          if (
+                            jsonDirty &&
+                            !window.confirm(
+                              "Discard unsaved JSON draft before inspecting another value?",
+                            )
+                          )
+                            return;
+                          if (json) recordDraft(`json:${json.id}`, "json", "", null);
+                          setJson({
+                            id: crypto.randomUUID(),
+                            row: true,
+                            text: rowJson(
+                              row.map((text, column) => ({
+                                name: page.fields[column]?.name ?? String(column),
+                                typeOid: page.fields[column]?.typeOid ?? 25,
+                                text,
+                              })),
+                            ),
+                          });
+                        }}
+                      >
+                        {index + 1}
+                      </button>
+                    </td>
                     {row.map((cell, column) => (
                       <td key={column}>
                         {cell === null ? (

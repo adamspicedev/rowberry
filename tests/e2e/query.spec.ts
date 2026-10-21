@@ -75,6 +75,13 @@ for (const version of [14, 18])
         await page.keyboard.type(sql);
       }
       await text("SELECT 12345678901234567890.123456789::numeric AS exact, NULL::text AS absent");
+      await page.getByRole("button", { name: "Connections", exact: true }).click();
+      await page.getByRole("button", { name: "Select SQL fixture", exact: true }).click();
+      await expect(page.getByLabel("Host", { exact: true })).toBeDisabled();
+      await page.getByRole("button", { name: "SQL workspace", exact: true }).click();
+      await expect(editor).toHaveValue(
+        "SELECT 12345678901234567890.123456789::numeric AS exact, NULL::text AS absent",
+      );
       await runButton.click();
       await expect(page.getByRole("table", { name: "SQL results" })).toContainText(
         "12345678901234567890.123456789",
