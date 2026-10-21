@@ -14,7 +14,15 @@ Public release is blocked until every required platform result below is recorded
 
 ## Current acceptance state
 
-The table below records checked-in local evidence. CI execution, Windows/Linux desktops, Intel macOS execution, signatures/notarization, fresh installation and installer upgrade remain unverified unless explicitly recorded there. No public release has been created.
+The dated sections below distinguish automated CI evidence, local package behavior, and outstanding native desktop qualification. No public release has been created.
+
+## QA evidence, 21 October 2026
+
+The [macOS packaged-workspace QA report](qa/2026-10-21-macos.md) records commit and package digests, screenshots, successful verified-TLS connection, Keychain-backed reconnects across process restarts, saved SQL queries, exact detached draft recovery, and durable explicit discard. Two existing packaged credential tests also passed. Native UI deletion removed a confirmed live Keychain credential and its connection profile, with both still absent after restart, and visual inspection confirmed a settled empty workspace. The app was copied from its DMG into an isolated directory and used a fresh application profile on the existing macOS account.
+
+This is partial release qualification: fresh-account installation, installer upgrades, signing/notarization, real locked-store behavior, and other native desktops remain open. The confusing reconnect warning for retained recovered copies is fixed in this change and covered by a desktop regression; the recorded DMG predates this fix.
+
+Before this QA pass, all nine required CI jobs passed at `e5f8cbf`: [checks](https://github.com/adamspicedev/rowberry/actions/runs/39532511031), [PostgreSQL and version compatibility](https://github.com/adamspicedev/rowberry/actions/runs/39532511170), and [four-platform package verification](https://github.com/adamspicedev/rowberry/actions/runs/39532511102). Those results supersede the historical “CI unrun” entries below; they do not qualify fresh-account installation or native credential behavior on every platform.
 
 ## Local evidence, 20 October 2026
 

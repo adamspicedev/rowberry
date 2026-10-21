@@ -23,7 +23,7 @@ export function RecoveryControls() {
     else dialog.current?.close();
   }, [open, hasDrafts]);
   return (
-    <section aria-label="Workspace recovery" data-dirty={state.drafts.length > 0}>
+    <section aria-label="Workspace recovery" data-recovery-dirty={state.drafts.length > 0}>
       <label>
         <input
           type="checkbox"

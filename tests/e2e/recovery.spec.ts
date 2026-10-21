@@ -41,6 +41,22 @@ test("restart recovers invalid JSON as a detached copy with no connection or que
     await expect(page.getByLabel("Recovered json draft")).toBeFocused();
     await page.getByRole("button", { name: "Keep local copies", exact: true }).click();
     await expect(review).toBeFocused();
+    // Connecting must preserve detached copies without asking to discard them.
+    await page.getByRole("button", { name: "New connection", exact: true }).click();
+    await page.getByLabel("Name", { exact: true }).fill("Recovery reconnect");
+    await page.getByLabel("Port", { exact: true }).fill("1");
+    await page.getByRole("button", { name: "Save connection", exact: true }).click();
+    const warnings: string[] = [];
+    page.on("dialog", async (dialog) => {
+      warnings.push(dialog.message());
+      await dialog.dismiss();
+    });
+    await page.getByRole("button", { name: "Connect Recovery reconnect", exact: true }).click();
+    await expect(page.getByRole("status")).toContainText("Database connection failed");
+    expect(warnings).toEqual([]);
+    await review.click();
+    await expect(page.getByLabel("Recovered json draft")).toHaveValue('{"invalid');
+    await page.getByRole("button", { name: "Keep local copies", exact: true }).click();
     await page.getByLabel("Recover drafts on this device").uncheck();
     await expect(page.getByRole("dialog", { name: "Recovered drafts" })).toBeHidden();
     const stored = await page.evaluate(() =>

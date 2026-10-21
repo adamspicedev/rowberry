@@ -74,7 +74,7 @@ export function App() {
     const protect = (event: BeforeUnloadEvent) => {
       if (
         document.querySelector(
-          '[data-dirty="true"], [data-saving="true"], [data-connection-dirty="true"], [data-connection-saving="true"]',
+          '[data-dirty="true"], [data-recovery-dirty="true"], [data-saving="true"], [data-connection-dirty="true"], [data-connection-saving="true"]',
         )
       ) {
         event.preventDefault();
