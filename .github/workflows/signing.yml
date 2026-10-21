@@ -1,6 +1,16 @@
 name: Signed release candidates
 on:
   workflow_dispatch:
+    inputs:
+      platform:
+        description: Platforms to sign
+        type: choice
+        required: true
+        default: macos
+        options:
+          - macos
+          - windows
+          - all
 permissions:
   contents: read
 jobs:
@@ -8,16 +18,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: macos-latest
-            platform: macos
-            build: --mac --arm64
-          - os: macos-15-intel
-            platform: macos
-            build: --mac --x64
-          - os: windows-latest
-            platform: windows
-            build: --win --x64
+        include: >-
+          ${{ fromJSON(
+            inputs.platform == 'windows' && '[{"os":"windows-latest","platform":"windows","build":"--win --x64"}]' ||
+            inputs.platform == 'all' && '[{"os":"macos-latest","platform":"macos","build":"--mac --arm64"},{"os":"macos-15-intel","platform":"macos","build":"--mac --x64"},{"os":"windows-latest","platform":"windows","build":"--win --x64"}]' ||
+            '[{"os":"macos-latest","platform":"macos","build":"--mac --arm64"},{"os":"macos-15-intel","platform":"macos","build":"--mac --x64"}]'
+          ) }}
     runs-on: ${{ matrix.os }}
     environment: release-signing-${{ matrix.platform }}
     env:
