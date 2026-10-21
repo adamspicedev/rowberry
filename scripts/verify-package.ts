@@ -64,10 +64,10 @@ for (const prefix of ["worker-", "editor.worker-"]) {
   )
     throw new Error(`Missing packaged worker asset: ${prefix}`);
 }
-const main = extractFile(archive, "dist/main/index.cjs").toString();
+const main = extractFile(archive, path.join("dist", "main", "index.cjs")).toString();
 if (/nodeIntegration(?:InWorker|InSubFrames)?\s*:\s*true/.test(main))
   throw new Error("Enabled packaged renderer Node integration");
-const html = extractFile(archive, "dist/renderer/index.html").toString();
+const html = extractFile(archive, path.join("dist", "renderer", "index.html")).toString();
 if (!html.includes("Content-Security-Policy")) throw new Error("Missing packaged CSP");
 for (const match of html.matchAll(/(?:src|href)="\.\/([^"]+)"/g)) {
   const asset = match[1];
