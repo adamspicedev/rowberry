@@ -32,3 +32,5 @@ This is a same-version, different-build compatibility result; it is not evidence
 ## Review-fix validation
 
 The same macOS package pair passed again with real verified-TLS authentication on both candidate launches. Local fault-injection copies of the runner confirmed that clearing `credential_enabled` after baseline seeding fails at `connections.connect`, while changing the completed upgrade profile to schema version 999 still allows credential cleanup to finish. The former retains the failed profile; the latter never opens that newer schema in the baseline. These diagnostic injections are not production command flags.
+
+A subsequent forced candidate-process exit confirmed shutdown tolerates an already-exited app, removes the native credential through the separate cleanup profile, and prints the retained diagnostic profile path. Normal authenticated upgrade/restart validation also passed after this fix. Unexpected shutdown errors are recorded, with a bounded process termination attempt; they prevent a successful result without blocking the remaining cleanup.

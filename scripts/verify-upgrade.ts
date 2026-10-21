@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
+import { once } from "node:events";
 import { createHash, randomUUID } from "node:crypto";
 import {
   _electron as electron,
@@ -103,14 +104,30 @@ async function launch(build: typeof baseline, userData = directory) {
   await page.clock.install();
   await page.clock.runFor(350);
 }
+const shutdownErrors: unknown[] = [];
 async function close() {
-  if (!application) return;
-  // Accept the native unsaved-work close guard; recovery remains on disk.
-  await application.evaluate(({ dialog }) => {
-    dialog.showMessageBoxSync = () => 1;
-  });
-  await application.close();
+  const current = application;
   application = undefined;
+  if (!current) return;
+  const child = current.process();
+  const exited = () => child.exitCode !== null || child.signalCode !== null;
+  try {
+    if (!exited()) {
+      // Accept the native unsaved-work close guard; recovery remains on disk.
+      await current.evaluate(({ dialog }) => {
+        dialog.showMessageBoxSync = () => 1;
+      });
+    }
+    await current.close();
+  } catch (error) {
+    // An already-exited candidate cannot accept IPC. Still run independent cleanup.
+    if (!exited()) {
+      shutdownErrors.push(error);
+      const stopped = once(child, "exit", { signal: AbortSignal.timeout(5000) });
+      child.kill();
+      await stopped.catch((failure) => shutdownErrors.push(failure));
+    }
+  }
 }
 async function credential(remove = false) {
   if (!application) throw new Error("No running package");
@@ -185,10 +202,12 @@ try {
   } finally {
     await close();
     if (cleanupDirectory) await fs.rm(cleanupDirectory, { recursive: true, force: true });
-    if (completed && cleanupComplete) await fs.rm(directory, { recursive: true, force: true });
+    if (completed && cleanupComplete && shutdownErrors.length === 0)
+      await fs.rm(directory, { recursive: true, force: true });
     else console.error(`Failed upgrade profile retained for diagnosis: ${directory}`);
   }
 }
+if (shutdownErrors.length) throw new AggregateError(shutdownErrors, "Package shutdown failed");
 console.log(
   JSON.stringify(
     { baseline, candidate, nativeVault, platform: process.platform, architecture: process.arch },
