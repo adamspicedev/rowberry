@@ -8,6 +8,7 @@ import {
   type ElectronApplication,
   type Page,
 } from "@playwright/test";
+import { z } from "zod";
 import { CommandSchema } from "../src/shared/protocol";
 
 const [baselinePath, candidatePath, ...flags] = process.argv.slice(2);
@@ -40,15 +41,30 @@ const baseline = await describe(baselinePath);
 const candidate = await describe(candidatePath);
 if (baseline.sha256 === candidate.sha256)
   throw new Error("Baseline and candidate archives must differ");
+let caPath: string | undefined;
+if (nativeVault) {
+  const manifest = process.env.DBAPP_POSTGRES_FIXTURES;
+  if (!manifest)
+    throw new Error(
+      "--native-vault requires DBAPP_POSTGRES_FIXTURES with a running PostgreSQL 18 fixture",
+    );
+  const fixture = z
+    .object({ directory: z.string(), containers: z.array(z.string()) })
+    .parse(JSON.parse(await fs.readFile(manifest, "utf8")));
+  if (!fixture.containers.some((name) => /^dbapp-task3-pg18-/.test(name)))
+    throw new Error("PostgreSQL 18 fixture missing");
+  caPath = path.join(fixture.directory, "ca.crt");
+  await fs.access(caPath);
+}
 const directory = await fs.mkdtemp(path.join(tmpdir(), "rowberry-upgrade-"));
 const profile = {
   id: randomUUID(),
   name: "Upgrade fixture",
   host: "localhost",
-  port: 1,
-  database: "upgrade_fixture",
-  user: "upgrade_fixture",
-  tls: { kind: "verify-full" },
+  port: nativeVault ? 55418 : 1,
+  database: nativeVault ? "fixture" : "upgrade_fixture",
+  user: nativeVault ? "fixture" : "upgrade_fixture",
+  tls: { kind: "verify-full", ...(caPath ? { caPath } : {}) },
   environmentColor: "#3985d6",
 };
 const query = {
@@ -64,7 +80,7 @@ const workspace = {
   sql: ["SELECT 'unsaved SQL'"],
   drafts: [{ id: "upgrade-json", kind: "json", label: "Upgrade JSON copy", text: '{"invalid 🫐' }],
 };
-const secret = randomUUID();
+const secret = "fixture-only-password";
 let application: ElectronApplication | undefined;
 let page!: Page;
 let completed = false;
@@ -74,10 +90,10 @@ async function request(input: Record<string, unknown>) {
   if (!reply.ok) throw new Error(`${command.kind}: ${reply.error.message}`);
   return reply;
 }
-async function launch(build: typeof baseline) {
+async function launch(build: typeof baseline, userData = directory) {
   application = await electron.launch({
     executablePath: build.executable,
-    args: [`--user-data-dir=${directory}`],
+    args: [`--user-data-dir=${userData}`],
     timeout: 30000,
   });
   page = await application.firstWindow();
@@ -142,24 +158,34 @@ try {
     await expect(page.getByLabel("Recovered json draft")).toHaveValue(workspace.drafts[0]!.text);
     await expect(page.getByText("No connection", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Run SQL / selection" })).toHaveCount(0);
-    if (nativeVault) expect(await credential()).toBe(true);
+    if (nativeVault) {
+      // No secret submission in the candidate: authenticate through its real lookup path.
+      const connected = await request({ kind: "connections.connect", id: profile.id });
+      if (connected.kind !== "connections.connect") throw new Error("Unexpected connect reply");
+      await request({ kind: "sessions.close", sessionId: connected.data.sessionId });
+    }
     console.log(
-      `PASS ${phase}: connection, saved query, SQL draft and exact recovered JSON${nativeVault ? ", native credential" : " (native credential not tested)"}`,
+      `PASS ${phase}: connection, saved query, SQL draft and exact recovered JSON${nativeVault ? ", authenticated native credential" : " (native credential not tested)"}`,
     );
     await close();
   }
   completed = true;
 } finally {
-  // Remove only this run's random credential, even when candidate validation fails.
+  // The baseline must never open a profile migrated by the candidate.
+  let cleanupComplete = false;
+  let cleanupDirectory: string | undefined;
   try {
+    await close();
     if (nativeVault) {
-      await close();
-      await launch(baseline);
+      cleanupDirectory = await fs.mkdtemp(path.join(tmpdir(), "rowberry-upgrade-cleanup-"));
+      await launch(baseline, cleanupDirectory);
       expect(await credential(true)).toBe(true);
     }
+    cleanupComplete = true;
   } finally {
     await close();
-    if (completed) await fs.rm(directory, { recursive: true, force: true });
+    if (cleanupDirectory) await fs.rm(cleanupDirectory, { recursive: true, force: true });
+    if (completed && cleanupComplete) await fs.rm(directory, { recursive: true, force: true });
     else console.error(`Failed upgrade profile retained for diagnosis: ${directory}`);
   }
 }
@@ -170,6 +196,4 @@ console.log(
     2,
   ),
 );
-console.log(
-  "PASS packaged profile upgrade; installer replacement, signing and database connectivity are not covered.",
-);
+console.log("PASS packaged profile upgrade; installer replacement and signing are not covered.");
