@@ -29,7 +29,7 @@ test("restart recovers invalid JSON as a detached copy with no connection or que
     app = await launch();
     page = await app.firstWindow();
     await expect(page.getByLabel("Recovered json draft")).toHaveValue('{"invalid');
-    await expect(page.getByText("No database connected", { exact: true })).toBeVisible();
+    await expect(page.getByText("No connection", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Run SQL / selection" })).toHaveCount(0);
     await expect(page.getByLabel("Recovered json draft")).toBeFocused();
     await page.getByRole("button", { name: "Keep local copies", exact: true }).click();
