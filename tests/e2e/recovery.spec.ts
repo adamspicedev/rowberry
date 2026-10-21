@@ -84,13 +84,12 @@ test("closing recovered unsaved work can cancel or explicitly discard", async ()
       BrowserWindow.getAllWindows()[0]?.close();
     });
     await expect(page.getByLabel("Recovered json draft")).toHaveValue("{");
+    const closed = page.waitForEvent("close");
     await app.evaluate(({ dialog, BrowserWindow }) => {
       dialog.showMessageBoxSync = () => 1;
       BrowserWindow.getAllWindows()[0]?.close();
     });
-    await expect
-      .poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length))
-      .toBe(0);
+    await closed;
   } finally {
     await app.close();
     rmSync(directory, { recursive: true, force: true });

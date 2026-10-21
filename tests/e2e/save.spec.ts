@@ -508,6 +508,7 @@ test("real IPC transports large save request/reply and rejects aggregate raw ove
     const opened = await request({ kind: "connections.connect", id });
     if (!opened.ok || opened.kind !== "connections.connect") throw Error("No session");
     const owner = { sessionId: opened.data.sessionId, generation: opened.data.generation };
+    await page.getByRole("button", { name: "Database", exact: true }).click();
     await page
       .getByRole("textbox", { name: "Search schemas and tables" })
       .fill("dbapp_save_ui.wire");

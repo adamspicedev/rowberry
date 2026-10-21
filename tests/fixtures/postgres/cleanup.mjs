@@ -5,7 +5,7 @@ const manifest = process.env.DBAPP_POSTGRES_FIXTURES ?? "/tmp/dbapp-task3-fixtur
 const fixture = z
   .object({
     directory: z.string(),
-    containers: z.array(z.string().regex(/^dbapp-task3-pg(?:14|18)(?:-[a-zA-Z0-9-]+)?$/)),
+    containers: z.array(z.string().regex(/^dbapp-task3-pg1[4-8](?:-[a-zA-Z0-9-]+)?$/)),
   })
   .parse(JSON.parse(readFileSync(manifest, "utf8")));
 const docker = ["--context", process.env.DBAPP_DOCKER_CONTEXT ?? "orbstack"];
