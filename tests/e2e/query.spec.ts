@@ -99,12 +99,16 @@ for (const version of [14, 18])
       await expect(page.locator(".query-tab output")).toContainText("complete");
       await text("SELECT pg_backend_pid()");
       await runButton.click();
-      await expect(page.locator(".query-tab output")).toContainText("complete");
+      await expect(
+        page
+          .getByRole("table", { name: "SQL results" })
+          .getByRole("columnheader", { name: "pg_backend_pid", exact: false }),
+      ).toBeVisible();
       const backendPid = Number(
         await page
           .getByRole("table", { name: "SQL results" })
           .locator("tbody td")
-          .first()
+          .nth(1)
           .textContent(),
       );
       await client.query("SELECT pg_terminate_backend($1)", [backendPid]);
@@ -152,7 +156,12 @@ for (const version of [14, 18])
       ).toBeVisible();
       await page.getByRole("button", { name: "Next result page" }).click();
       await expect(
-        page.getByRole("table", { name: "SQL results" }).locator("tbody tr").first(),
+        page
+          .getByRole("table", { name: "SQL results" })
+          .locator("tbody tr")
+          .first()
+          .getByRole("cell")
+          .nth(1),
       ).toHaveText("201");
       expect(
         await page.getByRole("table", { name: "SQL results" }).locator("tbody tr").count(),
@@ -175,6 +184,7 @@ for (const version of [14, 18])
       const inspectButtons = page.getByRole("button", { name: "Inspect JSON", exact: true });
       await inspectButtons.first().click();
       const inspector = page.getByRole("region", { name: "JSON inspector", exact: true });
+      await inspector.getByRole("button", { name: "Edit JSON", exact: true }).click();
       await inspector.getByLabel("JSON new value", { exact: true }).fill("retained until discard");
       await inspector.getByRole("button", { name: "Set value", exact: true }).click();
       await expect(inspector).toHaveAttribute("data-dirty", "true");

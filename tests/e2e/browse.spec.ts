@@ -99,12 +99,13 @@ test("live schema navigation, typed virtual grid, filtering, sorting, paging and
     await page.keyboard.press("Enter");
     const inspector = page.getByRole("region", { name: "JSON inspector", exact: true });
     async function copiedDraft() {
+      const actions = inspector.locator("details.json-actions");
+      if (!(await actions.evaluate((element) => element.hasAttribute("open"))))
+        await inspector.getByLabel("JSON viewer actions", { exact: true }).click();
       await inspector.getByRole("button", { name: "Copy JSON draft", exact: true }).click();
       return application.evaluate(({ clipboard }) => clipboard.readText());
     }
-    await expect(
-      inspector.getByRole("textbox", { name: "JSON text editor", exact: true }),
-    ).toBeVisible();
+    await expect(inspector.getByRole("tree")).toBeVisible();
     expect(await copiedDraft()).toBe('{"n":9007199254740993,"n":2}');
     await page.screenshot({ path: "/tmp/dbapp-task4-browse.png" });
     await page.getByRole("button", { name: "Close JSON", exact: true }).click();
