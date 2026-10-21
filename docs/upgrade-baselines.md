@@ -2,16 +2,18 @@
 
 Every release candidate must preserve profiles from the latest accepted release for each platform and architecture it will support. Acceptance is a maintainer decision recorded with evidence; passing CI alone does not promote a package.
 
+Current scope is macOS arm64 and Intel x64. Windows and Linux are deferred and are not release gates until explicitly added to scope. Existing cross-platform CI continues.
+
 ## Baseline register
 
 No release baseline has been accepted yet. The packages used in the October 2026 QA reports are development evidence, not accepted release baselines.
 
-| Target      | Accepted baseline | Retained package and checksums | Acceptance evidence |
-| ----------- | ----------------- | ------------------------------ | ------------------- |
-| macOS arm64 | Pending           | Pending                        | Pending             |
-| macOS x64   | Pending           | Pending                        | Pending             |
-| Windows x64 | Pending           | Pending                        | Pending             |
-| Linux x64   | Pending           | Pending                        | Pending             |
+| Target      | Accepted baseline | Retained package and checksums | Acceptance evidence  |
+| ----------- | ----------------- | ------------------------------ | -------------------- |
+| macOS arm64 | Pending           | Pending                        | Pending              |
+| macOS x64   | Pending           | Pending                        | Pending              |
+| Windows x64 | Deferred          | Not yet required               | Out of current scope |
+| Linux x64   | Deferred          | Not yet required               | Out of current scope |
 
 For each accepted target, replace its Pending entries with a link to a versioned baseline record under `docs/qa/`. That record must contain the version, full source commit, OS/architecture, acceptance date and maintainer, durable artifact location, installer SHA-256, unpacked `app.asar` SHA-256, signing status, and links to installation, credential-store and persistence results. For Linux, record the distribution/session and both AppImage and deb installer results if both are distributed.
 
