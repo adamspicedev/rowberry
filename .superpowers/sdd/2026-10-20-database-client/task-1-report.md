@@ -33,20 +33,20 @@ During GREEN, global sandbox enforcement correctly prevented a test attacker fro
 
 Host: macOS 27.2.0, Apple Silicon arm64; Node 20.20.2 and Bun 1.4.2.
 
-| Command | Result |
-| --- | --- |
-| `bun install --frozen-lockfile` | Passed, no lockfile changes |
-| `bun run typecheck` | Passed |
-| `bun run lint` | Passed, Oxlint with warnings denied |
-| `bun run format:check` | Passed, includes approved docs |
-| `bun run test` | 2/2 unit boundary tests passed |
-| `bun run build` | Passed, Vite renderer and bundled Electron main/preload |
-| `bun run test:e2e` | 7/7 actual Electron tests passed in 4.1s |
-| `bun run test:integration` | No tests yet, explicitly exits successfully as a placeholder |
-| `bun run package` | Passed, unsigned arm64 and x64 DMGs built |
-| `bun run verify:package release/mac-arm64/dbapp.app arm64` | Executable/header/assets/IPC/renderer smoke passed |
-| `bun run verify:package release/mac/dbapp.app x64` | x64 header/assets passed; launch explicitly skipped on arm64 host |
-| `git diff --check` | Passed |
+| Command                                                    | Result                                                            |
+| ---------------------------------------------------------- | ----------------------------------------------------------------- |
+| `bun install --frozen-lockfile`                            | Passed, no lockfile changes                                       |
+| `bun run typecheck`                                        | Passed                                                            |
+| `bun run lint`                                             | Passed, Oxlint with warnings denied                               |
+| `bun run format:check`                                     | Passed, includes approved docs                                    |
+| `bun run test`                                             | 2/2 unit boundary tests passed                                    |
+| `bun run build`                                            | Passed, Vite renderer and bundled Electron main/preload           |
+| `bun run test:e2e`                                         | 7/7 actual Electron tests passed in 4.1s                          |
+| `bun run test:integration`                                 | No tests yet, explicitly exits successfully as a placeholder      |
+| `bun run package`                                          | Passed, unsigned arm64 and x64 DMGs built                         |
+| `bun run verify:package release/mac-arm64/dbapp.app arm64` | Executable/header/assets/IPC/renderer smoke passed                |
+| `bun run verify:package release/mac/dbapp.app x64`         | x64 header/assets passed; launch explicitly skipped on arm64 host |
+| `git diff --check`                                         | Passed                                                            |
 
 Desktop tests cover Node/process isolation, untrusted real sender rejection, malformed preload commands, narrow exposed API, oversized messages, navigation/window denial, shell loading, and appearance controls. A separate test copies the actual build to a temporary directory and appends a raw IPC caller to its test-only preload, proving main-process validation rejects unknown fields and oversized inputs even when preload validation is bypassed. A valid control request succeeds first.
 
