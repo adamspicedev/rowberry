@@ -1,12 +1,13 @@
 import { test, expect, _electron as electron } from "@playwright/test";
-import { cp, mkdtemp, readFile, writeFile, rm } from "node:fs/promises";
+import { cp, mkdtemp, readFile, writeFile, rm, realpath } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
 test("main rejects malformed commands even when preload validation is bypassed", async () => {
   // Copy the real build and add a test-only raw IPC caller in its trusted preload.
   // Production sources and artifacts remain unchanged, with no test bypass shipped.
-  const directory = await mkdtemp(path.join(tmpdir(), "dbapp-boundary-"));
+  // Windows TEMP may use an 8.3 alias; Chromium resolves it before reporting its URL.
+  const directory = await realpath(await mkdtemp(path.join(tmpdir(), "dbapp-boundary-")));
   try {
     await cp("dist", path.join(directory, "dist"), { recursive: true });
     await writeFile(

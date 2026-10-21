@@ -299,9 +299,12 @@ for (const version of [14, 18])
       ).toBe(true);
       // App quit must drain cancellation, not just kill a socket while SQL runs.
       // Test teardown explicitly discards live editors; user close remains guarded.
-      await app.evaluate(({ BrowserWindow }) =>
-        BrowserWindow.getAllWindows().forEach((window) => window.destroy()),
-      );
+      await app.evaluate(({ app, BrowserWindow }) => {
+        BrowserWindow.getAllWindows().forEach((window) => window.destroy());
+        // Repeated quit requests must not bypass in-flight database cancellation.
+        app.quit();
+        app.quit();
+      });
       await app.close();
       app = await electron.launch({
         executablePath: process.env.DBAPP_PACKAGE_EXECUTABLE,

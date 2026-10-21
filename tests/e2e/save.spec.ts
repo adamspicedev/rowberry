@@ -473,6 +473,7 @@ test("real IPC transports large save request/reply and rejects aggregate raw ove
     ],
   });
   const page = await app.firstWindow();
+  await expect(page.locator("[data-app-ready]")).toBeVisible();
   async function request(command: Record<string, unknown>) {
     return ReplySchema.parse(
       await page.evaluate(

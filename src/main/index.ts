@@ -46,18 +46,27 @@ app.whenReady().then(() => {
     if (mainWindow && !mainWindow.isDestroyed()) mainWindow.webContents.send(EVENT_CHANNEL, event);
   });
   let quitting = false;
+  let draining = false;
   let quitRequested = false;
+  const finishQuit = () => {
+    if (draining) return;
+    draining = true;
+    sessions.stop();
+    void sessions.drain().finally(() => {
+      quitting = true;
+      app.quit();
+    });
+  };
   app.on("before-quit", (event) => {
     if (quitting) return;
     event.preventDefault();
+    if (draining) return;
     if (mainWindow && !mainWindow.isDestroyed()) {
       quitRequested = true;
       mainWindow.close();
       return;
     }
-    quitting = true;
-    sessions.stop();
-    void sessions.drain().finally(() => app.quit());
+    finishQuit();
   });
   app.once("will-quit", () => {
     sessions.stop();
@@ -89,8 +98,7 @@ app.whenReady().then(() => {
       sessions.stop();
       mainWindow = null;
       if (quitRequested) {
-        quitting = true;
-        void sessions.drain().finally(() => app.quit());
+        finishQuit();
       }
     });
   };
