@@ -15,3 +15,5 @@ Recovered values appear as local, copy-only text. They contain no reusable datab
 The older `rowberry.sql.drafts` browser key is migrated to detached SQL recovery copies and removed after a successful transaction. Copy recovered SQL into a new editor tab explicitly; migration never replaces active editor tabs. Failed migration keeps the key and offers Retry legacy SQL migration; disabled recovery removes the key without reading it. Recovery never falls back to browser SQL storage. JSON panel width remains a browser preference containing only a number.
 
 If reading or saving fails, Rowberry reports a recovery error and retains live drafts. Retry after freeing disk space; copy important work before closing. If the SQLite file cannot open or migrate, the startup dialog offers Quit or a temporary in-memory workspace. The original file is preserved. Temporary mode cannot persist anything and must not be used as a substitute for repairing the original profile. No automatic corruption reset or database mutation retry occurs.
+
+For Mac backup, application replacement, retained data after uninstall and reinstall steps, see [macOS installation](macos-installation.md).
