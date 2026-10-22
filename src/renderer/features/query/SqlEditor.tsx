@@ -1,3 +1,4 @@
+import { observeEditorTheme } from "../../app/editor-theme";
 import { useEffect, useRef } from "react";
 import * as monaco from "monaco-editor/editor/editor.api.js";
 import "monaco-editor/languages/definitions/sql/register.js";
@@ -42,6 +43,7 @@ export function SqlEditor({
       ariaLabel: "SQL editor",
       scrollBeyondLastLine: false,
     });
+    const stopTheme = observeEditorTheme();
     ownedModel.current = editor.getModel();
     onReady({
       text: () => editor.getValue(),
@@ -52,6 +54,7 @@ export function SqlEditor({
     });
     const listener = editor.onDidChangeModelContent(() => changed.current(editor.getValue()));
     return () => {
+      stopTheme();
       listener.dispose();
       onReady(null);
       const model = editor.getModel();

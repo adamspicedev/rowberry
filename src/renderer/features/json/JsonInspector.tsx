@@ -1,6 +1,7 @@
+import { Button } from "../../components/ui/button";
 import { filterPaths } from "../../../json/viewer";
 import { recordDraft } from "../../app/workspace";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { JsonValue, Range } from "../../../json/document";
 import { escapePointer } from "../../../json/paths";
 import { resolvePointer } from "../../../json/document";
@@ -117,6 +118,7 @@ export function JsonInspector({
     window.addEventListener("rowberry:discard-json", discard);
     return () => window.removeEventListener("rowberry:discard-json", discard);
   }, [documentId]);
+  const saveHelpId = useId();
   const editable = !readOnly && !!state.document?.editable && !state.pending && !saving;
   const limited =
     state.document?.diagnostics.some((diagnostic) => diagnostic.kind === "limit") ?? false;
@@ -276,6 +278,42 @@ export function JsonInspector({
               ? "Changes are saved after confirmation"
               : "Untargeted value · copy-only draft"}
       </p>
+      <div className="json-save-bar">
+        <div>
+          <strong>
+            {saving ? "Saving changes…" : dirty ? "Unsaved changes" : "No unsaved changes"}
+          </strong>
+          <p id={saveHelpId}>
+            {readOnly
+              ? "This result is read-only. Open the table to edit its values."
+              : !saveTarget
+                ? "Copy-only draft. Open this value from its table to save changes."
+                : saveBlocked
+                  ? "Resolve the pending table edit or save before saving JSON."
+                  : !state.document?.editable
+                    ? "Fix JSON errors before saving. Large values may be read-only."
+                    : "Review your changes before updating the database."}
+          </p>
+        </div>
+        <Button
+          className="json-save"
+          aria-describedby={saveHelpId}
+          disabled={!editable || !dirty || !saveTarget || !onSaveDraft || saveBlocked}
+          onClick={() => {
+            if (!editable || !state.document || !saveTarget || state.pending || saving) return;
+            onSaveDraft?.({
+              documentId,
+              text: state.text,
+              originalSource: sourceText,
+              originalSqlNull,
+              revision: state.document.revision,
+              saveTarget,
+            });
+          }}
+        >
+          Save to database
+        </Button>
+      </div>
       <div className="json-toolbar" hidden={!editing}>
         <button
           disabled={saving || state.pending || !state.document?.canUndo}
@@ -298,22 +336,6 @@ export function JsonInspector({
           }}
         >
           Copy selected value
-        </button>
-        <button
-          disabled={!editable || !dirty || !saveTarget || !onSaveDraft || saveBlocked}
-          onClick={() => {
-            if (!editable || !state.document || !saveTarget || state.pending || saving) return;
-            onSaveDraft?.({
-              documentId,
-              text: state.text,
-              originalSource: sourceText,
-              originalSqlNull,
-              revision: state.document.revision,
-              saveTarget,
-            });
-          }}
-        >
-          Save to database
         </button>
         <button disabled={saving || !dirty || state.pending} onClick={() => setClosing(true)}>
           Discard draft…

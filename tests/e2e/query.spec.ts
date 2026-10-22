@@ -68,6 +68,16 @@ for (const version of [14, 18])
       await page.getByRole("button", { name: "SQL workspace", exact: true }).click();
       const runButton = page.getByRole("button", { name: "Run SQL / selection", exact: true });
       await expect(runButton).toBeEnabled();
+      // Navigation remains a destination: clicking the selected SQL tab must not hide it.
+      await page.getByRole("button", { name: "SQL workspace", exact: true }).click();
+      await expect(runButton).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "SQL workspace", exact: true }),
+      ).toHaveAttribute("aria-current", "page");
+      await page.getByLabel("Appearance", { exact: true }).selectOption("dark");
+      await expect(page.locator(".sql-editor .monaco-editor")).toHaveClass(/vs-dark/);
+      await page.getByLabel("Appearance", { exact: true }).selectOption("light");
+      await expect(page.locator(".sql-editor .monaco-editor")).not.toHaveClass(/vs-dark/);
       const editor = page.getByRole("textbox", { name: "SQL editor" });
       async function text(sql: string) {
         await editor.focus();
