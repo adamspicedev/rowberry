@@ -104,7 +104,10 @@ test("JSON sidebar filters nested values, preserves drafts and inspects full row
     await expect(panel.getByRole("tree")).toContainText("12345678901234567890");
     await expect(panel.getByRole("tree")).toContainText('"absent":null');
     await panel.getByRole("button", { name: "Close JSON", exact: true }).click();
-    await page.getByRole("button", { name: "Table workspace", exact: true }).click();
+    await page
+      .getByRole("navigation", { name: "Workspace tabs" })
+      .getByRole("button", { name: "Database", exact: true })
+      .click();
     await page.getByRole("textbox", { name: "Search schemas and tables" }).fill(schema);
     page.once("dialog", (dialog) => dialog.accept());
     await page.getByRole("button", { name: `records ${schema} · table`, exact: true }).click();

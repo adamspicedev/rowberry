@@ -42,7 +42,7 @@ The operator created standard account `rowberryqa`; the active console account w
 - Cancelled `SELECT pg_sleep(30)` and successfully ran `SELECT 1` afterward.
 - Edited the disposable table's JSON, confirmed the database save, and reported success after instructions to requery the stored value.
 
-The JSON save action was difficult to discover: the operator needed guidance to find **Save to database** and **Confirm save**, then reported that the interface needs substantial improvement. This is an open usability finding even though the functional check passed. Exact Keychain prompt behavior was not reported. Detached JSON draft recovery in this account and locked-Keychain behavior remain untested.
+The JSON save action was difficult to discover: the operator needed guidance to find **Save to database** and **Confirm save**, then reported that the interface needs substantial improvement. This is an open usability finding even though the functional check passed. Exact Keychain prompt behavior was not reported. Detached JSON draft recovery in this account remains untested. The operator subsequently found Lock Keychain greyed out in Keychain Access for `rowberryqa`. Locked-Keychain testing is blocked on this host, not passed; no Keychain password or security settings were changed.
 
 All nine PR #5 checks passed at `c7f1d186f603bf6fbd0ecd6eaae4a48d7298a5d2`: [checks](https://github.com/adamspicedev/rowberry/actions/runs/39839111007), [PostgreSQL](https://github.com/adamspicedev/rowberry/actions/runs/39839111067), and [packages](https://github.com/adamspicedev/rowberry/actions/runs/39839111016). Intel CI does not establish interactive Intel desktop qualification.
 
