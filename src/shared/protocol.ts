@@ -55,6 +55,15 @@ export type ConnectionId = ConnectionProfile["id"];
 export const BrowseCommandSchema = z.discriminatedUnion("kind", [
   z
     .object({
+      kind: z.literal("rows.release"),
+      requestId: RequestIdSchema,
+      sessionId: SessionIdSchema,
+      generation: z.number().int().positive(),
+      tableId: z.string().min(1).max(32),
+    })
+    .strict(),
+  z
+    .object({
       kind: z.literal("rows.save"),
       requestId: RequestIdSchema,
       sessionId: SessionIdSchema,
@@ -299,6 +308,9 @@ const SuccessSchema = z.discriminatedUnion("kind", [
 
   z
     .object({ ...successFields, kind: z.literal("schema.list"), data: SchemaSnapshotSchema })
+    .strict(),
+  z
+    .object({ ...successFields, kind: z.literal("rows.release"), data: z.object({}).strict() })
     .strict(),
   z.object({ ...successFields, kind: z.literal("rows.fetch"), data: RowPageSchema }).strict(),
   z.object({ ...successFields, kind: z.literal("rows.value"), data: ValueSchema }).strict(),

@@ -121,6 +121,50 @@ for (const version of [14, 18])
         await session.client.query("RESET ROLE");
       }
     });
+    test("open table handles stay isolated, bounded and are released on close", async () => {
+      const documents = new RowBrowser(session);
+      await session.client.query(
+        'CREATE TABLE "browse fixture".tab_edit(id int PRIMARY KEY, rank int); INSERT INTO "browse fixture".tab_edit VALUES(1,1)',
+      );
+      const firstTable = await table("tab_edit");
+      const first = await documents.fetch({ tableId: firstTable.id, pageSize: 1 });
+      const target = first.rows[0]!.target!;
+      const otherTable = await table("quoted table");
+      const other = await documents.fetch({ tableId: otherTable.id, pageSize: 2 });
+      const saved = await documents.save({ changes: [{ target, values: { rank: "9" } }] });
+      expect(saved.kind).toBe("committed");
+      if (saved.kind !== "committed") throw new Error("Expected committed row");
+      const savedTarget = saved.rows[0]!.row.target!;
+      await documents.release(firstTable.id);
+      expect(
+        await documents.save({ changes: [{ target: savedTarget, values: { rank: "10" } }] }),
+      ).toMatchObject({ kind: "failed" });
+      await expect(
+        documents.value({ target: other.rows[1]!.target!, column: "doc" }),
+      ).resolves.toMatchObject({ text: '{"n":9007199254740993,"n":2}' });
+      // Close/reopen cycles must not consume the bounded table slots.
+      for (let index = 0; index < 17; index++) {
+        await documents.fetch({ tableId: firstTable.id, pageSize: 1 });
+        await documents.release(firstTable.id);
+      }
+      const capBrowser = new RowBrowser(session);
+      for (let index = 0; index < 17; index++) {
+        await session.client.query(
+          `CREATE TABLE "browse fixture"."tab_${index}"(id int PRIMARY KEY)`,
+        );
+        const entry = await table(`tab_${index}`);
+        if (index < 16) await capBrowser.fetch({ tableId: entry.id });
+        else {
+          await expect(capBrowser.fetch({ tableId: entry.id })).rejects.toThrow(
+            "Close a table tab",
+          );
+          await capBrowser.release((await table("tab_0")).id);
+          await expect(capBrowser.fetch({ tableId: entry.id })).resolves.toMatchObject({
+            rows: [],
+          });
+        }
+      }
+    });
     test("pages preserve raw values, NULL and composite identity without repeats", async () => {
       const t = await table("quoted table");
       const first = await browser.fetch({ tableId: t.id });

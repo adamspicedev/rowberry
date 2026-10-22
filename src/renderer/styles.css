@@ -163,12 +163,6 @@ nav {
   gap: 4px;
   padding: 0 16px;
 }
-.active-tab {
-  border-radius: 0;
-  border-bottom: 2px solid var(--accent);
-  height: 54px !important;
-  font-size: 12px !important;
-}
 .connection-state {
   display: flex;
   align-items: center;
@@ -530,7 +524,6 @@ textarea:focus-visible {
 .sql-results button,
 .query-tab > button,
 .query-toolbar button:not(.query-run),
-.query-workspace > [role="tablist"] > button,
 .query-workspace input,
 .query-workspace select {
   border: 1px solid var(--border);
@@ -634,12 +627,6 @@ textarea:focus-visible {
   max-height: 200px;
   overflow: auto;
   font-size: 12px;
-}
-
-.table-workspace-host:not([hidden]) {
-  display: flex;
-  flex: 1;
-  min-height: 0;
 }
 
 .save-preview {
@@ -1248,9 +1235,6 @@ textarea:focus-visible {
 .app > main > nav {
   align-items: center;
 }
-.app > main > nav > button {
-  flex-shrink: 0;
-}
 .connection-state {
   margin-left: auto;
   white-space: nowrap;
@@ -1284,22 +1268,6 @@ textarea:focus-visible {
 }
 .query-workspace {
   padding: 18px 22px;
-}
-.query-workspace > [role="tablist"] {
-  display: flex;
-  gap: 4px;
-  border-bottom: 1px solid var(--border);
-  margin: 8px 0 14px;
-}
-.query-workspace > [role="tablist"] > button {
-  border: 0;
-  border-radius: 6px 6px 0 0;
-  padding: 9px 18px;
-}
-.query-workspace > [role="tablist"] > button[aria-selected="true"] {
-  background: var(--selected);
-  color: var(--selected-text);
-  border-bottom: 2px solid var(--accent);
 }
 .query-toolbar {
   gap: 8px;
@@ -1449,4 +1417,88 @@ button:disabled {
   .query-workspace {
     padding: 12px;
   }
+}
+
+/* Open documents share one strip; switching keeps each document mounted. */
+.app > main > nav {
+  min-height: 42px;
+  padding: 0 8px;
+}
+.document-tab-host {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: stretch;
+}
+.document-tabs {
+  display: flex;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.document-tab {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  border-right: 1px solid var(--border);
+}
+.document-tab > button {
+  background: transparent;
+  color: var(--subtle);
+  border: 0;
+}
+.document-tab > [role="tab"] {
+  padding: 10px 12px;
+  max-width: 240px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  border-bottom: 2px solid transparent;
+}
+.document-tab:has([aria-selected="true"]) {
+  background: var(--selected);
+}
+.document-tab > [aria-selected="true"] {
+  color: var(--foreground);
+  border-bottom-color: var(--accent);
+}
+.document-tab > .document-close {
+  padding: 0 10px;
+  font-size: 18px;
+}
+.document-close:hover,
+.new-document:hover {
+  background: var(--selected);
+  color: var(--foreground);
+}
+.new-document {
+  flex: 0 0 40px;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  font-size: 22px;
+}
+.query-workspace {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+.query-workspace > [role="tabpanel"]:not([hidden]) {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+.query-workspace.table-document {
+  height: 100%;
+  min-height: 0;
+}
+.statusbar > .connection-state {
+  margin-left: 0;
+}
+.statusbar > button {
+  padding: 0 8px;
+  height: 24px;
+  font-size: 11px;
 }

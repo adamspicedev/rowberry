@@ -6,7 +6,8 @@ import { introspect } from "./introspection";
 import { RowBrowser, BrowseColumnLimitError } from "./rows";
 import { boundedCommand, boundedReply, failure } from "../shared/protocol";
 let browser: RowBrowser | undefined;
-let busy = false;
+let browseQueue: Promise<void> = Promise.resolve();
+let queuedBrowse = 0;
 const port = process.parentPort;
 if (!port) throw new Error("Database worker requires a private parent port.");
 let session: Session | undefined;
@@ -49,12 +50,18 @@ port.on("message", async ({ data }: { data: unknown }) => {
       !browser ||
       session.sessionId !== request.sessionId ||
       session.generation !== request.generation ||
-      busy
+      queuedBrowse >= 32
     ) {
       port.postMessage({ kind: "reply", reply: failure("UNAVAILABLE", request.requestId) });
       return;
     }
-    busy = true;
+    queuedBrowse++;
+    const previous = browseQueue;
+    let release!: () => void;
+    browseQueue = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await previous;
     try {
       let data;
       if (request.kind === "schema.list") data = await introspect(session);
@@ -63,7 +70,10 @@ port.on("message", async ({ data }: { data: unknown }) => {
         data = await browser.fetch({ tableId, filter, sort, cursor, pageSize });
       } else if (request.kind === "rows.save")
         data = await browser.save({ changes: request.changes });
-      else data = await browser.value({ target: request.target, column: request.column });
+      else if (request.kind === "rows.release") {
+        await browser.release(request.tableId);
+        data = {};
+      } else data = await browser.value({ target: request.target, column: request.column });
       const reply = { ok: true, kind: request.kind, requestId: request.requestId, data };
       port.postMessage({
         kind: "reply",
@@ -80,7 +90,8 @@ port.on("message", async ({ data }: { data: unknown }) => {
         ),
       });
     } finally {
-      busy = false;
+      queuedBrowse--;
+      release();
     }
     return;
   }
