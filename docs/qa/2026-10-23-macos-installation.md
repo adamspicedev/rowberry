@@ -30,6 +30,22 @@ The base runner's final message still says installer replacement is not covered:
 
 Documentation formatting and `git diff --check` passed. This report does not claim a new CI run or signed-package verification.
 
+## Fresh-account manual acceptance
+
+The operator created standard account `rowberryqa`; the active console account was independently confirmed before testing. Desktop automation remained attached to `spicey`, so the following results are operator-reported unless otherwise stated.
+
+- Opened the supplied DMG in Finder, copied the app into Applications and authenticated with a fingerprint to overwrite the existing bundle. The operator reported that the app opened without issue. `/Applications/Rowberry.app/Contents/Resources/app.asar` was subsequently hashed and matches the candidate above. This was a fresh account using a replaced shared application, not a machine with no previous installation. Disk-image ejection and the exact launch path were not independently observed.
+- Initial workspace was empty, with no inherited saved connections or recovered drafts.
+- Connected to the disposable PostgreSQL fixture. A supplied photo independently shows a successful one-row query result identifying PostgreSQL 18.6. Connection instructions specified verify-full TLS; the photo does not independently prove the selected TLS mode.
+- After quitting and reopening, reconnected without entering the password.
+- Named query and distinct unsaved Unicode SQL draft survived restart, as checked by the operator.
+- Cancelled `SELECT pg_sleep(30)` and successfully ran `SELECT 1` afterward.
+- Edited the disposable table's JSON, confirmed the database save, and reported success after instructions to requery the stored value.
+
+The JSON save action was difficult to discover: the operator needed guidance to find **Save to database** and **Confirm save**, then reported that the interface needs substantial improvement. This is an open usability finding even though the functional check passed. Exact Keychain prompt behavior was not reported. Detached JSON draft recovery in this account and locked-Keychain behavior remain untested.
+
+All nine PR #5 checks passed at `c7f1d186f603bf6fbd0ecd6eaae4a48d7298a5d2`: [checks](https://github.com/adamspicedev/rowberry/actions/runs/39839111007), [PostgreSQL](https://github.com/adamspicedev/rowberry/actions/runs/39839111067), and [packages](https://github.com/adamspicedev/rowberry/actions/runs/39839111016). Intel CI does not establish interactive Intel desktop qualification.
+
 ## Remaining acceptance gates
 
-Fresh macOS account with its own login Keychain; Finder installation and security prompts; Intel desktop runtime and native vault checks; actual locked-store behavior; signed/notarized candidates and their full smoke tests; accepted baseline and maintainer sign-off. No valid local code-signing identities were found. Windows and Linux qualification remains deferred. No baseline was promoted and no release was published.
+Signed/downloaded first-launch security prompts; remaining fresh-account JSON draft recovery and credential-denial cases; Intel desktop runtime and native vault checks; actual locked-store behavior; signed/notarized candidates and their full smoke tests; accepted baseline and maintainer sign-off. No valid local code-signing identities were found. Windows and Linux qualification remains deferred. No baseline was promoted and no release was published.

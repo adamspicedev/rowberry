@@ -19,7 +19,7 @@ The dated sections below distinguish automated CI evidence, local package behavi
 
 ## QA evidence, 23 October 2026
 
-The [bundle replacement and reinstall report](qa/2026-10-23-macos-installation.md) records fresh unsigned arm64 package identity and successful automated replacement, restart and reinstall with recovered data and authenticated Keychain credentials. This adds file-copy lifecycle evidence on the existing account; fresh-account, Finder and signed-release qualification remain open.
+The [bundle replacement and reinstall report](qa/2026-10-23-macos-installation.md) records fresh unsigned arm64 package identity and successful automated replacement, restart and reinstall with recovered data and authenticated Keychain credentials. The report also records operator-performed Finder installation and core workflows in the fresh `rowberryqa` account, with independently verified installed archive identity. JSON save discoverability is an open usability finding. Locked-store, remaining JSON draft recovery and signed-release qualification remain open.
 
 ## QA evidence, 21 October 2026
 
