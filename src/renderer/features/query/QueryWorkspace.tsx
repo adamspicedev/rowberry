@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { rowJson } from "../../../json/viewer";
 import { recordDraft } from "../../app/workspace";
 import { JsonInspector } from "../json/JsonInspector";
@@ -297,14 +298,14 @@ function QueryTab({
           onDirtyChange={setJsonDirty}
         />
       )}
-      <SqlEditor value={sql} onChange={onChange} onReady={editorReady} tables={tables} />
       <div className="query-toolbar">
-        <button
+        <Button
+          className="query-run"
           disabled={!ready || busy}
           onClick={() => void run(editor.current?.selected() || editor.current?.text() || sql)}
         >
           Run SQL / selection
-        </button>
+        </Button>
         <button
           disabled={!queryId || !busy}
           onClick={() => {
@@ -323,11 +324,14 @@ function QueryTab({
         >
           Cancel query
         </button>
-        {["BEGIN", "COMMIT", "ROLLBACK"].map((statement) => (
-          <button key={statement} disabled={!ready || busy} onClick={() => void run(statement)}>
-            {statement}
-          </button>
-        ))}
+        <fieldset className="transaction-controls" aria-label="Transaction controls">
+          <span>Transaction</span>
+          {["BEGIN", "COMMIT", "ROLLBACK"].map((statement) => (
+            <button key={statement} disabled={!ready || busy} onClick={() => void run(statement)}>
+              {statement}
+            </button>
+          ))}
+        </fieldset>
         <button disabled={busy || !page || page.done} onClick={() => setConfirmEnd(true)}>
           End unfinished result…
         </button>
@@ -381,6 +385,7 @@ function QueryTab({
           </button>
         )}
       </div>
+      <SqlEditor value={sql} onChange={onChange} onReady={editorReady} tables={tables} />
       {confirmEnd && (
         <div role="alertdialog" aria-label="End unfinished result">
           <p>
@@ -432,7 +437,7 @@ function QueryTab({
           Save query
         </button>
       </div>
-      <output>
+      <output className="query-status" aria-live="polite">
         {message} · Transaction: {transaction}
         {page
           ? ` · ${Math.round(page.durationMs)} ms elapsed · ${page.rowCount ?? page.rows.length} rows`

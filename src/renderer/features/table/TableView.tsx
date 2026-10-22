@@ -385,7 +385,7 @@ export function TableView({
           {table.rls ? " · RLS" : ""}
         </span>
         <Button
-          variant="default"
+          variant="ghost"
           onClick={() => {
             if (reset({ ...input, cursor: null })) setReload((n) => n + 1);
           }}
@@ -401,6 +401,7 @@ export function TableView({
           Preview changes
         </Button>
         <Button
+          variant="ghost"
           disabled={saving || !(drafts.length || editor || jsonDirty)}
           onClick={() => {
             if (discardAllowed()) clearInspection();
@@ -508,7 +509,7 @@ export function TableView({
           <Button disabled={saving || blocked} onClick={() => void save()}>
             Confirm save
           </Button>
-          <Button disabled={saving} onClick={() => setPreview(null)}>
+          <Button variant="ghost" disabled={saving} onClick={() => setPreview(null)}>
             Cancel preview
           </Button>
         </section>

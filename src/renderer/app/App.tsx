@@ -170,6 +170,7 @@ export function App() {
             <Button
               variant="ghost"
               className={!managerVisible && !showSql ? "active-tab" : undefined}
+              aria-current={!managerVisible && !showSql ? "page" : undefined}
               onClick={() => {
                 if (leaveManager()) setShowSql(false);
               }}
@@ -180,16 +181,18 @@ export function App() {
           {session?.state === "connected" && (
             <Button
               variant="ghost"
+              className={!managerVisible && showSql ? "active-tab" : undefined}
+              aria-current={!managerVisible && showSql ? "page" : undefined}
               onClick={() => {
                 if (!leaveManager()) return;
                 setSqlOpened(true);
-                setShowSql((current) => managerVisible || !current);
+                setShowSql(true);
               }}
             >
-              {!managerVisible && showSql ? "Table workspace" : "SQL workspace"}
+              SQL workspace
             </Button>
           )}
-          <span className="connection-state">
+          <span className="connection-state" data-state={session?.state}>
             <i /> {session?.state ?? "No connection"}
           </span>
           {session && session.state !== "disconnected" && (
@@ -222,7 +225,7 @@ export function App() {
           data-connection-saving={connectionBusy}
         />
         {sqlOpened && session?.state === "connected" && (
-          <div hidden={managerVisible || !showSql}>
+          <div className="query-workspace-host" hidden={managerVisible || !showSql}>
             <QueryWorkspace
               key={session.sessionId}
               sessionId={session.sessionId}
@@ -252,7 +255,11 @@ export function App() {
                       ? "Database connected"
                       : "No database connected"}
                   </strong>
-                  <p>Select Connect in the sidebar to open a PostgreSQL session.</p>
+                  <p>
+                    {session?.state === "connected"
+                      ? "Choose a table in the sidebar to browse rows, or open SQL workspace to write a query."
+                      : "Choose a saved connection in the sidebar, or add a new connection to get started."}
+                  </p>
                 </div>
               </div>
             </section>

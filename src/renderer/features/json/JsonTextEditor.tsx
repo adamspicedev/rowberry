@@ -1,3 +1,4 @@
+import { observeEditorTheme } from "../../app/editor-theme";
 import { useEffect, useRef } from "react";
 import * as monaco from "monaco-editor/editor/editor.api.js";
 import type { Diagnostic, Range } from "../../../json/document";
@@ -50,25 +51,9 @@ export function JsonTextEditor({
         if (model) selected.current?.(model.getOffsetAt(event.position));
       }
     });
-    const theme = () =>
-      monaco.editor.setTheme(
-        document.documentElement.dataset.theme === "dark" ||
-          (document.documentElement.dataset.theme === "system" &&
-            matchMedia("(prefers-color-scheme: dark)").matches)
-          ? "vs-dark"
-          : "vs",
-      );
-    const observer = new MutationObserver(theme);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["data-theme"],
-    });
-    const media = matchMedia("(prefers-color-scheme: dark)");
-    media.addEventListener("change", theme);
-    theme();
+    const stopTheme = observeEditorTheme();
     return () => {
-      observer.disconnect();
-      media.removeEventListener("change", theme);
+      stopTheme();
       cursor.dispose();
       listener.dispose();
       const model = instance.getModel();

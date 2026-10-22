@@ -239,6 +239,10 @@ for (const version of [14, 18])
       await inspector.getByLabel("JSON new value", { exact: true }).fill("99999999999999999999");
       await inspector.getByRole("button", { name: "Set value", exact: true }).click();
       await expect(inspector.getByRole("tree")).toContainText("99999999999999999999");
+      await inspector.getByRole("button", { name: "Done editing", exact: true }).click();
+      await expect(
+        inspector.getByRole("button", { name: "Save to database", exact: true }),
+      ).toBeEnabled();
       await inspector.getByRole("button", { name: "Save to database", exact: true }).click();
       await expect(preview).toBeVisible();
       await preview.getByRole("button", { name: "Confirm save" }).click();
@@ -247,6 +251,7 @@ for (const version of [14, 18])
         (await client.query("SELECT doc::text FROM dbapp_save_ui.records WHERE id=1")).rows[0].doc,
       ).toContain("99999999999999999999");
       await expect.poll(jsonRecoveryCount).toBe(0);
+      await openJsonEditing(inspector);
       const text = inspector.getByRole("textbox", { name: "JSON text editor", exact: true });
       await openJsonEditing(inspector);
       await expect(text).toBeEditable();
