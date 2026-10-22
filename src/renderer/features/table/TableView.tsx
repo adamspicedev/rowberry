@@ -2,7 +2,7 @@ import { rowJson } from "../../../json/viewer";
 import { recordDraft } from "../../app/workspace";
 /* oxlint-disable jsx-a11y/prefer-tag-over-role -- Virtual rows and columns use ARIA grid semantics with absolute positions. */
 import { JsonInspector, type ValidatedJsonDraft, type JsonSaveTarget } from "../json/JsonInspector";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useId } from "react";
 import { RequestIdSchema, type SessionId } from "../../../shared/protocol";
 import {
   FetchSchema,
@@ -20,11 +20,16 @@ export function TableView({
   table: initialTable,
   sessionId,
   generation,
+  onTabState,
+  onClose,
 }: {
   table: Table;
   sessionId: SessionId;
   generation: number;
+  onTabState?: (dirty: boolean, close: () => void, busy: boolean) => void;
+  onClose?: () => void;
 }) {
+  const gridId = useId();
   const [input, setInput] = useState<FetchInput>({ tableId: initialTable.id });
   const [history, setHistory] = useState<(string | null)[]>([]);
   const [reload, setReload] = useState(0);
@@ -243,6 +248,20 @@ export function TableView({
   const [jsonDirty, setJsonDirty] = useState(false);
   const [originalSqlNull, setOriginalSqlNull] = useState(false);
   const [jsonId, setJsonId] = useState(crypto.randomUUID());
+  useEffect(() => {
+    onTabState?.(
+      !!(drafts.length || editor || jsonDirty),
+      () => {
+        if (!discardAllowed()) return;
+        recordDraft(`table:${sessionId}:${initialTable.id}`, "table", "", null);
+        recordDraft(`cell:${sessionId}:${initialTable.id}`, "cell", "", null);
+        recordDraft(`json:${jsonId}`, "json", "", null);
+        onClose?.();
+      },
+      saving || !!preview,
+    );
+  });
+
   const [rowInspection, setRowInspection] = useState(false);
   const [inspected, setInspected] = useState<string | null>(null);
   const [inspectStatus, setInspectStatus] = useState("");
@@ -613,7 +632,7 @@ export function TableView({
         </p>
       ) : page ? (
         <>
-          <span id="grid-keyboard-help" className="sr-only">
+          <span id={`${gridId}-keyboard-help`} className="sr-only">
             Use arrow keys to select a cell. Press Enter to inspect JSON. Use column buttons to
             sort.
           </span>
@@ -621,14 +640,14 @@ export function TableView({
             className="grid-scroller"
             role="grid"
             aria-label="Table rows"
-            aria-describedby="grid-keyboard-help"
+            aria-describedby={`${gridId}-keyboard-help`}
             aria-activedescendant={
               selection.row >= firstRow &&
               selection.row < lastRow &&
               selection.col >= firstColumn &&
               selection.col < lastColumn &&
               page.rows.length
-                ? `table-cell-${selection.row}-${selection.col}`
+                ? `${gridId}-cell-${selection.row}-${selection.col}`
                 : undefined
             }
             aria-rowcount={page.rows.length + 1}
@@ -752,7 +771,7 @@ export function TableView({
                       onKeyDown={(e) => {
                         if (e.key === "Enter") void inspect(firstRow + i, firstColumn + j);
                       }}
-                      id={`table-cell-${firstRow + i}-${firstColumn + j}`}
+                      id={`${gridId}-cell-${firstRow + i}-${firstColumn + j}`}
                       role="gridcell"
                       aria-colindex={firstColumn + j + 1}
                       aria-selected={

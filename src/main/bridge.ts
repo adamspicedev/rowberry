@@ -57,6 +57,7 @@ export function installBridge(
     if (
       command.kind === "schema.list" ||
       command.kind === "rows.fetch" ||
+      command.kind === "rows.release" ||
       command.kind === "rows.value" ||
       command.kind === "rows.save" ||
       "tabId" in command

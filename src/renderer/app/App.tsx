@@ -2,16 +2,15 @@ import { CommandMenu } from "./CommandMenu";
 import { applyTheme } from "./theme";
 import { RecoveryControls } from "./recovery";
 import { discardLiveJsonDrafts, loadWorkspace, updateWorkspace } from "./workspace";
-import { QueryWorkspace } from "../features/query/QueryWorkspace";
+import { DocumentWorkspace, type WorkspaceHandle } from "../features/workspace/DocumentWorkspace";
 import mark from "../assets/rowberry-mark.svg";
 import { useEffect, useRef, useState } from "react";
 import { acceptSessionEvent, type SessionState } from "./session-state";
 import { RequestIdSchema } from "../../shared/protocol";
 import { ConnectionList } from "../features/connections/ConnectionList";
 import { Button } from "../components/ui/button";
-import { SchemaSidebar } from "../features/schema/SchemaSidebar";
-import { TableView } from "../features/table/TableView";
 import type { Table } from "../../shared/browse";
+import { SchemaSidebar } from "../features/schema/SchemaSidebar";
 export function App() {
   const [managerVisible, setManagerVisible] = useState(true);
   const [editorHost, setEditorHost] = useState<HTMLDivElement | null>(null);
@@ -37,18 +36,27 @@ export function App() {
     return true;
   }
   const [loaded, setLoaded] = useState(false);
-  const [sqlOpened, setSqlOpened] = useState(false);
-  const [showSql, setShowSql] = useState(false);
-  const [selected, setSelected] = useState<{ sessionId: string; table: Table } | null>(null);
-  const [session, setSession] = useState<SessionState | null>(null);
+  const [selectedTable, setSelectedTable] = useState<Table["id"] | null>(null);
+  const workspace = useRef<WorkspaceHandle>(null);
+  const [tabHost, setTabHost] = useState<HTMLDivElement | null>(null);
+  const [{ session, workspaceSession }, setSessions] = useState<{
+    session: SessionState | null;
+    workspaceSession: SessionState | null;
+  }>({ session: null, workspaceSession: null });
   useEffect(
     () =>
       window.dbapp.subscribe((event) =>
-        setSession((current) => acceptSessionEvent(current, event)),
+        setSessions((previous) => {
+          const session = acceptSessionEvent(previous.session, event);
+          if (session === previous.session) return previous;
+          return {
+            session,
+            workspaceSession: session?.state === "connected" ? session : previous.workspaceSession,
+          };
+        }),
       ),
     [],
   );
-  const table = selected?.sessionId === session?.sessionId ? (selected?.table ?? null) : null;
   const [status, setStatus] = useState("Starting");
   const [theme, setTheme] = useState<"system" | "light" | "dark">("system");
   useEffect(() => {
@@ -67,8 +75,6 @@ export function App() {
   useEffect(() => {
     void loadWorkspace().then((state) => {
       setTheme(state.theme);
-      setSqlOpened(state.layout.sqlOpened);
-      setShowSql(state.layout.showSql);
       setLoaded(true);
     });
     const protect = (event: BeforeUnloadEvent) => {
@@ -87,9 +93,6 @@ export function App() {
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
-  useEffect(() => {
-    if (loaded) updateWorkspace({ layout: { sqlOpened, showSql } });
-  }, [loaded, sqlOpened, showSql]);
   if (!loaded) return <output>Loading local workspace…</output>;
   return (
     <div className="app" data-app-ready>
@@ -100,6 +103,9 @@ export function App() {
           <span className="badge">LOCAL</span>
         </header>
         <div className="sidebar-content">
+          <Button variant="ghost" onClick={() => setManagerVisible(true)}>
+            Connections
+          </Button>
           <ConnectionList
             editorHost={editorHost}
             onDirty={markConnectionDirty}
@@ -117,22 +123,9 @@ export function App() {
               key={session.sessionId}
               sessionId={session.sessionId}
               generation={session.generation}
-              selected={table?.id ?? null}
+              selected={selectedTable}
               onSelect={(table) => {
-                if (!leaveManager()) return;
-                if (selected?.sessionId === session.sessionId && selected.table.id === table.id) {
-                  setShowSql(false);
-                  return;
-                }
-                if (document.querySelector('[data-saving="true"]')) return;
-                if (
-                  document.querySelector('[data-dirty="true"]') &&
-                  !window.confirm("Discard unsaved table or JSON drafts before changing table?")
-                )
-                  return;
-                discardLiveJsonDrafts();
-                setShowSql(false);
-                setSelected({ sessionId: session.sessionId, table });
+                if (leaveManager()) workspace.current?.openTable(table);
               }}
             />
           )}
@@ -158,40 +151,44 @@ export function App() {
       </aside>
       <main>
         <nav aria-label="Workspace tabs">
-          <Button
-            variant="ghost"
-            className={managerVisible ? "active-tab" : undefined}
-            aria-current={managerVisible ? "page" : undefined}
-            onClick={() => setManagerVisible(true)}
-          >
-            Connections
-          </Button>
-          {session?.state === "connected" && (
-            <Button
-              variant="ghost"
-              className={!managerVisible && !showSql ? "active-tab" : undefined}
-              aria-current={!managerVisible && !showSql ? "page" : undefined}
-              onClick={() => {
-                if (leaveManager()) setShowSql(false);
-              }}
-            >
-              {table?.name ?? "Database"}
-            </Button>
-          )}
-          {session?.state === "connected" && (
-            <Button
-              variant="ghost"
-              className={!managerVisible && showSql ? "active-tab" : undefined}
-              aria-current={!managerVisible && showSql ? "page" : undefined}
-              onClick={() => {
-                if (!leaveManager()) return;
-                setSqlOpened(true);
-                setShowSql(true);
-              }}
-            >
-              SQL workspace
-            </Button>
-          )}
+          <div className="document-tab-host" ref={setTabHost} />
+        </nav>
+        <div
+          className="connection-manager-host"
+          ref={setEditorHost}
+          hidden={!managerVisible}
+          data-connection-dirty={connectionDirty}
+          data-connection-saving={connectionBusy}
+        />
+        {workspaceSession && (
+          <div className="query-workspace-host" hidden={managerVisible}>
+            <DocumentWorkspace
+              key={`${workspaceSession.sessionId}:${workspaceSession.generation}`}
+              sessionId={workspaceSession.sessionId}
+              generation={workspaceSession.generation}
+              tabHost={tabHost}
+              workspaceRef={workspace}
+              onSelectedTable={setSelectedTable}
+              connected={
+                session?.state === "connected" && session.sessionId === workspaceSession.sessionId
+              }
+              onActivate={leaveManager}
+            />
+          </div>
+        )}
+        {!workspaceSession && !managerVisible && (
+          <section className="workspace" aria-label="Empty workspace">
+            <div className="empty-card">
+              <strong>No database connected</strong>
+              <p>Choose a saved connection in the sidebar to open tables and queries.</p>
+            </div>
+          </section>
+        )}
+        <div className="workspace-utilities">
+          <CommandMenu />
+          <RecoveryControls />
+        </div>
+        <div className="statusbar">
           <span className="connection-state" data-state={session?.state}>
             <i /> {session?.state ?? "No connection"}
           </span>
@@ -206,70 +203,26 @@ export function App() {
                 )
                   return;
                 discardLiveJsonDrafts();
-                void window.dbapp.request({
-                  kind: "sessions.close",
-                  sessionId: session.sessionId,
-                  requestId: RequestIdSchema.parse(crypto.randomUUID()),
-                });
+                void window.dbapp
+                  .request({
+                    kind: "sessions.close",
+                    sessionId: session.sessionId,
+                    requestId: RequestIdSchema.parse(crypto.randomUUID()),
+                  })
+                  .then((reply) => {
+                    if (reply.ok)
+                      setSessions((current) =>
+                        current.workspaceSession?.sessionId === session.sessionId
+                          ? { ...current, workspaceSession: null }
+                          : current,
+                      );
+                  });
               }}
             >
               Disconnect
             </Button>
           )}
-        </nav>
-        <div
-          className="connection-manager-host"
-          ref={setEditorHost}
-          hidden={!managerVisible}
-          data-connection-dirty={connectionDirty}
-          data-connection-saving={connectionBusy}
-        />
-        {sqlOpened && session?.state === "connected" && (
-          <div className="query-workspace-host" hidden={managerVisible || !showSql}>
-            <QueryWorkspace
-              key={session.sessionId}
-              sessionId={session.sessionId}
-              generation={session.generation}
-            />
-          </div>
-        )}
-        <div className="table-workspace-host" hidden={managerVisible || showSql}>
-          {session && table ? (
-            <TableView
-              key={session.sessionId + table.id}
-              table={table}
-              sessionId={session.sessionId}
-              generation={session.generation}
-            />
-          ) : (
-            <section className="workspace" aria-label="Empty workspace">
-              <div className="welcome">
-                <div className="database-icon" aria-hidden="true">
-                  <img src={mark} alt="" />
-                </div>
-                <h1>Your database workspace</h1>
-                <p>Your databases. In a good place.</p>
-                <div className="empty-card">
-                  <strong>
-                    {session?.state === "connected"
-                      ? "Database connected"
-                      : "No database connected"}
-                  </strong>
-                  <p>
-                    {session?.state === "connected"
-                      ? "Choose a table in the sidebar to browse rows, or open SQL workspace to write a query."
-                      : "Choose a saved connection in the sidebar, or add a new connection to get started."}
-                  </p>
-                </div>
-              </div>
-            </section>
-          )}
-        </div>
-        <div className="workspace-utilities">
-          <CommandMenu />
-          <RecoveryControls />
-        </div>
-        <div className="statusbar">
+
           <span>PostgreSQL workspace</span>
           <span>{status}</span>
         </div>
