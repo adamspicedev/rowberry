@@ -7,134 +7,15 @@ import {
   QueryIdSchema,
   RequestIdSchema,
   SqlSchema,
-  TabIdSchema,
   type SessionId,
   type SqlPage,
   type QueryCommand,
 } from "../../../shared/protocol";
 import type { Table } from "../../../shared/browse";
 import { SqlEditor, type SqlEditorHandle } from "./SqlEditor";
-import { loadDrafts, saveDrafts } from "./query-state";
 const requestId = () => RequestIdSchema.parse(crypto.randomUUID());
 type Owner = { sessionId: SessionId; generation: number };
-export function QueryWorkspace({ sessionId, generation }: Owner) {
-  const [tabs, setTabs] = useState(() => {
-    const drafts = loadDrafts();
-    return (drafts.length ? drafts : [""]).map((sql) => ({
-      id: TabIdSchema.parse(crypto.randomUUID()),
-      sql,
-    }));
-  });
-  const [active, setActive] = useState(tabs[0]?.id);
-  const [tables, setTables] = useState<Table[]>([]);
-  const [saved, setSaved] = useState<{ id: string; name: string }[]>([]);
-  const [offset, setOffset] = useState(0);
-  const [next, setNext] = useState<number | null>(null);
-  const [storageError, setStorageError] = useState("");
-  useEffect(() => {
-    if (!saveDrafts(tabs.map((tab) => tab.sql)))
-      queueMicrotask(() =>
-        setStorageError("Local draft storage is full. Save important SQL as a saved query."),
-      );
-  }, [tabs]);
-  useEffect(() => {
-    let live = true;
-    void window.dbapp
-      .request({ kind: "schema.list", sessionId, generation, requestId: requestId() })
-      .then((reply) => {
-        if (live && reply.ok && reply.kind === "schema.list") setTables(reply.data.tables);
-      });
-    return () => {
-      live = false;
-    };
-  }, [sessionId, generation]);
-  const refresh = useCallback(() => {
-    void window.dbapp
-      .request({ kind: "queries.saved.list", requestId: requestId(), offset })
-      .then((reply) => {
-        if (reply.ok && reply.kind === "queries.saved.list") {
-          setSaved(reply.data.items);
-          setNext(reply.data.nextOffset);
-        }
-      });
-  }, [offset]);
-  useEffect(refresh, [refresh]);
-  const add = (sql = "") => {
-    if (tabs.length >= 16) return;
-    const id = TabIdSchema.parse(crypto.randomUUID());
-    setTabs((current) => [...current, { id, sql }]);
-    setActive(id);
-  };
-  return (
-    <section className="query-workspace" aria-label="SQL workspace">
-      <div className="query-toolbar">
-        <button onClick={() => add()} disabled={tabs.length >= 16}>
-          New SQL tab
-        </button>
-        <label>
-          Saved queries{" "}
-          <select
-            aria-label="Saved queries"
-            value=""
-            onChange={(event) => {
-              const id = event.target.value;
-              if (id)
-                void window.dbapp
-                  .request({ kind: "queries.saved.get", id, requestId: requestId() })
-                  .then((reply) => {
-                    if (reply.ok && reply.kind === "queries.saved.get") add(reply.data.sql);
-                  });
-            }}
-          >
-            <option value="">Open without running</option>
-            {saved.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        {offset > 0 && <button onClick={() => setOffset(offset - 20)}>Previous saved</button>}
-        {next !== null && <button onClick={() => setOffset(next)}>More saved</button>}
-      </div>
-      {storageError && <p role="alert">{storageError}</p>}
-      <div role="tablist" aria-label="SQL tabs">
-        {tabs.map((tab, index) => (
-          <button
-            key={tab.id}
-            role="tab"
-            aria-selected={tab.id === active}
-            onClick={() => setActive(tab.id)}
-          >
-            SQL {index + 1}
-          </button>
-        ))}
-      </div>
-      {tabs.map((tab) => (
-        <div key={tab.id} hidden={tab.id !== active}>
-          <QueryTab
-            sessionId={sessionId}
-            generation={generation}
-            tabId={tab.id}
-            sql={tab.sql}
-            tables={tables}
-            onSaved={refresh}
-            onChange={(sql) =>
-              setTabs((current) =>
-                current.map((item) => (item.id === tab.id ? { ...item, sql } : item)),
-              )
-            }
-            onClose={() => {
-              setTabs((current) => current.filter((item) => item.id !== tab.id));
-              if (active === tab.id) setActive(tabs.find((item) => item.id !== tab.id)?.id);
-            }}
-          />
-        </div>
-      ))}
-    </section>
-  );
-}
-function QueryTab({
+export function QueryTab({
   sessionId,
   generation,
   tabId,
@@ -143,6 +24,7 @@ function QueryTab({
   tables,
   onClose,
   onSaved,
+  onTabState,
 }: Owner & {
   tabId: QueryCommand["tabId"];
   sql: string;
@@ -150,6 +32,7 @@ function QueryTab({
   tables: Table[];
   onClose: () => void;
   onSaved: () => void;
+  onTabState: (dirty: boolean, close: () => void, busy: boolean) => void;
 }) {
   const [json, setJson] = useState<{ id: string; text: string; row?: boolean } | null>(null);
   const [jsonDirty, setJsonDirty] = useState(false);
@@ -282,6 +165,21 @@ function QueryTab({
       setBusy(false);
     }
   }
+  function requestClose() {
+    if (busy) return;
+    if (
+      (sql.trim() || jsonDirty || transaction !== "idle") &&
+      !window.confirm(
+        "Close this query? Unsaved SQL and JSON will be discarded and any open transaction rolled back.",
+      )
+    )
+      return;
+    if (json) recordDraft(`json:${json.id}`, "json", "", null);
+    onClose();
+  }
+  useEffect(() => {
+    onTabState(!!sql.trim() || jsonDirty, requestClose, busy);
+  });
   return (
     <div
       className={`query-tab ${json ? "has-json-panel" : ""}`}
@@ -334,21 +232,6 @@ function QueryTab({
         </fieldset>
         <button disabled={busy || !page || page.done} onClick={() => setConfirmEnd(true)}>
           End unfinished result…
-        </button>
-        <button
-          onClick={() => {
-            if (
-              !(
-                sql.trim() ||
-                jsonDirty ||
-                document.querySelector('.table-workspace[data-dirty="true"]')
-              ) ||
-              window.confirm("Close SQL tab while SQL, table or JSON drafts are unsaved?")
-            )
-              onClose();
-          }}
-        >
-          Close SQL tab (roll back)
         </button>
         {!ready && (
           <button

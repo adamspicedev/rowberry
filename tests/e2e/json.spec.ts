@@ -50,7 +50,7 @@ for (const version of [14, 18])
       await page.reload();
       await page.getByRole("button", { name: "Connect JSON fixture", exact: true }).click();
       await expect(page.getByRole("textbox", { name: "Search schemas and tables" })).toBeVisible();
-      await page.getByRole("button", { name: "SQL workspace", exact: true }).click();
+      await page.getByRole("button", { name: "New SQL tab", exact: true }).click();
       const sql = page.getByRole("textbox", { name: "SQL editor" });
       await sql.focus();
       await page.keyboard.type(

@@ -21,13 +21,15 @@ interface Identity {
   version: string | null;
 }
 interface Cursor {
+  tableId: string;
   signature: string;
   values: (string | null)[];
   offset: number;
 }
 export class BrowseColumnLimitError extends Error {}
 // Values and cursors are opaque handles; callers never supply row predicates.
-// Only the latest page's identities remain live and at most 64 cursors survive.
+// Retain one page per open table (at most 16); closing a tab releases its handles.
+// At most 64 paging cursors survive across the session.
 export class RowBrowser {
   private queue: Promise<void> = Promise.resolve();
   private refreshRequired = false;
@@ -38,6 +40,19 @@ export class RowBrowser {
       () => {},
     );
     return result;
+  }
+  private pageTables = new Set<string>();
+  release(tableId: string): Promise<void> {
+    return this.serialize(async () => {
+      this.clearTableTargets(tableId);
+      this.pageTables.delete(tableId);
+      for (const [id, cursor] of this.cursors)
+        if (cursor.tableId === tableId) this.cursors.delete(id);
+    });
+  }
+  private clearTableTargets(tableId: string) {
+    for (const [id, target] of this.targets)
+      if (target.table.id === tableId) this.targets.delete(id);
   }
   private targets = new Map<string, Identity>();
   private cursors = new Map<string, Cursor>();
@@ -51,6 +66,8 @@ export class RowBrowser {
   }
   private async fetchPage(input: FetchInput): Promise<RowPage> {
     const args = FetchSchema.parse(input);
+    if (!this.pageTables.has(args.tableId) && this.pageTables.size >= 16)
+      throw new Error("Close a table tab before opening another.");
     const table = (await introspect(this.session)).tables.find((t) => t.id === args.tableId);
     if (!table) throw new Error("Table unavailable.");
     if (table.columns.length > 800)
@@ -140,7 +157,8 @@ export class RowBrowser {
       `SELECT ${projections.join(",")} FROM ${source} ${where.length ? "WHERE " + where.join(" AND ") : ""} ${order.length ? "ORDER BY " + order.map((s) => `${quote(s.column)} ${s.direction} NULLS LAST`).join(",") : ""} LIMIT ${pageSize} ${!stable ? "OFFSET " + offset : ""}`,
       parameters,
     );
-    this.targets.clear();
+    this.clearTableTargets(table.id);
+    this.pageTables.add(table.id);
     const rows: RowPage["rows"] = result.rows.map((raw) => {
       const cells: RowPage["rows"][number]["cells"] = table.columns.map((c, i) => {
         const bytes = raw["b" + i] === null ? null : Number(raw["b" + i]);
@@ -169,7 +187,12 @@ export class RowBrowser {
       );
       if (invalid) throw new Error("Ordering value exceeds paging limits.");
       nextCursor = randomUUID();
-      this.cursors.set(nextCursor, { signature, values, offset: offset + rows.length });
+      this.cursors.set(nextCursor, {
+        tableId: table.id,
+        signature,
+        values,
+        offset: offset + rows.length,
+      });
       if (this.cursors.size > 64) {
         const oldest = this.cursors.keys().next().value;
         if (oldest) this.cursors.delete(oldest);

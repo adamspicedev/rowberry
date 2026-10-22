@@ -106,7 +106,7 @@ for (const version of [14, 18])
       await page.getByRole("button", { name: "Select Save fixture", exact: true }).click();
       await expect(page.getByLabel("Name", { exact: true })).toBeDisabled();
       await expect(page.getByText("Disconnect to edit this connection.")).toBeVisible();
-      await page.getByRole("button", { name: "records", exact: true }).click();
+      await page.getByRole("tab", { name: /^records/ }).click();
       expect(
         await request({
           kind: "connections.save",
@@ -384,9 +384,13 @@ for (const version of [14, 18])
       await inspector.getByRole("button", { name: "Set value", exact: true }).click();
       await expect(inspector).toHaveAttribute("data-dirty", "true");
       await expect.poll(jsonRecoveryCount).toBe(1);
-      page.once("dialog", (dialog) => dialog.accept());
       await page.getByRole("button", { name: "other dbapp_save_ui · table", exact: true }).click();
       await expect(inspector).toHaveCount(0);
+      await expect.poll(jsonRecoveryCount).toBe(1);
+      await page.getByRole("tab", { name: /^records/ }).click();
+      await expect(inspector).toHaveAttribute("data-dirty", "true");
+      page.once("dialog", (dialog) => dialog.accept());
+      await page.getByRole("button", { name: "Close records", exact: true }).click();
       await expect.poll(jsonRecoveryCount).toBe(0);
       await app.close();
       app = await electron.launch({
@@ -514,7 +518,6 @@ test("real IPC transports large save request/reply and rejects aggregate raw ove
     const opened = await request({ kind: "connections.connect", id });
     if (!opened.ok || opened.kind !== "connections.connect") throw Error("No session");
     const owner = { sessionId: opened.data.sessionId, generation: opened.data.generation };
-    await page.getByRole("button", { name: "Database", exact: true }).click();
     await page
       .getByRole("textbox", { name: "Search schemas and tables" })
       .fill("dbapp_save_ui.wire");

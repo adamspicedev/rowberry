@@ -29,7 +29,9 @@ for (const version of [14, 18])
       ).rows.map((row) => row.pid),
     );
     const schema = "sql_desktop_" + crypto.randomUUID().replaceAll("-", "");
-    await client.query(`CREATE SCHEMA "${schema}"; CREATE TABLE "${schema}".writes(i int)`);
+    await client.query(
+      `CREATE SCHEMA "${schema}"; CREATE TABLE "${schema}".writes(i int); CREATE TABLE "${schema}".documents(id int PRIMARY KEY, label text); INSERT INTO "${schema}".documents VALUES(1, 'Original')`,
+    );
     async function request(command: Record<string, unknown>) {
       return ReplySchema.parse(
         await page.evaluate(
@@ -65,15 +67,15 @@ for (const version of [14, 18])
       await page.reload();
       await page.getByRole("button", { name: "Connect SQL fixture", exact: true }).click();
       await expect(page.getByRole("textbox", { name: "Search schemas and tables" })).toBeVisible();
-      await page.getByRole("button", { name: "SQL workspace", exact: true }).click();
+      await page.getByRole("button", { name: "New SQL tab", exact: true }).click();
       const runButton = page.getByRole("button", { name: "Run SQL / selection", exact: true });
       await expect(runButton).toBeEnabled();
-      // Navigation remains a destination: clicking the selected SQL tab must not hide it.
-      await page.getByRole("button", { name: "SQL workspace", exact: true }).click();
+      await page.getByRole("tab", { name: "SQL 1", exact: true }).click();
       await expect(runButton).toBeVisible();
-      await expect(
-        page.getByRole("button", { name: "SQL workspace", exact: true }),
-      ).toHaveAttribute("aria-current", "page");
+      await expect(page.getByRole("tab", { name: "SQL 1", exact: true })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      );
       await page.getByLabel("Appearance", { exact: true }).selectOption("dark");
       await expect(page.locator(".sql-editor .monaco-editor")).toHaveClass(/vs-dark/);
       await page.getByLabel("Appearance", { exact: true }).selectOption("light");
@@ -88,7 +90,7 @@ for (const version of [14, 18])
       await page.getByRole("button", { name: "Connections", exact: true }).click();
       await page.getByRole("button", { name: "Select SQL fixture", exact: true }).click();
       await expect(page.getByLabel("Host", { exact: true })).toBeDisabled();
-      await page.getByRole("button", { name: "SQL workspace", exact: true }).click();
+      await page.getByRole("tab", { name: /SQL 1/ }).click();
       await expect(editor).toHaveValue(
         "SELECT 12345678901234567890.123456789::numeric AS exact, NULL::text AS absent",
       );
@@ -97,6 +99,52 @@ for (const version of [14, 18])
         "12345678901234567890.123456789",
       );
       await expect(page.getByRole("table", { name: "SQL results" })).toContainText("NULL");
+      // Mixed documents retain results and table edits without prompting on a switch.
+      await page.getByRole("textbox", { name: "Search schemas and tables" }).fill(schema);
+      await page.getByRole("button", { name: `documents ${schema} · table`, exact: true }).click();
+      const grid = page.getByRole("grid", { name: "Table rows" });
+      await grid.getByRole("gridcell").nth(1).click();
+      await page.getByRole("button", { name: "Edit selected cell", exact: true }).click();
+      await page.getByRole("textbox", { name: "Cell draft", exact: true }).fill("Retained draft");
+      await page
+        .getByRole("button", { name: `writes ${schema} · table · read-only`, exact: true })
+        .click();
+      await page.getByRole("button", { name: `documents ${schema} · table`, exact: true }).click();
+      await expect(page.getByRole("tab")).toHaveCount(3);
+      await expect(page.getByRole("textbox", { name: "Cell draft", exact: true })).toHaveValue(
+        "Retained draft",
+      );
+      await expect(page.getByRole("tab", { name: /^documents/ })).toContainText("•");
+      await page.getByRole("tab", { name: /^documents/ }).focus();
+      await page.keyboard.press("ArrowLeft");
+      await expect(page.getByRole("tab", { name: /^SQL 1/ })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      );
+      await page.keyboard.press("ArrowRight");
+      await expect(page.getByRole("textbox", { name: "Cell draft", exact: true })).toHaveValue(
+        "Retained draft",
+      );
+      page.once("dialog", (dialog) => dialog.dismiss());
+      await page.getByRole("button", { name: "Close documents", exact: true }).click();
+      await expect(page.getByRole("textbox", { name: "Cell draft", exact: true })).toHaveValue(
+        "Retained draft",
+      );
+      await page.getByRole("tab", { name: /^SQL 1/ }).click();
+      await expect(page.getByRole("table", { name: "SQL results" })).toContainText(
+        "12345678901234567890.123456789",
+      );
+      // Closing a hidden table must not close or discard the active query.
+      page.once("dialog", (dialog) => dialog.accept());
+      await page.getByRole("button", { name: "Close documents", exact: true }).click();
+      await page.getByRole("button", { name: "Close writes", exact: true }).click();
+      await expect(page.getByRole("tab")).toHaveCount(1);
+      await expect(editor).toHaveValue(
+        "SELECT 12345678901234567890.123456789::numeric AS exact, NULL::text AS absent",
+      );
+      expect((await client.query(`SELECT label FROM "${schema}".documents`)).rows[0].label).toBe(
+        "Original",
+      );
       await text("SELECT 1; SELECT 2");
       await runButton.click();
       await expect(page.locator(".query-tab output")).toContainText("Run one statement at a time");
@@ -156,6 +204,7 @@ for (const version of [14, 18])
       await runButton.click();
       const cancel = page.getByRole("button", { name: "Cancel query", exact: true });
       await expect(cancel).toBeEnabled();
+      await expect(page.getByRole("button", { name: /^Close SQL \d+$/ })).toBeDisabled();
       await cancel.click();
       await expect(page.locator(".query-tab output")).toContainText("cancel");
       await expect(runButton).toBeEnabled();
@@ -181,7 +230,7 @@ for (const version of [14, 18])
       await expect(page.getByRole("alertdialog")).toContainText("commit an implicit mutation");
       await page.getByRole("button", { name: "Keep result" }).click();
       page.once("dialog", (dialog) => void dialog.accept());
-      await page.getByRole("button", { name: "Close SQL tab (roll back)" }).click();
+      await page.getByRole("button", { name: /^Close SQL \d+$/ }).click();
       await page.getByRole("button", { name: "New SQL tab" }).click();
       await expect(runButton).toBeEnabled();
       await text("SELECT ");
@@ -236,7 +285,7 @@ for (const version of [14, 18])
       };
       await expect(runButton).toBeEnabled();
       page.once("dialog", (dialog) => void dialog.accept());
-      await page.getByRole("button", { name: "Close SQL tab (roll back)" }).click();
+      await page.getByRole("button", { name: /^Close SQL \d+$/ }).click();
       const a = crypto.randomUUID(),
         b = crypto.randomUUID();
       for (const tabId of [a, b])
