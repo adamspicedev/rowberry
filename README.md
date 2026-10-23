@@ -71,6 +71,8 @@ Use a database role with only the permissions you need. Running SQL can change d
 
 ## Documentation
 
+See the [v1 roadmap](docs/roadmap-v1.md) for release scope and milestones, and the [v1 to-do list](docs/v1-todo.md) for progress and acceptance evidence.
+
 The [Rowberry website](https://rowberry.spicey.dev/) and [user documentation](https://rowberry.spicey.dev/docs/) live in `apps/web`. See the [website contributor guide](apps/web/README.md) to develop or deploy them.
 
 | Guide                                                  | Start here when you want to…                                                       |
