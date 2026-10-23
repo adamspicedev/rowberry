@@ -1,6 +1,6 @@
 import { app, ipcMain, type BrowserWindow, type IpcMainInvokeEvent } from "electron";
 import type { ConnectionStore } from "./store";
-import type { DatabaseProcess } from "./database-process";
+import { DatabaseProcess } from "./database-process";
 import type { ConnectionService } from "./connections";
 import {
   boundedCommand,
@@ -29,6 +29,7 @@ export function installBridge(
   sessions: DatabaseProcess,
   store: ConnectionStore,
 ): void {
+  let testing = false;
   let pending = Promise.resolve();
   let queued = 0;
   async function serialize<T>(operation: () => Promise<T>): Promise<T> {
@@ -63,6 +64,31 @@ export function installBridge(
       "tabId" in command
     )
       return sessions.request(command);
+    if (command.kind === "connections.test") {
+      if (testing) return failure("UNAVAILABLE", command.requestId);
+      testing = true;
+      const probe = new DatabaseProcess(() => {});
+      try {
+        const result = await probe.open(command.profile.id, async () => ({
+          profile: command.profile,
+          password:
+            command.secret ??
+            (await serialize(() => connections.resolveSecret(command.profile.id))),
+        }));
+        return ReplySchema.parse({
+          ok: true,
+          kind: command.kind,
+          requestId: command.requestId,
+          data: { serverVersion: result.serverVersion },
+        });
+      } catch {
+        return failure("CONNECTION_FAILED", command.requestId);
+      } finally {
+        probe.stop();
+        await probe.drain();
+        testing = false;
+      }
+    }
     // Closing is never queued behind OS credential access or a network handshake.
     if (command.kind === "sessions.close") {
       sessions.close(command.sessionId);
