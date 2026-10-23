@@ -6,19 +6,25 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026. I
   - [x] Define scope, observable acceptance tasks and release blockers in the [release contract](v1-release-contract.md).
   - [x] Create the [evidence register](qa/v1-evidence-register.md), separate historical evidence from candidate qualification, and assign each open gap a next task and responsible role.
   - Completed: 23 October 2026. Planning deliverables complete; runtime qualification and publication approval remain pending.
-- [ ] **V1-02 — Signing credentials and arm64 test readiness** · Release engineering · Next
+- [ ] **V1-02 — Signing credentials and arm64 test readiness** · Release engineering · Signing deferred
   - [ ] Verify protected macOS signing/notarization configuration without exposing secrets; exercise it on a candidate.
   - [ ] Prepare the existing Apple silicon Mac for native qualification; record test-account access, tester and OS coverage.
   - [ ] Record signing or native test-access blockers. Intel qualification is deferred by the 23 October 2026 scope decision.
-- [ ] **V1-03 — Observe current JSON save and workspace usability** · Product + QA · Can run alongside V1-02
+  - Signing deferred by the maintainer on 24 October 2026 because Apple Developer Program membership is outside the current budget. Continue unsigned local QA; signing remains required before public distribution.
+- [ ] **V1-03 — Observe current JSON save and workspace usability** · Product + QA · In progress
+  - [x] Run the [24 October automated workflow baseline](qa/2026-10-24-v1-workflows.md): 20 passed, 1 packaged-vault test skipped.
+  - [x] Prepare a [moderated task script and recording template](qa/v1-usability-session.md).
   - [ ] Select a known package, disposable fixture and three unfamiliar preview participants.
   - [ ] Observe connect, browse, query, edit, save, verify and recovery tasks without coaching; record intervention and failure points.
   - [ ] Identify focused fixes; re-run failed tasks after changes, including keyboard, light/dark and narrow-window checks.
-- [ ] **V1-04 — Close vault and JSON recovery evidence gaps** · Engineering + QA · Requires native test access
+- [ ] **V1-04 — Close vault and JSON recovery evidence gaps** · Engineering + QA · In progress; denied-store testing still pending
+  - [x] Verify the [unsigned arm64 native Keychain round trip and packaged connection workflows](qa/2026-10-24-integrity-and-package.md).
   - [ ] Exercise saved credentials, deletion and genuinely unavailable/denied native storage on each target.
+  - [x] Add packaged regressions for verbatim invalid JSON/Unicode/large-number recovery and explicit recovered-copy discard across restart.
   - [ ] Verify interrupted JSON recovery, invalid JSON, Unicode, exact large numbers and durable discard.
   - [ ] Retain outcomes tied to package hashes. Keep inaccessible scenarios blocked rather than passed by simulation.
-- [ ] **V1-05 — Audit integrity and interruption coverage** · Engineering · Before signed preview acceptance
+- [ ] **V1-05 — Audit integrity and interruption coverage** · Engineering · In progress; before signed preview acceptance
+  - [x] Run the [PG18 write-integrity and packaged guarded-save baseline](qa/2026-10-24-integrity-and-package.md); fix the stale Intel packaging target.
   - [ ] Map contract tasks A04–A09 to existing regression coverage and identify uncovered cases.
   - [ ] Verify conflicts, stale connection operations, ambiguous writes, cancellation and transaction/tab lifecycle behaviour.
   - [ ] Agree performance budgets on reference hardware, measure bounded large workloads and fix demonstrated blockers.
