@@ -30,6 +30,8 @@ export function ConnectionDialog({
   const profileId = useRef(profile?.id ?? ConnectionIdSchema.parse(crypto.randomUUID()));
   const password = useRef<HTMLInputElement>(null);
   const [tls, setTls] = useState(profile?.tls.kind ?? "verify-full");
+  const [testMessage, setTestMessage] = useState("");
+  const [action, setAction] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [visiblePassword, setVisiblePassword] = useState(false);
@@ -38,12 +40,14 @@ export function ConnectionDialog({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (locked || busy) return;
-    const connectAfterSave =
-      (event.nativeEvent as SubmitEvent).submitter?.getAttribute("value") === "connect";
+    const intent = (event.nativeEvent as SubmitEvent).submitter?.getAttribute("value") ?? "save";
+    const connectAfterSave = intent === "connect";
+    setAction(intent);
+    setTestMessage("");
     const form = event.currentTarget;
     // This input is deliberately uncontrolled and has no name, so FormData never contains it.
     let secret = password.current?.value ?? "";
-    if (password.current) password.current.value = "";
+    if (password.current && intent !== "test") password.current.value = "";
     const fields = new FormData(form);
     setBusy(true);
     onBusy(true);
@@ -75,6 +79,25 @@ export function ConnectionDialog({
         setError(
           "Check the connection fields and TLS acknowledgement. Certificate and key paths must be supplied together.",
         );
+        return;
+      }
+      if (intent === "test") {
+        const pending = window.dbapp.request({
+          kind: "connections.test",
+          requestId: requestId(),
+          profile: validated.data,
+          ...(secret ? { secret } : {}),
+        });
+        secret = "";
+        const reply = await pending;
+        if (reply.ok && reply.kind === "connections.test")
+          setTestMessage(
+            `Connected successfully · PostgreSQL ${reply.data.serverVersion}. Nothing has been saved.`,
+          );
+        else
+          setError(
+            "Could not connect. Check the host, port, database, credentials and SSL settings.",
+          );
         return;
       }
       const saved = await window.dbapp.request({
@@ -113,7 +136,11 @@ export function ConnectionDialog({
       await onSaved(message, validated.data);
       savedProfile = validated.data;
     } catch {
-      setError("The connection could not be saved. Enter the password again to retry.");
+      setError(
+        intent === "test"
+          ? "The connection test failed. Check your settings and try again."
+          : "The connection could not be saved. Enter the password again to retry.",
+      );
     } finally {
       secret = "";
       setBusy(false);
@@ -133,27 +160,33 @@ export function ConnectionDialog({
         <div>
           <span className="connection-engine">POSTGRESQL</span>
           <h1 id="connection-title">{profile ? profile.name : "New connection"}</h1>
+          {!locked && <p>Connect to a PostgreSQL database. Test your settings before saving.</p>}
           {locked && <p>Disconnect to edit this connection.</p>}
         </div>
         {locked && <span className="badge">Session active</span>}
       </div>
-      <form onSubmit={submit} onChange={() => onDirty(true)}>
+      <form
+        onSubmit={submit}
+        onChange={() => {
+          onDirty(true);
+          setTestMessage("");
+          setError("");
+        }}
+      >
         <fieldset className="connection-fields" disabled={locked || busy}>
           <div className="profile-identity-row">
             <label>
               Name
-              <input name="name" defaultValue={profile?.name ?? ""} required maxLength={80} />
-            </label>
-            <label>
-              Database
               <input
-                name="database"
-                defaultValue={profile?.database ?? "postgres"}
+                name="name"
+                defaultValue={profile?.name ?? ""}
+                placeholder="e.g. Development"
                 required
-                maxLength={128}
+                maxLength={80}
               />
             </label>
           </div>
+          <h2 className="connection-section-title">Server</h2>
           <div className="form-row">
             <label>
               Host
@@ -176,6 +209,16 @@ export function ConnectionDialog({
               />
             </label>
           </div>
+          <label>
+            Database
+            <input
+              name="database"
+              defaultValue={profile?.database ?? "postgres"}
+              required
+              maxLength={128}
+            />
+          </label>
+          <h2 className="connection-section-title">Authentication</h2>
           <div className="credentials-row">
             <label>
               User
@@ -209,7 +252,9 @@ export function ConnectionDialog({
           </div>
           <p id="password-help">
             {secureStorage
-              ? "Leave blank to keep the saved password."
+              ? profile
+                ? "Leave blank to keep the saved password."
+                : "Your password is never stored in the connection file."
               : "OS credential storage is unavailable. New passwords are kept only until the app quits."}
           </p>
           <label className="checkbox-label">
@@ -327,35 +372,41 @@ export function ConnectionDialog({
             </fieldset>
           </div>
         </fieldset>
-        {error && <p role="alert">{error}</p>}
-        <div className="connection-editor-actions">
-          {onDelete && (
+        <div className="connection-footer">
+          {testMessage && <output className="connection-test-result">{testMessage}</output>}
+          {error && <p role="alert">{error}</p>}
+          <div className="connection-editor-actions">
+            {onDelete && (
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={busy || locked}
+                onClick={onDelete}
+                aria-label={`Delete ${profile?.name}`}
+              >
+                Delete
+              </Button>
+            )}
             <Button
               type="button"
               variant="ghost"
-              disabled={busy || locked}
-              onClick={onDelete}
-              aria-label={`Delete ${profile?.name}`}
+              disabled={busy}
+              onClick={() => {
+                onClose();
+              }}
             >
-              Delete
+              Cancel
             </Button>
-          )}
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={busy}
-            onClick={() => {
-              onClose();
-            }}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" variant="ghost" disabled={busy || locked}>
-            {busy ? "Saving…" : "Save connection"}
-          </Button>
-          <Button type="submit" value="connect" disabled={busy || locked}>
-            Save &amp; connect
-          </Button>
+            <Button type="submit" value="test" variant="outline" disabled={busy || locked}>
+              {busy && action === "test" ? "Testing…" : "Test connection"}
+            </Button>
+            <Button type="submit" variant="ghost" disabled={busy || locked}>
+              {busy && action !== "test" ? "Saving…" : "Save connection"}
+            </Button>
+            <Button type="submit" value="connect" disabled={busy || locked}>
+              Save &amp; connect
+            </Button>
+          </div>
         </div>
       </form>
     </section>

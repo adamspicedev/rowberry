@@ -10,6 +10,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
+  --color-border: var(--border);
   --color-accent: var(--accent);
   --color-on-accent: var(--on-accent);
 }
@@ -804,10 +805,14 @@ textarea:focus-visible {
   display: none;
 }
 .connection-editor {
-  max-width: 720px;
+  max-width: 660px;
   margin: 0 auto;
+  border: 1px solid var(--border);
   border-top: 4px solid var(--profile-color);
-  padding-top: 16px;
+  border-radius: 12px;
+  padding: 24px 28px 0;
+  background: var(--background);
+  box-shadow: 0 8px 32px #00000008;
 }
 .connection-editor-heading {
   display: flex;
@@ -866,7 +871,25 @@ textarea:focus-visible {
 .connection-editor .form-row label:last-child {
   width: 130px;
 }
-.profile-identity-row,
+.profile-identity-row {
+  display: block;
+}
+.connection-section-title {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--foreground);
+  margin: 8px 0 12px;
+}
+.connection-test-result {
+  display: block;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--selected);
+  color: var(--selected-text);
+  font-size: 12px;
+  margin: 12px 0;
+}
 .credentials-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -906,8 +929,10 @@ textarea:focus-visible {
   accent-color: var(--accent);
 }
 .ssl-settings {
-  border-block: 1px solid var(--border);
-  padding: 12px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--sidebar);
+  padding: 12px;
   margin: 16px 0;
 }
 .ssl-settings summary {
@@ -972,11 +997,14 @@ textarea:focus-visible {
   margin-left: 6px;
   cursor: pointer;
 }
-.connection-editor-actions {
+.connection-footer {
   position: sticky;
   bottom: -24px;
   background: var(--background);
   z-index: 1;
+  border-top: 1px solid var(--border);
+}
+.connection-editor-actions {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
@@ -1501,4 +1529,16 @@ button:disabled {
   padding: 0 8px;
   height: 24px;
   font-size: 11px;
+}
+
+@media (max-width: 900px) {
+  .connection-editor {
+    padding: 18px 18px 0;
+  }
+  .connection-editor-actions {
+    flex-wrap: wrap;
+  }
+  .connection-editor-actions button {
+    flex: 1 0 auto;
+  }
 }

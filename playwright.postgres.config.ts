@@ -4,6 +4,7 @@ export default defineConfig({
   ...base,
   testIgnore: [],
   testMatch: [
+    "**/connection-test.spec.ts",
     "**/sessions.spec.ts",
     "**/browse.spec.ts",
     "**/query.spec.ts",
