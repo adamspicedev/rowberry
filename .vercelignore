@@ -1,0 +1,15 @@
+.env*
+.git
+node_modules
+/release
+/dist
+test-results
+playwright-report
+/docs
+/src
+/tests
+/assets
+/scripts
+apps/web/.venv
+apps/web/.output
+apps/web/public/docs

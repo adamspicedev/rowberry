@@ -1,0 +1,57 @@
+site_name: Rowberry
+site_description: Practical guides for the local PostgreSQL workspace.
+site_url: https://rowberry.spicey.dev/docs/
+edit_uri: ""
+docs_dir: wiki
+site_dir: public/docs
+use_directory_urls: true
+theme:
+  name: material
+  font: false
+  logo: /brand/mark.svg
+  favicon: /favicon.png
+  palette:
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to dark mode
+    - scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to light mode
+  features:
+    - navigation.footer
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+plugins:
+  - search
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - toc:
+      permalink: true
+extra_css:
+  - stylesheets/rowberry.css
+extra:
+  homepage: https://rowberry.spicey.dev/
+  generator: false
+nav:
+  - Welcome: index.md
+  - Get started: getting-started.md
+  - Connect to PostgreSQL: connections.md
+  - Browse tables: tables.md
+  - Write SQL: sql.md
+  - Work with JSON: json.md
+  - Drafts and recovery: recovery.md
+  - Security and local data: security.md
+  - Troubleshooting: troubleshooting.md
+  - Project status: status.md
+copyright: Free and open source · GPL-3.0-only · <a href="https://rowberry.spicey.dev/">Back to Rowberry</a> · <a href="https://github.com/adamspicedev/rowberry">Source code</a>

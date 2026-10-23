@@ -1,0 +1,70 @@
+{
+  "contract": "contract.md",
+  "targetViewports": ["390x844", "1440x900"],
+  "accessibility": {
+    "status": "pass",
+    "evidence": "Playwright verified keyboard skip-link focus, visible focus entry, semantic headings, reduced-motion scroll behavior, and axe WCAG 2 A/AA and 2.1 AA checks for homepage plus light/dark get-started docs at both viewports. Fixed inline-link distinction and light/dark contrast failures. This is automated coverage, not a full assistive-technology audit."
+  },
+  "responsive": {
+    "status": "pass",
+    "evidence": "Rendered screenshots inspected at 390x844 and 1440x900. No document horizontal overflow. Navigation, paragraphs and CTA wrap; screenshots retain aspect ratio and link to full-size images. Mobile docs drawer opens and follows a page link."
+  },
+  "contentStates": {
+    "loading": {
+      "status": "pass",
+      "evidence": "Docs search renders an initializing message before its local worker/index is ready; browser tests await the ready prompt before querying."
+    },
+    "empty": {
+      "status": "pass",
+      "evidence": "Unmatched docs search visibly reports No matching documents and accepts a replacement query."
+    },
+    "error": {
+      "status": "pass",
+      "evidence": "Unknown marketing and docs URLs return HTTP 404; the custom not-found page offers home and documentation links."
+    },
+    "partial": {
+      "status": "not-applicable",
+      "reason": "Marketing and docs are static pages with no partial remote dataset. Screenshots have descriptive alt text and fixed dimensions."
+    },
+    "success": {
+      "status": "pass",
+      "evidence": "Primary CTA opens source setup; docs search finds and opens the JSON guide; internal pages and linked local assets return expected content."
+    },
+    "permission": {
+      "status": "not-applicable",
+      "reason": "The public site has no account, authenticated area, database connection, or permission-gated action."
+    }
+  },
+  "renderedEvidence": [
+    {
+      "viewport": "390x844",
+      "artifact": "home-390.png",
+      "observation": "Complete marketing page with responsive navigation, actual app screenshots, honest release status and source-install CTA."
+    },
+    {
+      "viewport": "390x844",
+      "artifact": "docs-390.png",
+      "observation": "Light documentation page with navigation, local search, source installation and underlined inline links."
+    },
+    {
+      "viewport": "390x844",
+      "artifact": "docs-dark-390.png",
+      "observation": "Dark documentation page with matching brand palette and corrected code contrast."
+    },
+    {
+      "viewport": "1440x900",
+      "artifact": "home-1440.png",
+      "observation": "Complete marketing page with responsive navigation, actual app screenshots, honest release status and source-install CTA."
+    },
+    {
+      "viewport": "1440x900",
+      "artifact": "docs-1440.png",
+      "observation": "Light documentation page with navigation, local search, source installation and underlined inline links."
+    },
+    {
+      "viewport": "1440x900",
+      "artifact": "docs-dark-1440.png",
+      "observation": "Dark documentation page with matching brand palette and corrected code contrast."
+    }
+  ]
+}
