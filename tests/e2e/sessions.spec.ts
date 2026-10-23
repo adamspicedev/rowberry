@@ -57,7 +57,7 @@ test("saved metadata and private transient password open a real TLS session from
     });
     await page.getByRole("button", { name: "Connect Live fixture", exact: true }).click();
     await expect(page.locator(".connection-state")).toHaveText("connected");
-    await expect(page.getByText("Database connected", { exact: true })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Database schemas", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Disconnect", exact: true }).click();
     await expect(page.locator(".connection-state")).toHaveText("disconnected");
     expect(
@@ -267,9 +267,9 @@ test("Save & connect opens a real session and locks its profile", async () => {
     await page
       .getByLabel("CA certificate", { exact: true })
       .fill(path.join(fixture.directory, "ca.crt"));
-    await page.getByRole("button", { name: "Save & connect", exact: true }).click();
+    await page.getByRole("button", { name: "Connect", exact: true }).click();
     await expect(page.locator(".connection-state")).toHaveText("connected");
-    await expect(page.getByText("Database connected", { exact: true })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Database schemas", exact: true })).toBeVisible();
     await expect(
       page.getByRole("button", { name: "Select Manager fixture", exact: true }),
     ).toHaveAccessibleDescription("localhost:55418 / fixture Connected");
@@ -277,7 +277,7 @@ test("Save & connect opens a real session and locks its profile", async () => {
     await expect(page.getByLabel("Name", { exact: true })).toBeDisabled();
     await expect(page.getByLabel("Password", { exact: true })).toHaveValue("");
     await expect(
-      page.getByRole("button", { name: "Delete Manager fixture", exact: true }),
+      page.getByRole("button", { name: "More connection actions", exact: true }),
     ).toBeDisabled();
     await page.getByRole("button", { name: "Disconnect", exact: true }).click();
     await expect(page.getByLabel("Name", { exact: true })).toBeEnabled();

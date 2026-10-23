@@ -1,3 +1,4 @@
+import { useFeedback } from "../../app/Feedback";
 import { createPortal } from "react-dom";
 import { discardLiveJsonDrafts } from "../../app/workspace";
 import { useEffect, useRef, useState } from "react";
@@ -23,6 +24,7 @@ export function ConnectionList({
   onDirty: (value: boolean) => void;
   onBusy: (value: boolean) => void;
 }) {
+  const { toast } = useFeedback();
   const connectRequest = useRef(0);
   const [profiles, setProfiles] = useState<ConnectionProfile[]>([]);
   const [secureStorage, setSecureStorage] = useState(false);
@@ -220,6 +222,7 @@ export function ConnectionList({
                 }}
                 onSaved={async (message, profile) => {
                   await refresh(message);
+                  toast("Connection saved");
                   setDialog(profile);
                   onDirty(false);
                 }}

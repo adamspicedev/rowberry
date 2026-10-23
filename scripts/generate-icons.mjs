@@ -1,4 +1,5 @@
 // Render the checked-in vector master locally with Electron; no network or fonts.
+import { execFileSync } from "node:child_process";
 import { _electron as electron } from "@playwright/test";
 import { mkdtemp, readFile, writeFile, rm, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -49,26 +50,38 @@ try {
     "assets/branding/rowberry.ico",
     Buffer.concat([header, ...icoSizes.map((size) => images.get(size))]),
   );
-  // Modern macOS ICNS PNG representations, including a 1024px Retina master.
-  const chunks = [
-    [16, "icp4"],
-    [32, "icp5"],
-    [64, "icp6"],
-    [128, "ic07"],
-    [256, "ic08"],
-    [512, "ic09"],
-    [1024, "ic10"],
-  ].map(([size, type]) => {
-    const png = images.get(size);
-    const chunk = Buffer.alloc(8);
-    chunk.write(type, 0);
-    chunk.writeUInt32BE(png.length + 8, 4);
-    return Buffer.concat([chunk, png]);
-  });
-  const icnsHeader = Buffer.alloc(8);
-  icnsHeader.write("icns", 0);
-  icnsHeader.writeUInt32BE(8 + chunks.reduce((total, chunk) => total + chunk.length, 0), 4);
-  await writeFile("assets/branding/rowberry.icns", Buffer.concat([icnsHeader, ...chunks]));
+  // Let Apple's encoder choose the correct bitmap/mask formats for small icons.
+  // PNG payloads in hand-written icp4/icp5 chunks decode as corrupt pixels in Finder.
+  const iconset = path.join(directory, "rowberry.iconset");
+  await mkdir(iconset);
+  for (const size of [16, 32, 128, 256, 512]) {
+    await writeFile(path.join(iconset, `icon_${size}x${size}.png`), images.get(size));
+    await writeFile(path.join(iconset, `icon_${size}x${size}@2x.png`), images.get(size * 2));
+  }
+  execFileSync("iconutil", ["-c", "icns", iconset, "-o", "assets/branding/rowberry.icns"]);
+  const decoded = path.join(directory, "decoded.iconset");
+  execFileSync("iconutil", ["-c", "iconset", "assets/branding/rowberry.icns", "-o", decoded]);
+  await application.evaluate(
+    ({ nativeImage }, { iconset, decoded }) => {
+      const { readFileSync } = process.getBuiltinModule("node:fs");
+      for (const size of [16, 32, 128, 256, 512]) {
+        for (const scale of ["", "@2x"]) {
+          const name = `icon_${size}x${size}${scale}.png`;
+          const source = nativeImage.createFromBuffer(readFileSync(`${iconset}/${name}`));
+          const result = nativeImage.createFromBuffer(readFileSync(`${decoded}/${name}`));
+          const expected = size * (scale ? 2 : 1);
+          if (
+            source.isEmpty() ||
+            result.isEmpty() ||
+            result.getSize().width !== expected ||
+            result.getSize().height !== expected
+          )
+            throw new Error(`Missing or incorrectly sized macOS icon representation: ${name}`);
+        }
+      }
+    },
+    { iconset, decoded },
+  );
 } finally {
   await application?.close();
   await rm(directory, { recursive: true, force: true });

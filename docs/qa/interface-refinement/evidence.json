@@ -1,0 +1,55 @@
+{
+  "contract": "contract.md: quiet desktop database workbench; preserve drafts and credential boundaries; primary Connect, secondary Test, overflow save/delete.",
+  "targetViewports": ["1440x960", "1024x768"],
+  "accessibility": {
+    "status": "pass",
+    "evidence": "Desktop keyboard checks exercised tab ArrowRight/ArrowLeft and native popover Enter/Escape with focus restoration. Visible focus, field labels and light/dark text reviewed in captures. Reduced-motion media enabled for preview. This is a focused check, not a complete assistive-technology audit."
+  },
+  "responsive": {
+    "status": "pass",
+    "evidence": "Inspected table and JSON at 1440x960 and SQL at 1024x768; no overlapping controls. Additional narrow connection capture shows sticky actions and scrollable fields."
+  },
+  "contentStates": {
+    "loading": {
+      "status": "pass",
+      "evidence": "Delayed connection/save regression verifies busy state blocks competing actions; existing Connecting status remains visible."
+    },
+    "empty": {
+      "status": "pass",
+      "evidence": "Fresh disposable profile captured in empty.png; connection guidance visible."
+    },
+    "error": {
+      "status": "pass",
+      "evidence": "Packaged connection test rejects wrong password and displays inline recovery guidance without losing the active session."
+    },
+    "partial": {
+      "status": "pass",
+      "evidence": "Unavailable credential-store regression retains connection metadata while explicitly reporting session-only password storage."
+    },
+    "success": {
+      "status": "pass",
+      "evidence": "connections-dark.png shows successful isolated test; packaged save/restart/edit/delete lifecycle passed."
+    },
+    "permission": {
+      "status": "pass",
+      "evidence": "Native-store failure simulated in main process; UI reports unavailable storage and session-only fallback. Real locked-Keychain qualification remains untested."
+    }
+  },
+  "renderedEvidence": [
+    {
+      "viewport": "1440x960",
+      "artifact": "table-light.png",
+      "observation": "Selected table and persistent tabs; compact navigation and editable grid."
+    },
+    {
+      "viewport": "1440x960",
+      "artifact": "json-light.png",
+      "observation": "JSON inspection alongside SQL results, with read-only explanation."
+    },
+    {
+      "viewport": "1024x768",
+      "artifact": "workspace-dark.png",
+      "observation": "Dark SQL editor, controls and results fit smaller desktop window."
+    }
+  ]
+}

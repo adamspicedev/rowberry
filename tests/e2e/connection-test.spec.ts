@@ -80,7 +80,7 @@ test("connection test leaves metadata and active workspace untouched", async () 
       .scrollIntoViewIfNeeded();
     await page.screenshot({ path: "/tmp/rowberry-connection-light.png", animations: "disabled" });
     await page.getByLabel("Appearance", { exact: true }).selectOption("dark");
-    await expect(page.getByRole("button", { name: "Save connection", exact: true })).toHaveCSS(
+    await expect(page.getByRole("button", { name: "Cancel", exact: true })).toHaveCSS(
       "color",
       "rgb(228, 231, 236)",
     );
