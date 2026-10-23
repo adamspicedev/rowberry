@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent, type CSSProperties } from "react";
+import { useId, useRef, useState, type FormEvent, type CSSProperties } from "react";
 import {
   ConnectionIdSchema,
   ConnectionProfileSchema,
@@ -27,6 +27,8 @@ export function ConnectionDialog({
   locked?: boolean;
   onDelete?: () => void;
 }) {
+  const actionsId = useId();
+  const actionsPopover = useRef<HTMLDivElement>(null);
   const profileId = useRef(profile?.id ?? ConnectionIdSchema.parse(crypto.randomUUID()));
   const password = useRef<HTMLInputElement>(null);
   const [tls, setTls] = useState(profile?.tls.kind ?? "verify-full");
@@ -40,7 +42,8 @@ export function ConnectionDialog({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (locked || busy) return;
-    const intent = (event.nativeEvent as SubmitEvent).submitter?.getAttribute("value") ?? "save";
+    const intent = (event.nativeEvent as SubmitEvent).submitter?.getAttribute("value") ?? "connect";
+    actionsPopover.current?.hidePopover();
     const connectAfterSave = intent === "connect";
     setAction(intent);
     setTestMessage("");
@@ -160,7 +163,7 @@ export function ConnectionDialog({
         <div>
           <span className="connection-engine">POSTGRESQL</span>
           <h1 id="connection-title">{profile ? profile.name : "New connection"}</h1>
-          {!locked && <p>Connect to a PostgreSQL database. Test your settings before saving.</p>}
+          {!locked && <p>Connection settings are saved when you connect.</p>}
           {locked && <p>Disconnect to edit this connection.</p>}
         </div>
         {locked && <span className="badge">Session active</span>}
@@ -376,35 +379,54 @@ export function ConnectionDialog({
           {testMessage && <output className="connection-test-result">{testMessage}</output>}
           {error && <p role="alert">{error}</p>}
           <div className="connection-editor-actions">
-            {onDelete && (
-              <Button
-                type="button"
-                variant="ghost"
-                disabled={busy || locked}
-                onClick={onDelete}
-                aria-label={`Delete ${profile?.name}`}
-              >
-                Delete
-              </Button>
-            )}
+            <Button
+              className="connection-primary"
+              type="submit"
+              value="connect"
+              disabled={busy || locked}
+            >
+              {busy && action === "connect" ? "Connecting…" : "Connect"}
+            </Button>
             <Button
               type="button"
               variant="ghost"
-              disabled={busy}
-              onClick={() => {
-                onClose();
-              }}
+              disabled={busy || locked}
+              popoverTarget={actionsId}
+              aria-label="More connection actions"
+              className="connection-more"
             >
+              ⋯
+            </Button>
+            <div
+              id={actionsId}
+              ref={actionsPopover}
+              popover="auto"
+              className="connection-action-popover"
+              aria-label="More connection actions"
+            >
+              <Button type="submit" value="save" variant="ghost" disabled={busy || locked}>
+                {busy && action === "save" ? "Saving…" : "Save without connecting"}
+              </Button>
+              {onDelete && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={busy || locked}
+                  onClick={() => {
+                    actionsPopover.current?.hidePopover();
+                    onDelete();
+                  }}
+                  aria-label={`Delete ${profile?.name}`}
+                >
+                  Delete connection…
+                </Button>
+              )}
+            </div>
+            <Button type="button" variant="ghost" disabled={busy} onClick={onClose}>
               Cancel
             </Button>
             <Button type="submit" value="test" variant="outline" disabled={busy || locked}>
               {busy && action === "test" ? "Testing…" : "Test connection"}
-            </Button>
-            <Button type="submit" variant="ghost" disabled={busy || locked}>
-              {busy && action !== "test" ? "Saving…" : "Save connection"}
-            </Button>
-            <Button type="submit" value="connect" disabled={busy || locked}>
-              Save &amp; connect
             </Button>
           </div>
         </div>

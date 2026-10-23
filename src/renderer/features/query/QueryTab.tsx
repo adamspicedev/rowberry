@@ -1,3 +1,4 @@
+import { useFeedback } from "../../app/Feedback";
 import { Button } from "../../components/ui/button";
 import { rowJson } from "../../../json/viewer";
 import { recordDraft } from "../../app/workspace";
@@ -34,6 +35,7 @@ export function QueryTab({
   onSaved: () => void;
   onTabState: (dirty: boolean, close: () => void, busy: boolean) => void;
 }) {
+  const { toast } = useFeedback();
   const [json, setJson] = useState<{ id: string; text: string; row?: boolean } | null>(null);
   const [jsonDirty, setJsonDirty] = useState(false);
   const [ready, setReady] = useState(false);
@@ -312,7 +314,10 @@ export function QueryTab({
                       ? "Query saved. It will never run automatically."
                       : reply.error.message,
                   );
-                  if (reply.ok) onSaved();
+                  if (reply.ok) {
+                    onSaved();
+                    toast("Query saved");
+                  } else toast("Could not save query", { error: true });
                 }
               });
           }}

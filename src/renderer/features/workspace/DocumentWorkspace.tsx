@@ -13,7 +13,10 @@ import type { Table } from "../../../shared/browse";
 const requestId = () => RequestIdSchema.parse(crypto.randomUUID());
 type Owner = { sessionId: SessionId; generation: number };
 type Document = { id: QueryCommand["tabId"]; sql: string; title: string; table?: Table };
-export type WorkspaceHandle = { openTable: (table: Table) => void };
+export type WorkspaceHandle = {
+  openTable: (table: Table) => void;
+  openQuery: (sql: string) => void;
+};
 export function DocumentWorkspace({
   sessionId,
   generation,
@@ -149,6 +152,7 @@ export function DocumentWorkspace({
     setActive(id);
   };
   useImperativeHandle(workspaceRef, () => ({
+    openQuery: (sql) => add(sql),
     openTable(table) {
       const existing = tabs.find((tab) => tab.table?.id === table.id);
       if (existing) {

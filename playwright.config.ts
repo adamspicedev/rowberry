@@ -3,6 +3,7 @@ export default defineConfig({
   testDir: "tests/e2e",
   // Live JSON workflows are opt-in by explicit file selection or the PostgreSQL suite.
   testIgnore: [
+    "**/schema-browser.spec.ts",
     "**/connection-test.spec.ts",
     "**/sessions.spec.ts",
     "**/browse.spec.ts",
