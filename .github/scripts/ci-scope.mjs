@@ -17,9 +17,24 @@ export function classifyPaths(paths) {
       ["LICENSE", ".gitignore", ".oxfmtignore", ".oxfmtrc.json"].includes(path)
     ) {
       // Documentation and formatting settings do not change either application.
-    } else {
-      // Unknown paths fail toward running desktop checks, including new source/config files.
+    } else if (
+      ["src/", "tests/", "scripts/", "assets/"].some((prefix) => path.startsWith(prefix)) ||
+      [
+        "package.json",
+        "bun.lock",
+        "compose.yaml",
+        "electron-builder.yml",
+        "tsconfig.json",
+        "vite.config.ts",
+        "vitest.config.ts",
+      ].includes(path) ||
+      /^playwright(?:\.[^/]+)?\.config\.ts$/.test(path)
+    ) {
       desktop = true;
+    } else {
+      // Unrecognised shared configuration must not silently skip either application.
+      desktop = true;
+      website = true;
     }
   }
   return { desktop, website };
