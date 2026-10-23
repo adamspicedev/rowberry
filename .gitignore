@@ -5,3 +5,11 @@ test-results/
 playwright-report/
 .DS_Store
 *.log
+.vercel/
+.output/
+.tanstack/
+.venv/
+__pycache__/
+apps/web/public/docs/
+.vercel
+.env*

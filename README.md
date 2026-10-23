@@ -71,6 +71,8 @@ Use a database role with only the permissions you need. Running SQL can change d
 
 ## Documentation
 
+The [Rowberry website](https://rowberry.spicey.dev/) and [user documentation](https://rowberry.spicey.dev/docs/) live in `apps/web`. See the [website contributor guide](apps/web/README.md) to develop or deploy them.
+
 | Guide                                                  | Start here when you want to…                                                       |
 | ------------------------------------------------------ | ---------------------------------------------------------------------------------- |
 | [Contributing](CONTRIBUTING.md)                        | Set up development, choose checks, and prepare a focused pull request.             |

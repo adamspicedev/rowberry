@@ -1,0 +1,81 @@
+@font-face {
+  font-family: "Baloo 2";
+  src: url("/brand/Baloo2-Variable.ttf") format("truetype");
+  font-weight: 400 800;
+  font-display: swap;
+}
+:root {
+  --md-text-font: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --md-code-font: ui-monospace, SFMono-Regular, monospace;
+}
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #24232c;
+  --md-primary-bg-color: #f8f7f2;
+  --md-accent-fg-color: #6743b5;
+  --md-default-bg-color: #f8f7f2;
+  --md-typeset-a-color: #6743b5;
+}
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #191b24;
+  --md-primary-bg-color: #e4e7ec;
+  --md-accent-fg-color: #b69bff;
+  --md-default-bg-color: #191b24;
+  --md-typeset-a-color: #b69bff;
+}
+.md-header {
+  box-shadow: none;
+  border-bottom: 1px solid #ffffff22;
+}
+.md-header__topic:first-child {
+  font-family: "Baloo 2", sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.md-header__button.md-logo img {
+  height: 1.6rem;
+  width: auto;
+}
+.md-typeset h1,
+.md-typeset h2 {
+  letter-spacing: -0.035em;
+  font-weight: 600;
+}
+.md-typeset {
+  line-height: 1.8;
+}
+.md-typeset a {
+  text-underline-offset: 3px;
+}
+.md-typeset a:hover {
+  text-decoration: underline;
+}
+:focus-visible {
+  outline: 3px solid var(--md-accent-fg-color);
+  outline-offset: 3px;
+}
+.md-search__input {
+  min-height: 44px;
+}
+.md-footer {
+  background: #24232c;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}
+.md-typeset p a,
+.md-typeset li a {
+  text-decoration: underline;
+}
+[data-md-color-scheme="default"] {
+  --md-default-fg-color--light: #62616b;
+}
+[data-md-color-scheme="slate"] {
+  --md-code-hl-constant-color: #b69bff;
+}

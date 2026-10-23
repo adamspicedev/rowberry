@@ -3,3 +3,9 @@ dist
 release
 .superpowers
 bun.lock
+.output
+.vercel
+.tanstack
+.venv
+apps/web/public/docs
+apps/web/src/routeTree.gen.ts
