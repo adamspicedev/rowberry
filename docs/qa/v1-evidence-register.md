@@ -2,6 +2,8 @@
 
 Started 23 October 2026 for [V1-01](../v1-todo.md). This register separates evidence already recorded from qualification still required by the [release contract](../v1-release-contract.md). It is a planning inventory, not a new test run.
 
+Signing is deferred by the maintainer as of 24 October 2026 due to Apple Developer Program cost. Unsigned local V1-03 QA continues; public distribution still requires signing. The [usability session protocol](v1-usability-session.md) is ready; participant observations remain pending.
+
 ## Candidate status
 
 | Field                                        | macOS arm64                | macOS Intel x64           |
@@ -15,6 +17,12 @@ Started 23 October 2026 for [V1-01](../v1-todo.md). This register separates evid
 Scope decision, 23 October 2026: the maintainer approved Apple silicon-only v1 because purchasing Intel test hardware is outside the current budget. Intel build checks are paused; native qualification and supported downloads are deferred.
 
 Keep [the baseline register](../upgrade-baselines.md) authoritative for accepted artifacts. Neither local development packages nor green CI automatically become a baseline.
+
+## Current development checks
+
+[24 October workflow baseline](2026-10-24-v1-workflows.md): 20 automated desktop tests passed on source build `db7f1d3c871da448ab3a599a267330728d30c506`, with one packaged-vault test skipped. This is supplementary V1-03 evidence, not participant observation or final-candidate qualification.
+
+[Integrity and unsigned package follow-through](2026-10-24-integrity-and-package.md): 14 PG18 integration tests, 5 source desktop checks, 5 packaged connection/native-vault checks and 2 packaged guarded-save checks passed. Two additional packaged recovery checks passed after adding Unicode/large-number text and durable explicit discard assertions. Native denied-store, complete live-editor interruption coverage, complete coverage mapping and performance budgets remain open. The build configuration now produces arm64 only.
 
 ## Existing evidence and limits
 

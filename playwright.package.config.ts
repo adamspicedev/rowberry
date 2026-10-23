@@ -5,6 +5,7 @@ export default defineConfig({
     "**/schema-browser.spec.ts",
     "**/connection-test.spec.ts",
     "**/connections.spec.ts",
+    "**/recovery.spec.ts",
     "**/security.spec.ts",
     "**/query.spec.ts",
     "**/save.spec.ts",
