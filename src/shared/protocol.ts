@@ -147,6 +147,14 @@ export const QueryPageSchema = z
   .strict();
 export type SqlPage = z.infer<typeof QueryPageSchema>;
 export const CommandSchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      kind: z.literal("connections.test"),
+      requestId: RequestIdSchema,
+      profile: ConnectionProfileSchema,
+      secret: z.string().max(4096).optional(),
+    })
+    .strict(),
   ...BrowseCommandSchema.options,
   ...QueryCommandSchema.options,
   z
@@ -257,6 +265,13 @@ const sessionData = z
   })
   .strict();
 const SuccessSchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      ...successFields,
+      kind: z.literal("connections.test"),
+      data: z.object({ serverVersion: z.string().max(128) }).strict(),
+    })
+    .strict(),
   z.object({ ...successFields, kind: z.literal("rows.save"), data: SaveResultSchema }).strict(),
   z
     .object({
