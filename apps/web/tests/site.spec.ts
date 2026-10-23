@@ -5,6 +5,15 @@ import { resolve } from "node:path";
 
 const evidence = resolve("../../docs/qa/website");
 
+test.beforeEach(async ({ page }) => {
+  await page.route(/https:\/\/[^/]*posthog\.com\//, (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: "{}",
+    }),
+  );
+});
+
 for (const viewport of [
   { width: 390, height: 844 },
   { width: 1440, height: 900 },

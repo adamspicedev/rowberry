@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { usePostHog } from "posthog-js/react";
 
 export const Route = createFileRoute("/")({
   head: () => ({ links: [{ rel: "canonical", href: "https://rowberry.spicey.dev/" }] }),
@@ -17,6 +18,8 @@ function Brand() {
 }
 
 function Home() {
+  const posthog = usePostHog();
+
   return (
     <>
       <a className="skip-link" href="#main">
@@ -27,7 +30,17 @@ function Home() {
         <nav aria-label="Main navigation">
           <a href="#workspace">The workspace</a>
           <a href="/docs/">Docs</a>
-          <a className="github-link" href={github}>
+          <a
+            className="github-link"
+            href={github}
+            onClick={() => {
+              posthog?.capture(
+                "github_repository_clicked",
+                { location: "header" },
+                { send_instantly: true, transport: "sendBeacon" },
+              );
+            }}
+          >
             GitHub <span aria-hidden="true">↗</span>
           </a>
         </nav>
@@ -47,7 +60,17 @@ function Home() {
             <br className="desktop-break" /> One focused workspace. Right on your machine.
           </p>
           <div className="actions">
-            <a className="button primary" href="/docs/getting-started/">
+            <a
+              className="button primary"
+              href="/docs/getting-started/"
+              onClick={() => {
+                posthog?.capture(
+                  "getting_started_clicked",
+                  { location: "hero" },
+                  { send_instantly: true, transport: "sendBeacon" },
+                );
+              }}
+            >
               Get started <span aria-hidden="true">↗</span>
             </a>
             <a className="button secondary" href="#workspace">
@@ -242,7 +265,16 @@ function Home() {
               <p>
                 Try a workflow, report a reproducible bug, improve the docs, or propose a focused
                 change.{" "}
-                <a href={`${github}/blob/main/CONTRIBUTING.md`}>
+                <a
+                  href={`${github}/blob/main/CONTRIBUTING.md`}
+                  onClick={() => {
+                    posthog?.capture(
+                      "contribution_guide_clicked",
+                      {},
+                      { send_instantly: true, transport: "sendBeacon" },
+                    );
+                  }}
+                >
                   Start with the contribution guide.
                 </a>
               </p>
@@ -255,7 +287,17 @@ function Home() {
             <h2>Meet your next workspace.</h2>
             <p>Try Rowberry from source. Bring a little clarity to your next query.</p>
           </div>
-          <a className="button primary" href="/docs/getting-started/">
+          <a
+            className="button primary"
+            href="/docs/getting-started/"
+            onClick={() => {
+              posthog?.capture(
+                "getting_started_clicked",
+                { location: "closing_cta" },
+                { send_instantly: true, transport: "sendBeacon" },
+              );
+            }}
+          >
             Get started <span aria-hidden="true">↗</span>
           </a>
         </section>
@@ -267,7 +309,18 @@ function Home() {
         </div>
         <nav aria-label="Footer navigation">
           <a href="/docs/">Documentation</a>
-          <a href={github}>Source code</a>
+          <a
+            href={github}
+            onClick={() => {
+              posthog?.capture(
+                "github_repository_clicked",
+                { location: "footer" },
+                { send_instantly: true, transport: "sendBeacon" },
+              );
+            }}
+          >
+            Source code
+          </a>
           <a href={`${github}/issues`}>Report an issue</a>
           <a href={`${github}/blob/main/LICENSE`}>GPL-3.0-only</a>
         </nav>

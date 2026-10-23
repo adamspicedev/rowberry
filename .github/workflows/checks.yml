@@ -132,6 +132,9 @@ jobs:
     needs: scope
     if: needs.scope.outputs.website == 'true'
     runs-on: ubuntu-latest
+    env:
+      VITE_PUBLIC_POSTHOG_PROJECT_TOKEN: phc_website_test
+      VITE_PUBLIC_POSTHOG_HOST: https://us.i.posthog.com
     defaults:
       run:
         working-directory: apps/web

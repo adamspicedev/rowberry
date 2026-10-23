@@ -1,5 +1,10 @@
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
+import { PostHogErrorBoundary, PostHogProvider } from "posthog-js/react";
+import { analyticsOptions } from "../analytics-options";
 import styles from "../styles.css?url";
+
+const posthogApiKey = import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN;
+const posthogHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;
 
 export const Route = createRootRoute({
   head: () => ({
@@ -55,7 +60,24 @@ function Root() {
         <HeadContent />
       </head>
       <body>
-        <Outlet />
+        {posthogApiKey && posthogHost ? (
+          <PostHogProvider
+            apiKey={posthogApiKey}
+            options={{
+              api_host: posthogHost,
+              ...analyticsOptions,
+              opt_out_capturing_by_default: import.meta.env.DEV,
+            }}
+          >
+            <PostHogErrorBoundary
+              fallback={<main>Something went wrong. Please try again later.</main>}
+            >
+              <Outlet />
+            </PostHogErrorBoundary>
+          </PostHogProvider>
+        ) : (
+          <Outlet />
+        )}
         <Scripts />
       </body>
     </html>
