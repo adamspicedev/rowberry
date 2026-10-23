@@ -24,6 +24,8 @@ Keep [the baseline register](../upgrade-baselines.md) authoritative for accepted
 
 [Integrity and unsigned package follow-through](2026-10-24-integrity-and-package.md): 14 PG18 integration tests, 5 source desktop checks, 5 packaged connection/native-vault checks and 2 packaged guarded-save checks passed. Two additional packaged recovery checks passed after adding Unicode/large-number text and durable explicit discard assertions. Native denied-store, complete live-editor interruption coverage, complete coverage mapping and performance budgets remain open. The build configuration now produces arm64 only.
 
+[Completed integrity coverage map](2026-10-24-integrity-mapping.md): 64 integration checks passed across PG14/18, all five session scenarios passed with matching fixture certificates, and the complete unsigned package suite passed all 25 tests including native available-store access. Runtime, human and signing limits are recorded separately.
+
 ## Existing evidence and limits
 
 | Evidence                                                                                                                                   | What it establishes                                                                                                                                                                                                                                  | What it does not establish                                                                                                                                                                  |
