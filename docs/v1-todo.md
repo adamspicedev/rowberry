@@ -25,7 +25,7 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026. I
   - [ ] Retain outcomes tied to package hashes. Keep inaccessible scenarios blocked rather than passed by simulation.
 - [ ] **V1-05 — Audit integrity and interruption coverage** · Engineering · In progress; before signed preview acceptance
   - [x] Run the [PG18 write-integrity and packaged guarded-save baseline](qa/2026-10-24-integrity-and-package.md); fix the stale Intel packaging target.
-  - [ ] Map contract tasks A04–A09 to existing regression coverage and identify uncovered cases.
+  - [x] Map contract tasks A04–A09 to [existing regression coverage and remaining gaps](qa/2026-10-24-integrity-mapping.md).
   - [ ] Verify conflicts, stale connection operations, ambiguous writes, cancellation and transaction/tab lifecycle behaviour.
   - [ ] Agree performance budgets on reference hardware, measure bounded large workloads and fix demonstrated blockers.
 - [ ] **V1-06 — Decide minimum result-export scope** · Product · After initial V1-03 observations
