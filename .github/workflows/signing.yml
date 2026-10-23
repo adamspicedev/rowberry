@@ -1,31 +1,12 @@
 name: Signed release candidates
 on:
   workflow_dispatch:
-    inputs:
-      platform:
-        description: Platforms to sign
-        type: choice
-        required: true
-        default: macos
-        options:
-          - macos
-          - windows
-          - all
 permissions:
   contents: read
 jobs:
   candidate:
-    strategy:
-      fail-fast: false
-      matrix:
-        include: >-
-          ${{ fromJSON(
-            inputs.platform == 'windows' && '[{"os":"windows-latest","platform":"windows","build":"--win --x64"}]' ||
-            inputs.platform == 'all' && '[{"os":"macos-latest","platform":"macos","build":"--mac --arm64"},{"os":"macos-15-intel","platform":"macos","build":"--mac --x64"},{"os":"windows-latest","platform":"windows","build":"--win --x64"}]' ||
-            '[{"os":"macos-latest","platform":"macos","build":"--mac --arm64"},{"os":"macos-15-intel","platform":"macos","build":"--mac --x64"}]'
-          ) }}
-    runs-on: ${{ matrix.os }}
-    environment: release-signing-${{ matrix.platform }}
+    runs-on: macos-latest
+    environment: release-signing-macos
     env:
       CSC_LINK: ${{ secrets.CSC_LINK }}
       CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
@@ -40,30 +21,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - run: test "$(uname -m)" = arm64
       - run: bun install --frozen-lockfile
       - run: bun run build
-      - run: bun x --no-install electron-builder ${{ matrix.build }} --publish never -c.forceCodeSigning=true
-      - if: runner.os == 'macOS'
-        shell: bash
+      - run: bun x --no-install electron-builder --mac --arm64 --publish never -c.forceCodeSigning=true
+      - name: Verify signed Apple silicon application
         run: |
-          for application in release/mac*/Rowberry.app; do
-            codesign --verify --deep --strict --verbose=2 "$application"
-            spctl --assess --type execute --verbose=2 "$application"
-            xcrun stapler validate "$application"
-          done
-      - if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          Get-ChildItem release -Filter *.exe | ForEach-Object {
-            $signature = Get-AuthenticodeSignature $_.FullName
-            if ($signature.Status -ne 'Valid') { throw "Invalid installer signature" }
-          }
-          if ((Get-AuthenticodeSignature release/win-unpacked/Rowberry.exe).Status -ne 'Valid') { throw 'Invalid executable signature' }
+          application=release/mac-arm64/Rowberry.app
+          codesign --verify --deep --strict --verbose=2 "$application"
+          spctl --assess --type execute --verbose=2 "$application"
+          xcrun stapler validate "$application"
       - run: bun scripts/checksums.ts
       - uses: actions/upload-artifact@v4
         with:
           name: signed-candidate-${{ runner.os }}-${{ runner.arch }}
           path: |
             release/*.dmg
-            release/*.exe
             release/SHA256SUMS
