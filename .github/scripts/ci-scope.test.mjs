@@ -30,7 +30,11 @@ for (const [name, paths, expected] of [
     { desktop: true, website: true },
   ],
   ["CI wiring", [".github/workflows/checks.yml"], { desktop: true, website: true }],
-  ["unknown application file", ["new-runtime.config.ts"], { desktop: true, website: false }],
+  [
+    "unknown shared configuration",
+    [".npmrc", "new-runtime.config.ts"],
+    { desktop: true, website: true },
+  ],
 ]) {
   test(name, () => assert.deepEqual(classifyPaths(paths), expected));
 }
