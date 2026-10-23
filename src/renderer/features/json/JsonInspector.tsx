@@ -1,3 +1,4 @@
+import { copyText } from "../../app/clipboard";
 import { Button } from "../../components/ui/button";
 import { filterPaths } from "../../../json/viewer";
 import { recordDraft } from "../../app/workspace";
@@ -165,22 +166,11 @@ export function JsonInspector({
     }
   }
   function copy(text: string) {
-    const input = document.createElement("textarea");
-    input.value = text;
-    input.style.position = "fixed";
-    input.style.opacity = "0";
-    document.body.append(input);
-    input.select();
-    try {
-      setStatus(
-        document.execCommand("copy")
-          ? "Copied"
-          : "Clipboard unavailable. Select the text and copy manually.",
-      );
-    } finally {
-      input.remove();
-    }
+    setStatus(
+      copyText(text) ? "Copied" : "Clipboard unavailable. Select the text and copy manually.",
+    );
   }
+
   return (
     <section
       className={`json-inspector ${expanded ? "json-expanded" : ""}`}

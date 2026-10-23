@@ -123,6 +123,7 @@ export function App() {
               key={session.sessionId}
               sessionId={session.sessionId}
               generation={session.generation}
+              onQuery={(sql) => workspace.current?.openQuery(sql)}
               selected={selectedTable}
               onSelect={(table) => {
                 if (leaveManager()) workspace.current?.openTable(table);
