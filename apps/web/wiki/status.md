@@ -12,11 +12,12 @@ Rowberry is an early **0.1.0** project, licensed under **GPL-3.0-only**. Public 
 
 ## Platform focus
 
-| Platform                           | Direction                                                   |
-| ---------------------------------- | ----------------------------------------------------------- |
-| macOS 13+, Apple silicon and Intel | Current desktop priority; release qualification in progress |
-| Windows x64                        | Build target; native desktop qualification deferred         |
-| Linux x64                          | Build target; native desktop qualification deferred         |
+| Platform                 | Direction                                         |
+| ------------------------ | ------------------------------------------------- |
+| macOS 13+, Apple silicon | Only v1 release target; qualification in progress |
+| macOS Intel              | Deferred; desktop build checks paused             |
+| Windows x64              | Deferred; desktop build checks paused             |
+| Linux x64                | Deferred; desktop build checks paused             |
 
 Build targets and CI checks are not equivalent to a signed, tested public release. Signing, installation, and platform checks are tracked in the repository's [release checklist](https://github.com/adamspicedev/rowberry/blob/main/docs/release-checklist.md).
 
@@ -25,6 +26,8 @@ Database testing covers PostgreSQL 14 and 18, with connection and TLS compatibil
 ## Current limits
 
 PostgreSQL is the only database engine. SQL results are read only. Multi-statement SQL batches, COPY streaming, import/export, schema-changing context-menu actions, ER diagrams, and automatic updates are not currently available.
+
+See the [roadmap to v1](roadmap.md) for milestones and deferred features.
 
 ## Help shape the project
 

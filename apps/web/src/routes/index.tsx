@@ -225,9 +225,9 @@ function Home() {
             <details>
               <summary>Which databases and platforms are supported?</summary>
               <p>
-                PostgreSQL is the current focus. We’re prioritising macOS on Apple silicon and
-                Intel. Windows and Linux packages are build targets, but native desktop
-                qualification is deferred. <a href="/docs/status/">See current status.</a>
+                PostgreSQL is the current focus. We’re prioritising macOS on Apple silicon. Intel,
+                Windows and Linux desktop qualification is deferred.{" "}
+                <a href="/docs/status/">See current status.</a>
               </p>
             </details>
             <details>
