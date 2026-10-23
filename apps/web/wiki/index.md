@@ -19,6 +19,8 @@ Rowberry is not yet a qualified public release. The current way to try it is to 
 | Recover work after reconnecting     | [Drafts and recovery](recovery.md)      |
 | Understand where my data goes       | [Security and local data](security.md)  |
 
+See the [roadmap to v1](roadmap.md) for what we are working towards.
+
 ## A few boundaries worth knowing
 
 - PostgreSQL is the only supported database engine.
