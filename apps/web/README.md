@@ -28,6 +28,8 @@ bun run test
 bun run start
 ```
 
+CI selects suites from changed paths. Website-only changes run this package and formatting, without Electron, package builds or PostgreSQL fixtures. Desktop-only changes skip the website. Changes under `.github/` and manual runs execute both suites; the required `CI` gate rejects failures or unexpected skips.
+
 The browser suite checks responsive layout, keyboard entry, accessibility, actual docs search, links, assets and HTTP 404s against the production build. `WEB_BASE_URL` can target an existing deployment instead. It writes visual evidence under `docs/qa/website/` in the repository.
 
 ## Deployment
