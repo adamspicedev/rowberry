@@ -437,6 +437,26 @@ for (const version of [14, 18])
       ).toBeVisible();
       await expect(failedInspector).toHaveAttribute("data-dirty", "true");
       await expect.poll(jsonRecoveryCount).toBe(1);
+      // Recover exact editor text, even when it cannot be parsed or safely represented as JS numbers.
+      const interruptedText = '{"name":"Pōhutukawa 🌳","exact":900719925474099312345,"unfinished":';
+      const interruptedEditor = failedInspector.getByRole("textbox", {
+        name: "JSON text editor",
+        exact: true,
+      });
+      await interruptedEditor.focus();
+      await page.keyboard.press("ControlOrMeta+A");
+      await page.keyboard.insertText(interruptedText);
+      await expect(
+        failedInspector.getByRole("button", { name: "Save to database", exact: true }),
+      ).toBeDisabled();
+      await expect
+        .poll(async () => {
+          const loaded = await request({ kind: "workspace.load" });
+          return loaded.ok && loaded.kind === "workspace.load"
+            ? loaded.data.drafts.find((draft) => draft.kind === "json")?.text
+            : undefined;
+        })
+        .toBe(interruptedText);
       // Unexpected window destruction emits no explicit draft-discard event.
       await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.destroy());
       await app.close();
@@ -448,7 +468,10 @@ for (const version of [14, 18])
         ],
       });
       page = await app.firstWindow();
-      await expect(page.getByLabel("Recovered json draft")).toHaveValue("777");
+      await expect(page.getByLabel("Recovered json draft")).toHaveValue(interruptedText);
+      expect(
+        (await client.query("SELECT doc::text FROM dbapp_save_ui.records WHERE id=1")).rows[0].doc,
+      ).toBe("456");
     } finally {
       // Test teardown explicitly discards live editors; user close remains guarded.
       await app.evaluate(({ BrowserWindow }) =>

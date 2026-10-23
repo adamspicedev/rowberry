@@ -21,7 +21,7 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026. I
   - [x] Verify the [unsigned arm64 native Keychain round trip and packaged connection workflows](qa/2026-10-24-integrity-and-package.md).
   - [ ] Exercise saved credentials, deletion and genuinely unavailable/denied native storage on each target.
   - [x] Add packaged regressions for verbatim invalid JSON/Unicode/large-number recovery and explicit recovered-copy discard across restart.
-  - [ ] Verify interrupted JSON recovery, invalid JSON, Unicode, exact large numbers and durable discard.
+  - [x] Verify interrupted JSON recovery, invalid JSON, Unicode, exact large numbers and durable discard in the [unsigned packaged scenarios](qa/2026-10-24-integrity-mapping.md); final-candidate qualification remains required.
   - [ ] Retain outcomes tied to package hashes. Keep inaccessible scenarios blocked rather than passed by simulation.
 - [ ] **V1-05 — Audit integrity and interruption coverage** · Engineering · In progress; before signed preview acceptance
   - [x] Run the [PG18 write-integrity and packaged guarded-save baseline](qa/2026-10-24-integrity-and-package.md); fix the stale Intel packaging target.
