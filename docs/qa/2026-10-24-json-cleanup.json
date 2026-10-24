@@ -1,0 +1,264 @@
+{
+  "platform": "Apple M4, 32 GiB, macOS 27.2 arm64",
+  "appAsarSha256": "651b8707a3ccf9125d45e25a7fc295aafa7cd80907d8533be6512d79e8ad74bc",
+  "measurements": [
+    {
+      "measurement": "json-ui-performance",
+      "repetition": 1,
+      "status": "passed",
+      "values": {
+        "expandMs": 16.5,
+        "selectMs": 8.399999999906868
+      }
+    },
+    {
+      "measurement": "json-retained-memory",
+      "repetition": 1,
+      "status": "passed",
+      "values": [
+        {
+          "cycle": 0,
+          "usedHeapBytes": 31902836,
+          "nodes": 495
+        },
+        {
+          "cycle": 1,
+          "usedHeapBytes": 32018772,
+          "nodes": 495
+        },
+        {
+          "cycle": 2,
+          "usedHeapBytes": 32070456,
+          "nodes": 495
+        },
+        {
+          "cycle": 3,
+          "usedHeapBytes": 32077920,
+          "nodes": 495
+        },
+        {
+          "cycle": 4,
+          "usedHeapBytes": 32230240,
+          "nodes": 495
+        },
+        {
+          "cycle": 5,
+          "usedHeapBytes": 32693008,
+          "nodes": 495
+        },
+        {
+          "cycle": 6,
+          "usedHeapBytes": 32801696,
+          "nodes": 495
+        },
+        {
+          "cycle": 7,
+          "usedHeapBytes": 32826732,
+          "nodes": 495
+        },
+        {
+          "cycle": 8,
+          "usedHeapBytes": 32884040,
+          "nodes": 495
+        },
+        {
+          "cycle": 9,
+          "usedHeapBytes": 32907368,
+          "nodes": 495
+        },
+        {
+          "cycle": 10,
+          "usedHeapBytes": 32917692,
+          "nodes": 495
+        }
+      ]
+    },
+    {
+      "measurement": "json-worker-performance",
+      "repetition": 1,
+      "status": "passed",
+      "values": {
+        "bytes": 11888891,
+        "scalars": 100000,
+        "parseMs": 180.89999999990687,
+        "searchMs": 13.300000000279397,
+        "cancelSearchMs": 9.899999999906868,
+        "cancelParseMs": 6.2999999998137355,
+        "matches": 1,
+        "editable": true
+      }
+    },
+    {
+      "measurement": "json-ui-performance",
+      "repetition": 2,
+      "status": "passed",
+      "values": {
+        "expandMs": 17.800000000279397,
+        "selectMs": 2.900000000372529
+      }
+    },
+    {
+      "measurement": "json-retained-memory",
+      "repetition": 2,
+      "status": "passed",
+      "values": [
+        {
+          "cycle": 0,
+          "usedHeapBytes": 31911684,
+          "nodes": 495
+        },
+        {
+          "cycle": 1,
+          "usedHeapBytes": 32012184,
+          "nodes": 495
+        },
+        {
+          "cycle": 2,
+          "usedHeapBytes": 32062104,
+          "nodes": 495
+        },
+        {
+          "cycle": 3,
+          "usedHeapBytes": 32077720,
+          "nodes": 495
+        },
+        {
+          "cycle": 4,
+          "usedHeapBytes": 32226888,
+          "nodes": 495
+        },
+        {
+          "cycle": 5,
+          "usedHeapBytes": 32686292,
+          "nodes": 495
+        },
+        {
+          "cycle": 6,
+          "usedHeapBytes": 32797884,
+          "nodes": 495
+        },
+        {
+          "cycle": 7,
+          "usedHeapBytes": 32815428,
+          "nodes": 495
+        },
+        {
+          "cycle": 8,
+          "usedHeapBytes": 32852112,
+          "nodes": 495
+        },
+        {
+          "cycle": 9,
+          "usedHeapBytes": 32900516,
+          "nodes": 495
+        },
+        {
+          "cycle": 10,
+          "usedHeapBytes": 32920476,
+          "nodes": 495
+        }
+      ]
+    },
+    {
+      "measurement": "json-worker-performance",
+      "repetition": 2,
+      "status": "passed",
+      "values": {
+        "bytes": 11888891,
+        "scalars": 100000,
+        "parseMs": 179.5,
+        "searchMs": 13.100000000093132,
+        "cancelSearchMs": 9.800000000279397,
+        "cancelParseMs": 5.199999999720603,
+        "matches": 1,
+        "editable": true
+      }
+    },
+    {
+      "measurement": "json-ui-performance",
+      "repetition": 3,
+      "status": "passed",
+      "values": {
+        "expandMs": 15.700000000186265,
+        "selectMs": 4.7999999998137355
+      }
+    },
+    {
+      "measurement": "json-retained-memory",
+      "repetition": 3,
+      "status": "passed",
+      "values": [
+        {
+          "cycle": 0,
+          "usedHeapBytes": 31895468,
+          "nodes": 495
+        },
+        {
+          "cycle": 1,
+          "usedHeapBytes": 32005752,
+          "nodes": 495
+        },
+        {
+          "cycle": 2,
+          "usedHeapBytes": 32050548,
+          "nodes": 495
+        },
+        {
+          "cycle": 3,
+          "usedHeapBytes": 32073364,
+          "nodes": 495
+        },
+        {
+          "cycle": 4,
+          "usedHeapBytes": 32179180,
+          "nodes": 495
+        },
+        {
+          "cycle": 5,
+          "usedHeapBytes": 32686648,
+          "nodes": 495
+        },
+        {
+          "cycle": 6,
+          "usedHeapBytes": 32795464,
+          "nodes": 495
+        },
+        {
+          "cycle": 7,
+          "usedHeapBytes": 32803608,
+          "nodes": 495
+        },
+        {
+          "cycle": 8,
+          "usedHeapBytes": 33506636,
+          "nodes": 495
+        },
+        {
+          "cycle": 9,
+          "usedHeapBytes": 32902340,
+          "nodes": 495
+        },
+        {
+          "cycle": 10,
+          "usedHeapBytes": 32912760,
+          "nodes": 495
+        }
+      ]
+    },
+    {
+      "measurement": "json-worker-performance",
+      "repetition": 3,
+      "status": "passed",
+      "values": {
+        "bytes": 11888891,
+        "scalars": 100000,
+        "parseMs": 178.70000000018626,
+        "searchMs": 12.599999999627471,
+        "cancelSearchMs": 9.600000000093132,
+        "cancelParseMs": 5.100000000093132,
+        "matches": 1,
+        "editable": true
+      }
+    }
+  ]
+}

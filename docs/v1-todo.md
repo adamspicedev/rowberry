@@ -27,7 +27,7 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026. I
   - [x] Run the [PG18 write-integrity and packaged guarded-save baseline](qa/2026-10-24-integrity-and-package.md); fix the stale Intel packaging target.
   - [x] Map contract tasks A04–A09 to [existing regression coverage and remaining gaps](qa/2026-10-24-integrity-mapping.md).
   - [ ] Verify conflicts, stale connection operations, ambiguous writes, cancellation and transaction/tab lifecycle behaviour.
-  - [ ] Agree performance budgets on reference hardware, measure bounded large workloads and fix demonstrated blockers. [Initial M4 JSON latency budgets and three packaged repetitions](qa/json-performance-and-accessibility.md) pass; memory, sustained-session and lower-spec qualification remain open.
+  - [ ] Agree performance budgets on reference hardware, measure bounded large workloads and fix demonstrated blockers. [Initial M4 JSON latency budgets and three packaged repetitions](qa/json-performance-and-accessibility.md) pass; 30 packaged cleanup cycles also pass; peak memory, sustained-session and lower-spec qualification remain open.
 - [ ] **V1-06 — Decide minimum result-export scope** · Product · After initial V1-03 observations
   - [ ] Record whether a real core task is blocked without export.
   - [ ] Decide explicit deferral or a bounded feature with format, row scope, size, cancellation, fidelity and spreadsheet handling specified.

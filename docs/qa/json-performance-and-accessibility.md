@@ -30,3 +30,31 @@ Unsigned Apple-silicon package built from the JSON tree changes accompanying thi
 - app.asar SHA-256: `465c3ece22f3b963033b231da03126a6bf7b73d3e7fdd13dfeeaad565b0d914a`
 
 The initial six-test pass was followed by this retained run because the default console reporter did not persist successful measurement attachments. To retain future qualification data, use `--reporter=json` with `PLAYWRIGHT_JSON_OUTPUT_NAME` pointing to the report file.
+
+## Focus and cleanup follow-up
+
+Pointer selection now focuses the tree without scrolling it, including after a disclosure-button click. Disclosure labels identify Expand versus Collapse. Explicit sibling positions and counts describe the full expanded/filter-visible tree rather than only the rendered window; the 100,000th array entry is identified as item 100,000 of 100,000. Filtered results use the filtered sibling set.
+
+Set `DBAPP_MEMORY_QUALIFICATION=1` for the optional JSON inspector cleanup scenario in `json.spec.ts`. After a warm-up cycle it opens, expands and closes the 100,000-value document ten times. Each cycle must create one JSON worker and release it on close. After explicit Chromium garbage collection, retained renderer heap must stay within 16 MiB of the warm baseline and DOM growth below 100 nodes. These initial regression limits allow runtime/cache variation while catching retained document-sized allocations or repeated detached trees.
+
+This is a retained-resource test, not an OS memory ceiling: renderer heap excludes worker heaps, GPU/native allocations and other processes. Explicit garbage collection does not represent ordinary user timing. Peak memory, longer sessions and lower-spec Macs remain unqualified.
+
+### Packaged cleanup result — 24 October 2026
+
+[All retained measurements](2026-10-24-json-cleanup.json) passed across three consecutive packaged repetitions (30 measured cleanup cycles plus three warm-ups). Every JSON worker closed, DOM counts stayed at 495 after collection, and the maximum heap increase from each warm baseline was under 1.54 MiB. Expansion stayed below 18 ms and worker parsing below 181 ms. This records bounded local cleanup, not general memory or sustained-session acceptance.
+
+Unsigned package built from the focus changes accompanying this record, based on `2c77614eb491741d14b53f964cea3eef667fe6cb`:
+
+- DMG SHA-256: `9b3ff78442030247ad43d3db4901fd7160747d1303afea14e8da5b881757f9f6`
+- app.asar SHA-256: `651b8707a3ccf9125d45e25a7fc295aafa7cd80907d8533be6512d79e8ad74bc`
+
+## Pending human check
+
+Use the matching unsigned package with a disposable connection. Turn on VoiceOver and inspect a nested JSON value. Record the package hash and spoken output rather than marking this passed from automated ARIA assertions.
+
+1. Click a tree row, then use Up/Down without clicking elsewhere. Confirm navigation continues from that row and the selection is announced.
+2. Click a disclosure control, then use Right/Left to enter a child or return to its parent. Confirm the spoken expanded/collapsed state matches the display.
+3. Use Home/End in a large array. Confirm the spoken position and sibling count reflect the full array. Scroll the active row offscreen, then navigate again.
+4. Filter to a nested match, clear the filter, and close the inspector using the keyboard. Record any lost focus, missing announcements or unexpected jumps.
+
+This check remains pending until a person reports the actual result; it does not require Apple signing or access to production data.
