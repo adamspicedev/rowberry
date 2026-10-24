@@ -188,18 +188,43 @@ for (const version of [14, 18])
           );
           return performance.now() - start;
         });
-      // Measurement-only: the 100 ms target is evaluated on the documented reference machine.
+      // Opt-in local budgets are evaluated on the documented reference machine.
       // General CI runners do not enforce a machine-dependent wall-clock threshold.
       console.log(
-        "Actual Chromium large JSON UI (measurement-only, target 100 ms)",
+        "Actual Chromium large JSON UI (local target 100 ms)",
         JSON.stringify({ expandMs, selectMs }),
       );
+      await test.info().attach("json-ui-performance", {
+        body: JSON.stringify({ expandMs, selectMs }),
+        contentType: "application/json",
+      });
+      if (process.env.DBAPP_PERFORMANCE_BUDGETS === "1") {
+        expect(expandMs).toBeLessThan(100);
+        expect(selectMs).toBeLessThan(100);
+      }
       await panel.getByRole("button", { name: "Edit JSON", exact: true }).click();
       await panel.getByLabel("JSON edit pointer", { exact: true }).fill("/items/99999");
       await panel.getByRole("button", { name: "Reveal pointer", exact: true }).click();
       await expect(panel.getByRole("treeitem", { selected: true })).toContainText("99999");
       await panel.getByRole("tree").evaluate((element) => element.scrollTo({ top: 0 }));
-      await expect(panel.getByRole("treeitem", { selected: true })).toHaveCount(0);
+      await expect(panel.getByRole("treeitem", { selected: true })).toHaveCount(1);
+      const tree = panel.getByRole("tree");
+      const selectedItem = panel.getByRole("treeitem", { selected: true });
+      await expect(tree).toHaveAttribute(
+        "aria-activedescendant",
+        (await selectedItem.getAttribute("id")) as string,
+      );
+      expect(await panel.getByRole("treeitem").count()).toBeLessThan(40);
+      await tree.focus();
+      await page.keyboard.press("Home");
+      await expect(panel.getByRole("treeitem", { selected: true })).toContainText("$");
+      await page.keyboard.press("ArrowRight");
+      await expect(panel.getByRole("treeitem", { selected: true })).toContainText("items");
+      await page.keyboard.press("End");
+      await expect(panel.getByRole("treeitem", { selected: true })).toContainText("99999");
+      await page.keyboard.press("ArrowLeft");
+      await expect(panel.getByRole("treeitem", { selected: true })).toContainText("items");
+      await panel.getByLabel("JSON edit pointer", { exact: true }).fill("/items/99999");
       await panel.getByRole("button", { name: "Reveal pointer", exact: true }).click();
       await expect(panel.getByRole("treeitem", { selected: true })).toContainText("99999");
 
@@ -385,6 +410,16 @@ test("Chromium JSON worker large parse, search, cancellation and stale identity"
       };
     }, asset);
     console.log("Actual Chromium worker", JSON.stringify(metrics));
+    await test.info().attach("json-worker-performance", {
+      body: JSON.stringify(metrics),
+      contentType: "application/json",
+    });
+    if (process.env.DBAPP_PERFORMANCE_BUDGETS === "1") {
+      expect(metrics.parseMs).toBeLessThan(1000);
+      expect(metrics.searchMs).toBeLessThan(250);
+      expect(metrics.cancelSearchMs).toBeLessThan(100);
+      expect(metrics.cancelParseMs).toBeLessThan(100);
+    }
     expect(metrics.bytes).toBeGreaterThan(10 * 1024 * 1024);
     expect(metrics.editable).toBe(true);
     expect(metrics.matches).toBe(1);

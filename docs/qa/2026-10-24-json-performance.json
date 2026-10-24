@@ -1,0 +1,78 @@
+{
+  "platform": "Apple M4, 32 GiB, macOS 27.2 arm64",
+  "appAsarSha256": "465c3ece22f3b963033b231da03126a6bf7b73d3e7fdd13dfeeaad565b0d914a",
+  "measurements": [
+    {
+      "test": "JSON draft worker, collapsed search, precise edits, invalid text and close PG18",
+      "repetition": 1,
+      "status": "passed",
+      "metrics": {
+        "expandMs": 14.300000000046566,
+        "selectMs": 10.599999999976717
+      }
+    },
+    {
+      "test": "Chromium JSON worker large parse, search, cancellation and stale identity",
+      "repetition": 1,
+      "status": "passed",
+      "metrics": {
+        "bytes": 11888891,
+        "scalars": 100000,
+        "parseMs": 215.40000000002328,
+        "searchMs": 11.5,
+        "cancelSearchMs": 8.400000000023283,
+        "cancelParseMs": 5.5,
+        "matches": 1,
+        "editable": true
+      }
+    },
+    {
+      "test": "JSON draft worker, collapsed search, precise edits, invalid text and close PG18",
+      "repetition": 2,
+      "status": "passed",
+      "metrics": {
+        "expandMs": 14.900000000023283,
+        "selectMs": 7.299999999930151
+      }
+    },
+    {
+      "test": "Chromium JSON worker large parse, search, cancellation and stale identity",
+      "repetition": 2,
+      "status": "passed",
+      "metrics": {
+        "bytes": 11888891,
+        "scalars": 100000,
+        "parseMs": 214.5,
+        "searchMs": 11.600000000093132,
+        "cancelSearchMs": 7.599999999976717,
+        "cancelParseMs": 5.699999999953434,
+        "matches": 1,
+        "editable": true
+      }
+    },
+    {
+      "test": "JSON draft worker, collapsed search, precise edits, invalid text and close PG18",
+      "repetition": 3,
+      "status": "passed",
+      "metrics": {
+        "expandMs": 14.29999999993015,
+        "selectMs": 5.699999999953434
+      }
+    },
+    {
+      "test": "Chromium JSON worker large parse, search, cancellation and stale identity",
+      "repetition": 3,
+      "status": "passed",
+      "metrics": {
+        "bytes": 11888891,
+        "scalars": 100000,
+        "parseMs": 212.19999999995343,
+        "searchMs": 11.800000000046566,
+        "cancelSearchMs": 7.5,
+        "cancelParseMs": 6.200000000069849,
+        "matches": 1,
+        "editable": true
+      }
+    }
+  ]
+}
