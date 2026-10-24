@@ -9,6 +9,8 @@ export type TreeRow = {
   label: string;
   depth: number;
   parent: string | null;
+  position: number;
+  siblingCount: number;
 };
 export function JsonTree({
   root,
@@ -65,11 +67,16 @@ export function JsonTree({
     filter ? !filterCollapsed.has(path) : allExpanded !== expanded.has(path);
   const rows = useMemo(() => {
     const result: TreeRow[] = [];
-    const stack: TreeRow[] = [{ node: root, path: "", label: "$", depth: 0, parent: null }];
+    const stack: TreeRow[] = [
+      { node: root, path: "", label: "$", depth: 0, parent: null, position: 1, siblingCount: 1 },
+    ];
+    const siblingCounts = new Map<string | null, number>();
     while (stack.length) {
       const row = stack.pop();
       if (!row) break;
       if (filter && !filter.has(row.path)) continue;
+      row.position = (siblingCounts.get(row.parent) ?? 0) + 1;
+      siblingCounts.set(row.parent, row.position);
       result.push(row);
       if (!(filter ? !filterCollapsed.has(row.path) : allExpanded !== expanded.has(row.path)))
         continue;
@@ -83,6 +90,8 @@ export function JsonTree({
               label: entry.key,
               depth: row.depth + 1,
               parent: row.path,
+              position: 1,
+              siblingCount: 1,
             });
         }
       if (row.node.kind === "array")
@@ -95,9 +104,12 @@ export function JsonTree({
               label: String(i),
               depth: row.depth + 1,
               parent: row.path,
+              position: 1,
+              siblingCount: 1,
             });
         }
     }
+    for (const row of result) row.siblingCount = siblingCounts.get(row.parent) ?? 1;
     return result;
   }, [root, expanded, allExpanded, filter, filterCollapsed]);
   useEffect(() => {
@@ -179,6 +191,8 @@ export function JsonTree({
               onKeyDown={() => {}}
               role="treeitem"
               aria-level={row.depth + 1}
+              aria-posinset={row.position}
+              aria-setsize={row.siblingCount}
               aria-selected={active?.path === row.path}
               aria-expanded={container ? isExpanded(row.path) : undefined}
               key={row.node.start}
@@ -188,15 +202,20 @@ export function JsonTree({
                 top: index * 28,
                 paddingLeft: row.depth * 18,
               }}
-              onClick={() => onSelect(row)}
+              onClick={() => {
+                onSelect(row);
+                host.current?.focus({ preventScroll: true });
+              }}
               onDoubleClick={() => container && toggle(row.path)}
             >
               <button
                 tabIndex={-1}
-                aria-label={`Expand ${row.label}`}
+                aria-label={`${isExpanded(row.path) ? "Collapse" : "Expand"} ${row.label}`}
                 disabled={!container}
                 onClick={(event) => {
                   event.stopPropagation();
+                  onSelect(row);
+                  host.current?.focus({ preventScroll: true });
                   toggle(row.path);
                 }}
               >

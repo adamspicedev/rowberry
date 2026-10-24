@@ -69,7 +69,11 @@ for (const version of [14, 18])
       await expect(panel).toContainText("1 matches");
       await panel.getByRole("button", { name: "Next match" }).click();
       await expect(panel.getByRole("treeitem", { selected: true })).toContainText("a/b~c");
-      await panel.getByRole("button", { name: "Expand hidden", exact: true }).click();
+      await expect(panel.getByRole("treeitem", { selected: true })).toHaveAttribute(
+        "aria-setsize",
+        "1",
+      );
+      await panel.getByRole("button", { name: "Collapse hidden", exact: true }).click();
       await expect(panel.getByRole("tree")).not.toContainText("a/b~c");
       await panel.getByRole("button", { name: "Next match", exact: true }).click();
       await expect(panel.getByRole("treeitem", { selected: true })).toContainText("a/b~c");
@@ -146,7 +150,7 @@ for (const version of [14, 18])
       await page.keyboard.type('{"fromText":true}');
       await expect(panel.getByRole("tree")).toContainText('"fromText":true');
       await panel.getByRole("treeitem").first().click();
-      await panel.getByRole("tree").focus();
+      await expect(panel.getByRole("tree")).toBeFocused();
       await page.keyboard.press("ArrowDown");
       await expect(panel.getByRole("treeitem", { selected: true })).toContainText("fromText");
       await panel.getByRole("button", { name: "Undo JSON" }).click();
@@ -206,6 +210,14 @@ for (const version of [14, 18])
       await panel.getByLabel("JSON edit pointer", { exact: true }).fill("/items/99999");
       await panel.getByRole("button", { name: "Reveal pointer", exact: true }).click();
       await expect(panel.getByRole("treeitem", { selected: true })).toContainText("99999");
+      await expect(panel.getByRole("treeitem", { selected: true })).toHaveAttribute(
+        "aria-posinset",
+        "100000",
+      );
+      await expect(panel.getByRole("treeitem", { selected: true })).toHaveAttribute(
+        "aria-setsize",
+        "100000",
+      );
       await panel.getByRole("tree").evaluate((element) => element.scrollTo({ top: 0 }));
       await expect(panel.getByRole("treeitem", { selected: true })).toHaveCount(1);
       const tree = panel.getByRole("tree");
@@ -224,6 +236,14 @@ for (const version of [14, 18])
       await expect(panel.getByRole("treeitem", { selected: true })).toContainText("99999");
       await page.keyboard.press("ArrowLeft");
       await expect(panel.getByRole("treeitem", { selected: true })).toContainText("items");
+      await panel.getByRole("button", { name: "Collapse items", exact: true }).click();
+      await expect(tree).toBeFocused();
+      await expect(selectedItem).toContainText("items");
+      await expect(panel.getByRole("button", { name: "Expand items", exact: true })).toBeVisible();
+      await page.keyboard.press("ArrowRight");
+      await page.keyboard.press("ArrowRight");
+      await expect(selectedItem).toHaveAttribute("aria-posinset", "1");
+      await expect(selectedItem).toHaveAttribute("aria-setsize", "100000");
       await panel.getByLabel("JSON edit pointer", { exact: true }).fill("/items/99999");
       await panel.getByRole("button", { name: "Reveal pointer", exact: true }).click();
       await expect(panel.getByRole("treeitem", { selected: true })).toContainText("99999");
@@ -232,6 +252,48 @@ for (const version of [14, 18])
       await page.getByLabel("Appearance", { exact: true }).selectOption("dark");
       await page.screenshot({ path: "/tmp/rowberry-json-dark-task7.png" });
       await page.getByLabel("Appearance", { exact: true }).selectOption("system");
+      if (process.env.DBAPP_MEMORY_QUALIFICATION === "1") {
+        test.setTimeout(120000);
+        const cdp = await page.context().newCDPSession(page);
+        const samples: { cycle: number; usedHeapBytes: number; nodes: number }[] = [];
+        try {
+          await panel.getByRole("button", { name: "Close JSON", exact: true }).click();
+          await expect(panel).toHaveCount(0);
+          // Cycle zero warms the same path before ten measured repetitions.
+          for (let cycle = 0; cycle <= 10; cycle++) {
+            await page.getByRole("button", { name: "Inspect JSON", exact: true }).click();
+            await panel.getByRole("button", { name: "Expand items", exact: true }).click();
+            await expect(panel.getByRole("treeitem").nth(2)).toBeVisible();
+            expect(
+              page.workers().filter((worker) => /\/worker-[^/]+\.js/.test(worker.url())),
+            ).toHaveLength(1);
+            await panel.getByRole("button", { name: "Close JSON", exact: true }).click();
+            await expect(panel).toHaveCount(0);
+            await expect
+              .poll(
+                () =>
+                  page.workers().filter((worker) => /\/worker-[^/]+\.js/.test(worker.url())).length,
+              )
+              .toBe(0);
+            await cdp.send("HeapProfiler.collectGarbage");
+            const heap = await cdp.send("Runtime.getHeapUsage");
+            const dom = await cdp.send("Memory.getDOMCounters");
+            samples.push({ cycle, usedHeapBytes: heap.usedSize, nodes: dom.nodes });
+          }
+          await test.info().attach("json-retained-memory", {
+            body: JSON.stringify(samples),
+            contentType: "application/json",
+          });
+          console.log("JSON retained renderer heap after GC", JSON.stringify(samples));
+          const baseline = samples[0]!;
+          for (const sample of samples.slice(1)) {
+            expect(sample.usedHeapBytes - baseline.usedHeapBytes).toBeLessThan(16 * 1024 * 1024);
+            expect(sample.nodes - baseline.nodes).toBeLessThan(100);
+          }
+        } finally {
+          await cdp.detach();
+        }
+      }
     } finally {
       // Test teardown explicitly discards live editors; user close remains guarded.
       await app.evaluate(({ BrowserWindow }) =>
