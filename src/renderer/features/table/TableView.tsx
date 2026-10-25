@@ -61,6 +61,14 @@ export function TableView({
     );
   }, [drafts, editor, sessionId, initialTable.id, initialTable.name]);
   const [preview, setPreview] = useState<SaveInput["changes"] | null>(null);
+  const previewDialog = useRef<HTMLDialogElement>(null);
+  const cancelPreview = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (preview) {
+      previewDialog.current?.showModal();
+      cancelPreview.current?.focus();
+    } else previewDialog.current?.close();
+  }, [preview]);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState("");
   const [blocked, setBlocked] = useState(false);
@@ -475,64 +483,67 @@ export function TableView({
           <Button onClick={() => setEditor(null)}>Cancel cell edit</Button>
         </section>
       )}
-      {preview && (
-        <section
-          className="save-preview"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Confirm database changes"
-        >
-          <p>Review all original and pending values. This batch commits atomically.</p>
-          {preview.map((change) => (
-            <div key={change.target}>
-              <strong>
-                Original row:{" "}
-                {table.key
-                  .map((name) => {
-                    const index = table.columns.findIndex((column) => column.name === name);
-                    const cell = page?.rows.find((row) => row.target === change.target)?.cells[
-                      index
-                    ];
-                    return `${name}=${cell?.kind === "value" ? (cell.text === null ? "SQL NULL" : cell.text) : "Unavailable"}`;
-                  })
-                  .join(", ")}
-              </strong>
-              {Object.entries(change.values).map(([name, text]) => {
-                const index = table.columns.findIndex((column) => column.name === name);
-                const original = page?.rows.find((row) => row.target === change.target)?.cells[
-                  index
-                ];
-                return (
-                  <div key={name}>
-                    <strong>{name}</strong>
-                    <pre aria-label={`Original ${name}`}>
-                      {original?.kind === "value"
-                        ? original.text === null
-                          ? "SQL NULL"
-                          : original.text
-                        : (jsonSaveDraft?.originalSource ?? "Large original value")}
-                    </pre>
-                    <pre aria-label={`Pending ${name}`}>
-                      {text === null
+      <dialog
+        ref={previewDialog}
+        className="save-preview"
+        aria-label="Confirm database changes"
+        onCancel={(event) => {
+          event.preventDefault();
+          if (!saving) setPreview(null);
+        }}
+      >
+        <p>Review all original and pending values. This batch commits atomically.</p>
+        {preview?.map((change) => (
+          <div key={change.target}>
+            <strong>
+              Original row:{" "}
+              {table.key
+                .map((name) => {
+                  const index = table.columns.findIndex((column) => column.name === name);
+                  const cell = page?.rows.find((row) => row.target === change.target)?.cells[index];
+                  return `${name}=${cell?.kind === "value" ? (cell.text === null ? "SQL NULL" : cell.text) : "Unavailable"}`;
+                })
+                .join(", ")}
+            </strong>
+            {Object.entries(change.values).map(([name, text]) => {
+              const index = table.columns.findIndex((column) => column.name === name);
+              const original = page?.rows.find((row) => row.target === change.target)?.cells[index];
+              return (
+                <div key={name}>
+                  <strong>{name}</strong>
+                  <pre aria-label={`Original ${name}`}>
+                    {original?.kind === "value"
+                      ? original.text === null
                         ? "SQL NULL"
-                        : [114, 3802].includes(table.columns[index]?.typeOid ?? 0) &&
-                            text.trim() === "null"
-                          ? "JSON null"
-                          : text}
-                    </pre>
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-          <Button disabled={saving || blocked} onClick={() => void save()}>
-            Confirm save
-          </Button>
-          <Button variant="ghost" disabled={saving} onClick={() => setPreview(null)}>
-            Cancel preview
-          </Button>
-        </section>
-      )}
+                        : original.text
+                      : (jsonSaveDraft?.originalSource ?? "Large original value")}
+                  </pre>
+                  <pre aria-label={`Pending ${name}`}>
+                    {text === null
+                      ? "SQL NULL"
+                      : [114, 3802].includes(table.columns[index]?.typeOid ?? 0) &&
+                          text.trim() === "null"
+                        ? "JSON null"
+                        : text}
+                  </pre>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+        <Button disabled={saving || blocked} onClick={() => void save()}>
+          Confirm save
+        </Button>
+        <Button
+          ref={cancelPreview}
+          variant="ghost"
+          disabled={saving}
+          onClick={() => setPreview(null)}
+        >
+          Cancel preview
+        </Button>
+        {saving && <output>Saving…</output>}
+      </dialog>
       {compare && (
         <section aria-label="Compare database with preserved drafts">
           <strong>Preserved drafts</strong>
