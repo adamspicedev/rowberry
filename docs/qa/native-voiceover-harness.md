@@ -8,12 +8,14 @@ Use an unlocked local Mac with the unsigned packaged Rowberry build and the disp
 
 1. Turn VoiceOver on and use English speech/UI for the current phrase matchers.
 2. In VoiceOver Utility → General, enable **Allow VoiceOver to be controlled with AppleScript**.
-3. Allow the executing host (Terminal or Codex) to control VoiceOver and System Events under macOS Privacy & Security → Automation. Grant that host Accessibility access for native keystrokes. If macOS still denies `osascript` keystrokes, restart the approved host or run from an approved Terminal; do not reset TCC or weaken system protection.
+3. Allow the executing host (Terminal, Codex, or ChatGPT as listed by macOS) to control VoiceOver and System Events under macOS Privacy & Security → Automation. Grant that host native keyboard access under **Device Control and Data Access** on macOS 27 (called **Accessibility** on earlier versions). The host for this session was listed as ChatGPT. If macOS still denies `osascript` keystrokes, restart the approved host or run from an approved Terminal; do not reset TCC or weaken system protection.
 4. Keep Quick Nav off so ordinary arrow keys reach the app. Leave the desktop idle while the harness runs; focus loss aborts capture. The harness leaves VoiceOver and your preferences unchanged.
 
 ```sh
 bun run verify:voiceover --check
 DBAPP_VOICEOVER=1 bun run verify:voiceover
+# Separate qualification of explicitly requested state readback:
+DBAPP_VOICEOVER=1 bun run verify:voiceover --readback
 ```
 
 The default executable is `release/mac-arm64/Rowberry.app/Contents/MacOS/Rowberry`. Override it with `DBAPP_PACKAGE_EXECUTABLE` for another packaged candidate. `--check` verifies VoiceOver is running and its last-phrase interface is readable; it does not prove native keystroke permission. A live run verifies that separately.
@@ -24,12 +26,24 @@ The runner prints a temporary evidence directory containing a JSON report and a 
 
 The capture requires output to change after the action before accepting expected words. Pre-existing matching output, missing speech, scripting denial and lost application focus fail. The tests reject the duplicate/scalar Expand labels reported during manual testing. Native arrow/Escape events are guarded by the test app's foreground process ID. The script never speaks expected phrases to manufacture a result and does not use the clipboard.
 
+The default mode requires automatic announcements. `--readback` explicitly asks VoiceOver to describe the current item (VO-F3) after expansion/collapse; it is **not evidence of automatic state-change announcements**. The report records `speechMode` so the results cannot be confused. Both modes enter the JSON table's VoiceOver interaction context. Preview cancellation uses VO-Tab followed by Escape to pass the key to Rowberry, because VoiceOver can consume Escape itself. Plain Escape with VoiceOver active is not qualified by this scenario.
+
 Current scenarios: select/expand/collapse JSON items, select a scalar without a bogus Expand label, open a save preview with Cancel focused, Escape back to Preview changes, and independent verification that cancellation did not write the staged value. Because only the last phrase is exposed, rapidly superseded announcements can produce a failure requiring inspection; this is not a complete speech transcript.
 
 CI runs the transcript matcher/freshness tests. Native qualification is intentionally local and explicit: hosted CI has no configured VoiceOver desktop or macOS permissions.
 
 ## Initial validation — 26 October 2026
 
-Four automated harness tests passed, covering freshness, normalization, forbidden repeated labels and focus loss. Native preflight succeeded. The live run captured: “items: array, 2 items selected collapsed outline row (2 of 2) JSON inspector region”. Subsequent native navigation was blocked by macOS: `osascript is not allowed to send keystrokes (1002)`, including after the maintainer reported enabling permission. The harness correctly failed; expansion and modal speech qualification are **not passed**. A fresh live run from a correctly approved host remains required.
+Four automated harness tests passed, covering freshness, normalization, forbidden repeated labels and focus loss. Native keyboard permission is now confirmed working after enabling ChatGPT under Device Control and Data Access.
+
+The requested-readback run passed all six speech checks: selected array, expanded array, collapsed array, scalar label without bogus Expand wording, preview Cancel focus, and return to Preview changes after passed-through Escape. Independent database verification confirmed the original value remained unchanged. Typecheck and lint passed.
+
+Candidate `app.asar` SHA-256: `bd2040762f06396a0f781acd196d5adaef9982500493a736a193f6d70e946f46`.
+
+Local evidence: `/var/folders/2x/90kbbrpx6kj81dfc_53j6t_00000gn/T/rowberry-voiceover-V6QT6s/evidence`. This is temporary local evidence, not a published release artifact.
+
+The default automatic-announcement run still failed at expansion: the UI expanded, but no fresh expanded-state phrase was captured. Explicit readback confirmed the state is exposed correctly. Automatic expansion/collapse speech remains **open**, and this readback pass does not replace that qualification or the broader manual accessibility checklist.
 
 Apple documents [the caption panel as a view of VoiceOver speech](https://support.apple.com/guide/voiceover/unac078/mac). The scripting property names used here were verified against `/System/Library/CoreServices/VoiceOver.app/Contents/Resources/VoiceOver.sdef` on the test Mac.
+
+Apple documents [current-item descriptions](https://support.apple.com/guide/voiceover/orientation-commands-cpvokys03/mac) and [passing the next key to an app](https://support.apple.com/en-ca/guide/voiceover/vo2722/mac).
