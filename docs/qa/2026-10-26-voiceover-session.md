@@ -16,6 +16,6 @@ Each tree row now has an explicit accessible name containing its key and value o
 
 Regression checks verify container and scalar accessible names, filtered nested values, absence of scalar buttons and expanded state, and the existing keyboard/virtualization workflows. Source PG18 regression, typecheck, lint and build pass. Packaged results are recorded in the accompanying PR.
 
-The corrected spoken wording still requires a VoiceOver retest. Large-array announcements, filter/clear focus, keyboard-only inspector exit and broader application accessibility remain open. The confirmed expand/collapse results do not establish full accessibility acceptance.
+The maintainer subsequently supplied VoiceOver speech showing the corrected names, values, sibling positions and expanded/collapsed states, with no repeated names or scalar Expand controls. They also confirmed keyboard-only inspector exit and return to typing in SQL. These coached retests pass based on their report; the installed build hash was not independently verified. Large-array announcements, filter/clear focus and broader application accessibility remain open. The confirmed expand/collapse results do not establish full accessibility acceptance.
 
 The rebuilt unsigned package passed the PG18 JSON regression, including accessible-name assertions and existing focus/navigation workflows. DMG SHA-256: `1118a6baa1042ce890dbea4f5edeff18d2b23504af7861a6de5612b638a8e391`. These automated results do not verify the revised VoiceOver speech.

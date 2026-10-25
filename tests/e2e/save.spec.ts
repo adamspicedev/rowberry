@@ -133,6 +133,17 @@ for (const version of [14, 18])
 
       await page.getByRole("button", { name: "Preview changes", exact: true }).click();
       const preview = page.getByRole("dialog", { name: "Confirm database changes" });
+      await expect(preview.getByRole("button", { name: "Cancel preview" })).toBeFocused();
+      await page.keyboard.press("Tab");
+      await page.keyboard.press("Tab");
+      await expect(preview.getByRole("button", { name: "Cancel preview" })).toBeFocused();
+      expect(await preview.evaluate((element) => element.matches(":modal"))).toBe(true);
+      await page.keyboard.press("Escape");
+      await expect(preview).not.toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Preview changes", exact: true }),
+      ).toBeFocused();
+      await page.keyboard.press("Enter");
       await expect(preview.getByLabel("Original note")).toHaveText("original");
       await expect(preview.getByLabel("Pending note")).toHaveText("saved");
       expect(
@@ -140,7 +151,17 @@ for (const version of [14, 18])
       ).toBe("original");
       await preview.getByRole("button", { name: "Cancel preview" }).click();
       await page.getByRole("button", { name: "Preview changes", exact: true }).click();
-      await preview.getByRole("button", { name: "Confirm save" }).click();
+      await client.query("BEGIN");
+      try {
+        await client.query("SELECT id FROM dbapp_save_ui.records WHERE id=1 FOR UPDATE");
+        await preview.getByRole("button", { name: "Confirm save" }).click();
+        await expect(preview.getByRole("status")).toHaveText("Saving…");
+        await page.keyboard.press("Escape");
+        await expect(preview).toBeVisible();
+        await expect(preview.getByRole("button", { name: "Cancel preview" })).toBeDisabled();
+      } finally {
+        await client.query("ROLLBACK");
+      }
       await expect(page.getByText("Changes committed", { exact: true })).toBeVisible();
       expect(
         (await client.query("SELECT note FROM dbapp_save_ui.records ORDER BY id")).rows.map(
