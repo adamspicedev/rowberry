@@ -32,6 +32,7 @@ export function JsonTree({
   const [filterCollapsed, setFilterCollapsed] = useState(new Set<string>());
   const [allExpanded, setAllExpanded] = useState(false);
   const [top, setTop] = useState(0);
+  const [announcement, setAnnouncement] = useState("");
   const host = useRef<HTMLDivElement>(null);
   const revealAncestors = useEffectEvent(() => {
     setFilterCollapsed(new Set());
@@ -117,7 +118,13 @@ export function JsonTree({
     const index = rows.findIndex((row) => row.path === reveal.path);
     if (index >= 0) host.current?.scrollTo({ top: Math.max(0, index * 28 - 84) });
   }, [rows, reveal]);
-  function toggle(path: string) {
+  function toggle(row: TreeRow) {
+    const path = row.path;
+    // VoiceOver exposes aria-expanded but does not consistently announce its
+    // changes while DOM focus remains on this virtualized tree's container.
+    setAnnouncement(
+      `${row.path ? row.label.slice(0, 160) : "JSON root"} ${isExpanded(path) ? "collapsed" : "expanded"}`,
+    );
     if (filter) {
       setFilterCollapsed((old) => {
         const next = new Set(old);
@@ -154,111 +161,118 @@ export function JsonTree({
     host.current?.scrollTo({ top: Math.max(0, index * 28 - 84) });
   }
   return (
-    <div
-      className="json-tree"
-      role="tree"
-      aria-label="JSON tree"
-      aria-activedescendant={active ? `${treeId}-${active.node.start}` : undefined}
-      tabIndex={0}
-      ref={host}
-      onScroll={(event) => setTop(event.currentTarget.scrollTop)}
-      onKeyDown={(event) => {
-        const row = active;
-        if (!row) return;
-        const container = row.node.kind === "object" || row.node.kind === "array";
-        if (["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key))
-          event.preventDefault();
-        if (event.key === "Home") selectIndex(0);
-        if (event.key === "End") selectIndex(rows.length - 1);
-        if (event.key === "ArrowRight" && container) {
-          if (!isExpanded(row.path)) toggle(row.path);
-          else if (rows[selectedIndex + 1]?.parent === row.path) selectIndex(selectedIndex + 1);
-        }
-        if (event.key === "ArrowLeft") {
-          if (container && isExpanded(row.path)) toggle(row.path);
-          else selectIndex(rows.findIndex((item) => item.path === row.parent));
-        }
-        if (event.key === "ArrowDown") selectIndex(selectedIndex + 1);
-        if (event.key === "ArrowUp") selectIndex(selectedIndex - 1);
-      }}
-    >
-      <div style={{ height: rows.length * 28, position: "relative" }}>
-        {rendered.map(({ row, index }) => {
+    <>
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+        {announcement}
+      </div>
+      <div
+        className="json-tree"
+        role="tree"
+        aria-label="JSON tree"
+        aria-activedescendant={active ? `${treeId}-${active.node.start}` : undefined}
+        tabIndex={0}
+        ref={host}
+        onScroll={(event) => setTop(event.currentTarget.scrollTop)}
+        onKeyDown={(event) => {
+          const row = active;
+          if (!row) return;
           const container = row.node.kind === "object" || row.node.kind === "array";
-          const spokenValue =
-            row.node.kind === "object"
-              ? `object, ${row.node.entries.length} keys`
-              : row.node.kind === "array"
-                ? `array, ${row.node.children.length} items`
-                : row.node.kind === "number"
-                  ? row.node.lexeme
-                  : row.node.kind === "null"
-                    ? "null"
-                    : String(row.node.value).slice(0, 160);
-          return (
-            <div
-              id={`${treeId}-${row.node.start}`}
-              tabIndex={-1}
-              onKeyDown={() => {}}
-              role="treeitem"
-              aria-label={`${row.path ? row.label : "JSON root"}: ${spokenValue}`}
-              aria-level={row.depth + 1}
-              aria-posinset={row.position}
-              aria-setsize={row.siblingCount}
-              aria-selected={active?.path === row.path}
-              aria-expanded={container ? isExpanded(row.path) : undefined}
-              key={row.node.start}
-              className="json-tree-row"
-              style={{
-                position: "absolute",
-                top: index * 28,
-                paddingLeft: row.depth * 18,
-              }}
-              onClick={() => {
-                onSelect(row);
-                host.current?.focus({ preventScroll: true });
-              }}
-              onDoubleClick={() => container && toggle(row.path)}
-            >
-              {container ? (
-                <button
-                  tabIndex={-1}
-                  aria-label={`${isExpanded(row.path) ? "Collapse" : "Expand"} ${row.label}`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onSelect(row);
-                    host.current?.focus({ preventScroll: true });
-                    toggle(row.path);
-                  }}
-                >
-                  {isExpanded(row.path) ? "▾" : "▸"}
-                </button>
-              ) : (
-                <span className="json-leaf-marker" aria-hidden="true">
-                  ·
-                </span>
-              )}
-              <span className="json-key">
-                {row.path ? JSON.stringify(row.label) : "$"}
-                {row.path ? ":" : ""}
-              </span>
-              <small className={`json-value json-${row.node.kind}`}>
-                {row.node.kind === "string"
-                  ? jsonStringPreview(row.node.value)
+          if (
+            ["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)
+          )
+            event.preventDefault();
+          if (event.key === "Home") selectIndex(0);
+          if (event.key === "End") selectIndex(rows.length - 1);
+          if (event.key === "ArrowRight" && container) {
+            if (!isExpanded(row.path)) toggle(row);
+            else if (rows[selectedIndex + 1]?.parent === row.path) selectIndex(selectedIndex + 1);
+          }
+          if (event.key === "ArrowLeft") {
+            if (container && isExpanded(row.path)) toggle(row);
+            else selectIndex(rows.findIndex((item) => item.path === row.parent));
+          }
+          if (event.key === "ArrowDown") selectIndex(selectedIndex + 1);
+          if (event.key === "ArrowUp") selectIndex(selectedIndex - 1);
+        }}
+      >
+        <div style={{ height: rows.length * 28, position: "relative" }}>
+          {rendered.map(({ row, index }) => {
+            const container = row.node.kind === "object" || row.node.kind === "array";
+            const spokenValue =
+              row.node.kind === "object"
+                ? `object, ${row.node.entries.length} keys`
+                : row.node.kind === "array"
+                  ? `array, ${row.node.children.length} items`
                   : row.node.kind === "number"
                     ? row.node.lexeme
-                    : row.node.kind === "boolean"
-                      ? String(row.node.value)
-                      : row.node.kind === "object"
-                        ? `{ ${row.node.entries.length} keys }`
-                        : row.node.kind === "array"
-                          ? `[ ${row.node.children.length} items ]`
-                          : "null"}
-              </small>
-            </div>
-          );
-        })}
+                    : row.node.kind === "null"
+                      ? "null"
+                      : String(row.node.value).slice(0, 160);
+            return (
+              <div
+                id={`${treeId}-${row.node.start}`}
+                tabIndex={-1}
+                onKeyDown={() => {}}
+                role="treeitem"
+                aria-label={`${row.path ? row.label : "JSON root"}: ${spokenValue}`}
+                aria-level={row.depth + 1}
+                aria-posinset={row.position}
+                aria-setsize={row.siblingCount}
+                aria-selected={active?.path === row.path}
+                aria-expanded={container ? isExpanded(row.path) : undefined}
+                key={row.node.start}
+                className="json-tree-row"
+                style={{
+                  position: "absolute",
+                  top: index * 28,
+                  paddingLeft: row.depth * 18,
+                }}
+                onClick={() => {
+                  onSelect(row);
+                  host.current?.focus({ preventScroll: true });
+                }}
+                onDoubleClick={() => container && toggle(row)}
+              >
+                {container ? (
+                  <button
+                    tabIndex={-1}
+                    aria-label={`${isExpanded(row.path) ? "Collapse" : "Expand"} ${row.label}`}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onSelect(row);
+                      host.current?.focus({ preventScroll: true });
+                      toggle(row);
+                    }}
+                  >
+                    {isExpanded(row.path) ? "▾" : "▸"}
+                  </button>
+                ) : (
+                  <span className="json-leaf-marker" aria-hidden="true">
+                    ·
+                  </span>
+                )}
+                <span className="json-key">
+                  {row.path ? JSON.stringify(row.label) : "$"}
+                  {row.path ? ":" : ""}
+                </span>
+                <small className={`json-value json-${row.node.kind}`}>
+                  {row.node.kind === "string"
+                    ? jsonStringPreview(row.node.value)
+                    : row.node.kind === "number"
+                      ? row.node.lexeme
+                      : row.node.kind === "boolean"
+                        ? String(row.node.value)
+                        : row.node.kind === "object"
+                          ? `{ ${row.node.entries.length} keys }`
+                          : row.node.kind === "array"
+                            ? `[ ${row.node.children.length} items ]`
+                            : "null"}
+                </small>
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

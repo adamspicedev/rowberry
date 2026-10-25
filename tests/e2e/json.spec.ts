@@ -63,6 +63,17 @@ for (const version of [14, 18])
       await expect(panel).toContainText("copy-only draft");
       const itemsRow = panel.getByRole("treeitem", { name: "items: array, 2 items", exact: true });
       await expect(itemsRow).toBeVisible();
+      await itemsRow.click();
+      await page.keyboard.press("ArrowRight");
+      await expect(itemsRow).toHaveAttribute("aria-expanded", "true");
+      await expect(panel.getByRole("status").filter({ hasText: /^items expanded$/ })).toHaveCount(
+        1,
+      );
+      await page.keyboard.press("ArrowLeft");
+      await expect(itemsRow).toHaveAttribute("aria-expanded", "false");
+      await expect(panel.getByRole("status").filter({ hasText: /^items collapsed$/ })).toHaveCount(
+        1,
+      );
       const exactRow = panel.getByRole("treeitem", {
         name: "exact: 12345678901234567890",
         exact: true,
