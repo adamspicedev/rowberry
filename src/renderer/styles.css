@@ -608,7 +608,8 @@ textarea:focus-visible {
   background: var(--selected);
   color: var(--selected-text);
 }
-.json-tree-row button {
+.json-tree-row button,
+.json-tree-row .json-leaf-marker {
   border: 0;
   background: transparent;
   padding: 0 4px;

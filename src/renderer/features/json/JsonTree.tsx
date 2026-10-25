@@ -184,12 +184,23 @@ export function JsonTree({
       <div style={{ height: rows.length * 28, position: "relative" }}>
         {rendered.map(({ row, index }) => {
           const container = row.node.kind === "object" || row.node.kind === "array";
+          const spokenValue =
+            row.node.kind === "object"
+              ? `object, ${row.node.entries.length} keys`
+              : row.node.kind === "array"
+                ? `array, ${row.node.children.length} items`
+                : row.node.kind === "number"
+                  ? row.node.lexeme
+                  : row.node.kind === "null"
+                    ? "null"
+                    : String(row.node.value).slice(0, 160);
           return (
             <div
               id={`${treeId}-${row.node.start}`}
               tabIndex={-1}
               onKeyDown={() => {}}
               role="treeitem"
+              aria-label={`${row.path ? row.label : "JSON root"}: ${spokenValue}`}
               aria-level={row.depth + 1}
               aria-posinset={row.position}
               aria-setsize={row.siblingCount}
@@ -208,19 +219,24 @@ export function JsonTree({
               }}
               onDoubleClick={() => container && toggle(row.path)}
             >
-              <button
-                tabIndex={-1}
-                aria-label={`${isExpanded(row.path) ? "Collapse" : "Expand"} ${row.label}`}
-                disabled={!container}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onSelect(row);
-                  host.current?.focus({ preventScroll: true });
-                  toggle(row.path);
-                }}
-              >
-                {container ? (isExpanded(row.path) ? "▾" : "▸") : "·"}
-              </button>
+              {container ? (
+                <button
+                  tabIndex={-1}
+                  aria-label={`${isExpanded(row.path) ? "Collapse" : "Expand"} ${row.label}`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onSelect(row);
+                    host.current?.focus({ preventScroll: true });
+                    toggle(row.path);
+                  }}
+                >
+                  {isExpanded(row.path) ? "▾" : "▸"}
+                </button>
+              ) : (
+                <span className="json-leaf-marker" aria-hidden="true">
+                  ·
+                </span>
+              )}
               <span className="json-key">
                 {row.path ? JSON.stringify(row.label) : "$"}
                 {row.path ? ":" : ""}
