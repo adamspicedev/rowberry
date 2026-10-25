@@ -27,6 +27,7 @@ async function preflight() {
   // Check permission without saving speech from whatever app currently has focus.
   await appleScript('tell application "VoiceOver" to get content of last phrase');
 }
+const requestedReadback = process.argv.includes("--readback");
 await preflight();
 if (process.argv.includes("--check")) {
   console.log("VoiceOver is running and its speech scripting interface is available");
@@ -45,8 +46,15 @@ const directory = await mkdtemp(path.join(tmpdir(), "rowberry-voiceover-"));
 const evidence = path.join(directory, "evidence");
 const profile = path.join(directory, "profile");
 await mkdir(evidence);
-const report: { appAsarSha256: string; status: string; steps: unknown[]; error?: string } = {
+const report: {
+  appAsarSha256: string;
+  speechMode: string;
+  status: string;
+  steps: unknown[];
+  error?: string;
+} = {
   appAsarSha256: digest,
+  speechMode: requestedReadback ? "requested-readback" : "automatic-announcements",
   status: "running",
   steps: [],
 };
@@ -79,10 +87,10 @@ try {
   });
   const running = app;
   const page = await app.firstWindow();
-  async function nativeKey(code: number) {
+  async function nativeKey(code: number, voiceOverModifier = false) {
     await appleScript(`tell application "System Events"
       if (unix id of first application process whose frontmost is true) is not ${running.process().pid} then error "Test app lost foreground focus"
-      key code ${code}
+      key code ${code}${voiceOverModifier ? " using {control down, option down}" : ""}
     end tell`);
   }
 
@@ -155,8 +163,21 @@ try {
     }
   }
   await step("select-items", () => items.click(), ["items", "collapsed"], ["items items"]);
-  await step("expand-items", () => nativeKey(124), ["items", "expanded"], ["items items"]);
-  await step("collapse-items", () => nativeKey(123), ["items", "collapsed"]);
+  await appleScript('tell application "VoiceOver" to tell vo cursor to move into item');
+  async function changeExpansion(code: number, expanded: boolean) {
+    await nativeKey(code);
+    await expect(items).toHaveAttribute("aria-expanded", String(expanded));
+    // VO-F3 describes the actual current item; never supply expected speech.
+    // This opt-in mode does not qualify automatic state-change announcements.
+    if (requestedReadback) await nativeKey(99, true);
+  }
+  await step(
+    "expand-items",
+    () => changeExpansion(124, true),
+    ["items", "expanded"],
+    ["items items"],
+  );
+  await step("collapse-items", () => changeExpansion(123, false), ["items", "collapsed"]);
   await step(
     "select-name",
     () => panel.getByRole("treeitem", { name: "name: Rowberry", exact: true }).click(),
@@ -175,7 +196,15 @@ try {
     ["cancel preview"],
   );
   await expect(preview.getByRole("button", { name: "Cancel preview", exact: true })).toBeFocused();
-  await step("cancel-preview", () => nativeKey(53), ["preview changes"]);
+  await step(
+    "cancel-preview-passed-through",
+    async () => {
+      // VoiceOver consumes Escape itself unless the next key is passed to the app.
+      await nativeKey(48, true);
+      await nativeKey(53);
+    },
+    ["preview changes"],
+  );
   await expect(preview).not.toBeVisible();
   await expect(page.getByRole("button", { name: "Preview changes", exact: true })).toBeFocused();
   if (
