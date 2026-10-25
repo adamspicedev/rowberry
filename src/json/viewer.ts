@@ -34,3 +34,8 @@ export function filterPaths(paths: readonly string[]): Set<string> {
   }
   return visible;
 }
+
+/** Bound serialization work to the visible prefix, with one code unit for surrogate pairs. */
+export function jsonStringPreview(value: string): string {
+  return JSON.stringify(value.slice(0, 161)).slice(0, 160);
+}

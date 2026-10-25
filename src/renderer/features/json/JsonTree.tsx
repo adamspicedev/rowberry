@@ -1,6 +1,7 @@
 /* oxlint-disable jsx-a11y/prefer-tag-over-role -- Virtualized tree items require positioned ARIA tree semantics. */
 import { useMemo, useRef, useState, useEffect, useEffectEvent, useId } from "react";
 import type { JsonNode } from "../../../json/document";
+import { jsonStringPreview } from "../../../json/viewer";
 import { escapePointer } from "../../../json/paths";
 export type RevealRequest = { path: string; token: number };
 export type TreeRow = {
@@ -243,7 +244,7 @@ export function JsonTree({
               </span>
               <small className={`json-value json-${row.node.kind}`}>
                 {row.node.kind === "string"
-                  ? JSON.stringify(row.node.value).slice(0, 160)
+                  ? jsonStringPreview(row.node.value)
                   : row.node.kind === "number"
                     ? row.node.lexeme
                     : row.node.kind === "boolean"

@@ -307,6 +307,38 @@ for (const version of [14, 18])
           await cdp.detach();
         }
       }
+      if (process.env.DBAPP_SCALAR_QUALIFICATION === "1") {
+        if (await panel.isVisible())
+          await panel.getByRole("button", { name: "Close JSON", exact: true }).click();
+        await sql.focus();
+        await page.keyboard.press("ControlOrMeta+A");
+        await page.keyboard.type("SELECT json_build_object('payload', repeat('x', 10000000))");
+        await page.getByRole("button", { name: "Run SQL / selection", exact: true }).click();
+        await expect(page.locator(".query-tab output")).toContainText("complete");
+        await page.getByRole("button", { name: "Inspect JSON", exact: true }).click();
+        await expect(panel.getByRole("treeitem")).toHaveCount(2);
+        const durations = [];
+        for (let index = 0; index < 10; index++) {
+          durations.push(
+            await panel
+              .getByRole("treeitem")
+              .nth(index % 2)
+              .evaluate(async (element) => {
+                const start = performance.now();
+                element.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+                await new Promise((resolve) =>
+                  requestAnimationFrame(() => requestAnimationFrame(resolve)),
+                );
+                return performance.now() - start;
+              }),
+          );
+        }
+        await test.info().attach("json-large-scalar-selection", {
+          body: JSON.stringify({ bytes: 10000000, durations }),
+          contentType: "application/json",
+        });
+        console.log("Large scalar selection", JSON.stringify(durations));
+      }
     } finally {
       // Test teardown explicitly discards live editors; user close remains guarded.
       await app.evaluate(({ BrowserWindow }) =>
