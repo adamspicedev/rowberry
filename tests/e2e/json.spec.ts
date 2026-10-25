@@ -61,6 +61,16 @@ for (const version of [14, 18])
       const panel = page.getByRole("region", { name: "JSON inspector", exact: true });
       await expect(panel.getByRole("tree")).toBeVisible();
       await expect(panel).toContainText("copy-only draft");
+      const itemsRow = panel.getByRole("treeitem", { name: "items: array, 2 items", exact: true });
+      await expect(itemsRow).toBeVisible();
+      const exactRow = panel.getByRole("treeitem", {
+        name: "exact: 12345678901234567890",
+        exact: true,
+      });
+      await expect(exactRow).toBeVisible();
+      await expect(exactRow.getByRole("button")).toHaveCount(0);
+      await expect(exactRow).not.toHaveAttribute("aria-expanded");
+
       await panel.getByRole("button", { name: "Edit JSON", exact: true }).click();
       await expect(panel.getByRole("button", { name: "Save to database" })).toBeDisabled();
       await expect(page.getByRole("table", { name: "SQL results" })).toContainText("SQL NULL");
@@ -69,6 +79,9 @@ for (const version of [14, 18])
       await expect(panel).toContainText("1 matches");
       await panel.getByRole("button", { name: "Next match" }).click();
       await expect(panel.getByRole("treeitem", { selected: true })).toContainText("a/b~c");
+      await expect(panel.getByRole("treeitem", { selected: true })).toHaveAccessibleName(
+        "a/b~c: needle",
+      );
       await expect(panel.getByRole("treeitem", { selected: true })).toHaveAttribute(
         "aria-setsize",
         "1",
