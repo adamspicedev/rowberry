@@ -51,3 +51,42 @@ it("stops capture when the test app loses focus", async () => {
     }),
   ).rejects.toThrow("lost foreground");
 });
+
+it("captures speech while an action is still awaiting completion", async () => {
+  let phrase = "collapsed";
+  let observed: () => void = () => {};
+  const heard = new Promise<void>((resolve) => {
+    observed = resolve;
+  });
+  const result = await captureSpeech({
+    read: async () => {
+      const current = phrase;
+      if (current === "items expanded") observed();
+      return current;
+    },
+    action: async () => {
+      phrase = "items expanded";
+      await heard;
+      phrase = "You are currently on a table";
+    },
+    focused: async () => true,
+    expected: ["items", "expanded"],
+  });
+  expect(result.phrase).toBe("items expanded");
+  expect(phrase).toBe("You are currently on a table");
+});
+
+it("does not turn matching speech into a pass when the action fails", async () => {
+  let phrase = "collapsed";
+  await expect(
+    captureSpeech({
+      read: async () => phrase,
+      action: async () => {
+        phrase = "items expanded";
+        throw new Error("Native input failed");
+      },
+      focused: async () => true,
+      expected: ["items", "expanded"],
+    }),
+  ).rejects.toThrow("Native input failed");
+});

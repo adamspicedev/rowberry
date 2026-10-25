@@ -24,7 +24,7 @@ The default executable is `release/mac-arm64/Rowberry.app/Contents/MacOS/Rowberr
 
 The runner prints a temporary evidence directory containing a JSON report and a screenshot per completed step (or failed UI step). The report records the exact `app.asar` SHA-256, observed phrases, and pass/fail state. Copy this directory to the candidate's durable QA evidence storage before temporary files are removed. The isolated profile is removed on normal completion/failure; the evidence remains. Abrupt process termination can leave the uniquely named fixture schema/profile for manual cleanup.
 
-The capture requires output to change after the action before accepting expected words. Pre-existing matching output, missing speech, scripting denial and lost application focus fail. The tests reject the duplicate/scalar Expand labels reported during manual testing. Native arrow/Escape events are guarded by the test app's foreground process ID. The script never speaks expected phrases to manufacture a result and does not use the clipboard.
+The capture polls while native input and its DOM verification are in flight, then waits for both the action and matching speech to succeed. It requires output to change after the action starts before accepting expected words. An action failure cannot be hidden by matching speech. Pre-existing matching output, missing speech, scripting denial and lost application focus fail. The tests reject the duplicate/scalar Expand labels reported during manual testing. Native arrow/Escape events are guarded by the test app's foreground process ID. The script never speaks expected phrases to manufacture a result and does not use the clipboard.
 
 The default mode requires automatic announcements. `--readback` explicitly asks VoiceOver to describe the current item (VO-F3) after expansion/collapse; it is **not evidence of automatic state-change announcements**. The report records `speechMode` so the results cannot be confused. Both modes enter the JSON table's VoiceOver interaction context. Preview cancellation uses VO-Tab followed by Escape to pass the key to Rowberry, because VoiceOver can consume Escape itself. Plain Escape with VoiceOver active is not qualified by this scenario.
 
@@ -47,3 +47,17 @@ The default automatic-announcement run still failed at expansion: the UI expande
 Apple documents [the caption panel as a view of VoiceOver speech](https://support.apple.com/guide/voiceover/unac078/mac). The scripting property names used here were verified against `/System/Library/CoreServices/VoiceOver.app/Contents/Resources/VoiceOver.sdef` on the test Mac.
 
 Apple documents [current-item descriptions](https://support.apple.com/guide/voiceover/orientation-commands-cpvokys03/mac) and [passing the next key to an app](https://support.apple.com/en-ca/guide/voiceover/vo2722/mac).
+
+## Automatic announcement fix — 26 October 2026
+
+The JSON tree now emits a polite status message when the user expands or collapses a row. Native `aria-expanded` state remains present. Direct row focus and delaying input did not resolve the silence; improving speech capture alone also did not resolve it.
+
+The new packaged candidate passed the default **automatic-announcements** run, without requesting a description: “items expanded” and “items collapsed”. All six speech checks passed, including scalar naming, preview focus and passed-through Escape. Independent database verification confirmed cancellation did not write the staged value. A preceding run correctly failed when the app lost foreground focus.
+
+- `app.asar` SHA-256: `c8e2a90d4c51c6a1ec5e6000cf7bf493cb48752e34fd4570760c066155321f9f`.
+- DMG SHA-256: `bd4217740c48872bf904e259203a1d6cb0b13d5d08da438e870a3537e16ec236`.
+- Temporary native evidence: `/var/folders/2x/90kbbrpx6kj81dfc_53j6t_00000gn/T/rowberry-voiceover-Y2899F/evidence`.
+- Packaged JSON workflows passed on PostgreSQL 14 and 18, plus the Chromium worker test. Observed large-tree expansion was 21–24 ms and selection 8–10 ms on this Mac.
+- Six speech-capture tests cover freshness, normalization, forbidden labels, focus loss, speech during an unfinished action, and action failure despite matching speech.
+
+This closes the specific automatic expansion/collapse gap for this candidate on the test Mac. It does not qualify every VoiceOver setting, every announcement in the queue, other screen readers, or plain Escape while VoiceOver consumes that key.
