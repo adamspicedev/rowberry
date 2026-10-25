@@ -5,6 +5,7 @@ const selection = files.length
   ? files
   : [
       "src",
+      "tests/voiceover/speech.test.ts",
       "tests/integration/store.test.ts",
       "tests/integration/workspace.test.ts",
       "tests/integration/credentials.native.test.ts",

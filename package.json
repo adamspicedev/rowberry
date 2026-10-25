@@ -22,7 +22,8 @@
     "verify:upgrade": "bun scripts/verify-upgrade.ts",
     "verify:package": "bun scripts/verify-package.ts",
     "format": "oxfmt --write .",
-    "format:check": "oxfmt --check ."
+    "format:check": "oxfmt --check .",
+    "verify:voiceover": "bun scripts/verify-voiceover.ts"
   },
   "dependencies": {
     "@napi-rs/keyring": "2.1.2",
