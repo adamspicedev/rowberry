@@ -34,7 +34,7 @@ linux:
   category: Development
   maintainer: dbapp contributors
 dmg:
-  title: Rowberry
+  title: "${productName} ${version}"
   icon: assets/branding/rowberry.icns
   background: assets/branding/dmg-background.png
   iconSize: 88
