@@ -33,7 +33,9 @@ export function useFeedback() {
   return value;
 }
 function ToastItem({ toast, dismiss }: { toast: Toast; dismiss: (id: number) => void }) {
-  const [paused, setPaused] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const paused = hovered || focused;
   useEffect(() => {
     if (paused || toast.error) return;
     const timer = setTimeout(() => dismiss(toast.id), 7000);
@@ -43,11 +45,11 @@ function ToastItem({ toast, dismiss }: { toast: Toast; dismiss: (id: number) => 
     <div
       className="toast"
       data-error={toast.error}
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocus={() => setPaused(true)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onFocus={() => setFocused(true)}
       onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false);
+        if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
       }}
     >
       <span role={toast.error ? "alert" : "status"}>{toast.message}</span>

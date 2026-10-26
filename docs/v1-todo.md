@@ -42,6 +42,7 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026. I
   - [ ] Record maintainer acceptance and, if applicable, the explicit first-release bootstrap exception; update the baseline register.
 - [ ] **V1-08 — Preview feedback and targeted polish** · Product + Engineering · Depends on V1-07
   - [x] Build the [native VoiceOver harness](qa/native-voiceover-harness.md) and fix automatic JSON expansion/collapse announcements on the recorded unsigned candidate.
+  - [x] Fix [notification expiry during overlapping pointer and keyboard interaction](qa/2026-10-27-toast-interaction.md); packaged regression verifies pause, keyboard Undo and resumed dismissal.
   - [ ] Observe actual task completion, collect reproducible findings and fix release blockers.
   - [ ] Re-test affected workflows and record evidence; silence or elapsed time alone is not acceptance.
 - [ ] **V1-09 — Final candidate, upgrades and distribution** · Release engineering + QA · Depends on V1-08
