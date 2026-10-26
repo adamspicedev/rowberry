@@ -31,6 +31,22 @@ export async function loadWorkspace() {
   if (reply.ok && reply.kind === "workspace.load") {
     const drafts = new Map(reply.data.drafts.map((draft) => [draft.id, draft]));
     for (const draft of pendingInitialUpdates.drafts ?? []) drafts.set(draft.id, draft);
+    // Live SQL tabs own their current array. Preserve displaced disk tabs as
+    // detached copies rather than replacing the editor or silently losing them.
+    if (pendingInitialUpdates.sql !== undefined) {
+      reply.data.sql.forEach((text, index) => {
+        if (!text || pendingInitialUpdates.sql?.includes(text)) return;
+        if ([...drafts.values()].some((draft) => draft.kind === "sql" && draft.text === text))
+          return;
+        const id = `read-retry-sql:${crypto.randomUUID()}`;
+        drafts.set(id, {
+          id,
+          kind: "sql",
+          label: `Stored SQL tab ${index + 1} (copy only; paste into a new SQL tab explicitly)`,
+          text,
+        });
+      });
+    }
     state = { ...reply.data, ...pendingInitialUpdates, drafts: [...drafts.values()] };
     if (!state.recoveryEnabled) state = { ...state, sql: [], drafts: [] };
     pendingInitialUpdates = {};

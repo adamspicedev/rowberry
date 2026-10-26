@@ -77,6 +77,7 @@ test.each([false, true])(
     let failSave = initialSaveFailure;
     let stored: ReturnType<typeof emptyWorkspace> = {
       ...emptyWorkspace(),
+      sql: ["SELECT stored_before_read_failure"],
       drafts: [{ id: "older", kind: "json" as const, label: "stored", text: "{older" }],
     };
     vi.stubGlobal("localStorage", { getItem: () => null, removeItem: vi.fn() });
@@ -97,11 +98,15 @@ test.each([false, true])(
     const workspace = await import("./workspace");
     await workspace.loadWorkspace();
     workspace.recordDraft("newer", "json", "local copy", "{newer 雪 12345678901234567890");
+    const editor = await import("../features/query/query-state");
+    editor.saveDrafts(["SELECT newer_live_editor"]);
     await workspace.loadWorkspace();
     expect(workspace.workspaceState().drafts.map((draft) => draft.text)).toEqual([
       "{older",
       "{newer 雪 12345678901234567890",
+      "SELECT stored_before_read_failure",
     ]);
+    expect(editor.loadDrafts()).toEqual(["SELECT newer_live_editor"]);
     expect(workspace.canReadWorkspace()).toBe(false);
     expect(workspace.canRetryWorkspaceSave()).toBe(initialSaveFailure);
     if (initialSaveFailure) {
@@ -109,7 +114,8 @@ test.each([false, true])(
       failSave = false;
       expect(await workspace.flushWorkspace()).toBe(true);
     }
-    expect(stored.drafts).toHaveLength(2);
+    expect(stored.drafts).toHaveLength(3);
+    expect(stored.sql).toEqual(["SELECT newer_live_editor"]);
     vi.resetModules();
     const restarted = await import("./workspace");
     await restarted.loadWorkspace();
