@@ -71,3 +71,25 @@ The rebuilt Apple-silicon candidate passed all nine tests across three consecuti
 An initial attempt had six connection failures because OrbStack and both fixtures were stopped; its three standalone worker checks passed. Both existing fixtures were started and verified ready before the complete nine-test rerun. These failures were environmental and are recorded in the retained evidence.
 
 The [native VoiceOver harness](native-voiceover-harness.md#automatic-announcement-fix-26-october-2026) also verified automatic expansion/collapse speech on this candidate. Large-array position announcements and the remaining human tasks above are still open. These short repeated-use checks do not establish peak process memory, hours-long stability or lower-spec Mac performance.
+
+## Sustained cleanup qualification
+
+Set `DBAPP_MEMORY_SOAK_MINUTES` alongside `DBAPP_MEMORY_QUALIFICATION=1` to keep the inspector open/expand/close cleanup loop running for a specified duration. It accepts whole minutes from 0 to 120; zero retains the existing ten measured cycles. Ordinary CI does not enable a soak. Example for a one-hour packaged PostgreSQL 18 run:
+
+```sh
+DBAPP_MEMORY_QUALIFICATION=1 DBAPP_MEMORY_SOAK_MINUTES=60 \
+DBAPP_PACKAGE_EXECUTABLE="$PWD/release/mac-arm64/Rowberry.app/Contents/MacOS/Rowberry" \
+PLAYWRIGHT_JSON_OUTPUT_NAME=/tmp/rowberry-soak.json \
+bunx playwright test --config playwright.postgres.config.ts tests/e2e/json.spec.ts \
+  --grep PG18 --reporter=json
+```
+
+Each cycle verifies worker release, collects Chromium garbage, and enforces the existing 16 MiB retained-heap and 100-node growth limits. Samples include elapsed time. Measurement attachments are saved on assertion failure as well as success so a failed soak is not reduced to its last console line. A one-minute smoke test passed 195 cycles while developing this runner.
+
+This extends the duration of the specific repeated-cleanup scenario. It does not establish peak process memory or typical-use memory without forced garbage collection, and does not qualify every workspace operation or lower-spec hardware.
+
+### One-hour packaged result — 26 October 2026
+
+The PostgreSQL 18 packaged scenario passed a full hour: **6,365 open/expand/close cycles**, including the initial baseline cycle. [All retained samples](2026-10-26-json-soak.json) cover 3,600,138 ms. Maximum retained renderer heap growth was **5,574,304 bytes (5.32 MiB)**, below 16 MiB; maximum DOM growth was zero. Every cycle verified worker release. The runner completed with one pass, no retries and no failures.
+
+The unsigned Apple-silicon candidate's `app.asar` SHA-256 is `8009de1a208c5523a6a907e2403021d657b49a6466889d78cae53edb0c9c57f5`; application source matches `a54843c6d1cbbc6ac38269ee3a50a682f7ca6cb7`. This qualifies the sustained cleanup workload only; the broader memory and hardware gates remain open.
