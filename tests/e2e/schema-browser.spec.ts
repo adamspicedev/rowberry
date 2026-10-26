@@ -78,10 +78,24 @@ test("schema tree, reusable menus and toast undo preserve database data", async 
     await expect(page.getByRole("dialog")).toContainText("Nullable");
     await expect(page.getByRole("dialog")).toContainText("Key");
     await page.getByRole("button", { name: "Close structure" }).click();
+    await page.clock.install();
     await table.click({ button: "right" });
     await page.getByRole("menuitem", { name: "Hide from sidebar" }).click();
     await expect(table).toBeHidden();
-    await page.getByRole("button", { name: "Undo", exact: true }).click();
+    const undo = page.getByRole("button", { name: "Undo", exact: true });
+    // Pointer departure must not restart expiry while a button has keyboard focus.
+    await undo.hover();
+    await undo.focus();
+    await page.mouse.move(0, 0);
+    await page.clock.fastForward(8000);
+    await expect(undo).toBeFocused();
+    // Focus departure must not restart expiry while the pointer remains over it.
+    await undo.hover();
+    await page.getByRole("textbox", { name: "Search schemas and tables" }).focus();
+    await page.clock.fastForward(8000);
+    await expect(undo).toBeVisible();
+    await undo.focus();
+    await page.keyboard.press("Enter");
     await expect(table).toBeVisible();
     await table.click({ button: "right" });
     await page.getByRole("menuitem", { name: "SQL: Select top 200" }).click();
@@ -106,6 +120,15 @@ test("schema tree, reusable menus and toast undo preserve database data", async 
     await page.keyboard.press("Escape");
     await page.getByRole("button", { name: "Refresh schemas", exact: true }).click();
     await expect(page.getByRole("region", { name: "Notifications" })).toContainText(
+      "Schema refreshed",
+    );
+    const dismissRefresh = page.getByRole("button", { name: "Dismiss Schema refreshed" });
+    await dismissRefresh.hover();
+    await dismissRefresh.focus();
+    await page.getByRole("textbox", { name: "Search schemas and tables" }).focus();
+    await page.mouse.move(0, 0);
+    await page.clock.fastForward(8000);
+    await expect(page.getByRole("region", { name: "Notifications" })).not.toContainText(
       "Schema refreshed",
     );
     expect((await db.query(`SELECT count(*) FROM "${schema}"."odd""table"`)).rows[0].count).toBe(
