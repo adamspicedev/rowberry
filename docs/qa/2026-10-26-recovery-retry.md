@@ -19,3 +19,9 @@ Unsigned Apple-silicon candidate built with this change on base `248affb687c41df
 - `app.asar` SHA-256: `bd256815665f42ef6a4ad1ee2053d8629bf2d6a56d3922b5ac1c16a4d013f252`.
 
 The read/save failure sequence uses a controlled renderer regression. The packaged checks exercise real restart/discard storage behavior; they do not simulate native disk failure or establish recovery before a save is acknowledged. Signing and final-candidate acceptance remain deferred/open as recorded in the evidence register.
+
+## Abrupt process termination follow-up
+
+The packaged recovery scenario now sends `SIGKILL` to its own isolated Electron main process after the workspace save reply succeeds. It verifies that the process exited with that signal, relaunches the same temporary profile, checks the exact invalid JSON/Unicode/large numeric text, and confirms no connection or SQL execution is restored. The existing discard-and-restart checks then verify durable removal.
+
+Both packaged recovery scenarios passed on the candidate identified above. This extends evidence beyond graceful close or window destruction to abrupt process termination **after acknowledged persistence**. It does not promise recovery for edits still inside the debounce window, a machine power failure, or damaged storage.
