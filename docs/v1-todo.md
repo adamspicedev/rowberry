@@ -29,7 +29,9 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026. I
   - [x] Map contract tasks A04–A09 to [existing regression coverage and remaining gaps](qa/2026-10-24-integrity-mapping.md).
   - [x] Verify development coverage for conflicts, stale connection operations, ambiguous writes, cancellation and transaction/tab lifecycle in the [integrity map](qa/2026-10-24-integrity-mapping.md); requalify the final release candidate separately.
   - [x] Establish working M4 development budgets and qualify bounded large JSON workloads. [Three latest packaged repetitions](qa/json-performance-and-accessibility.md#packaged-follow-up-26-october-2026) passed nine tests, 60 cleanup cycles and 60 large-string selection samples; large-string selection now enforces the 100 ms budget.
-  - [ ] Qualify peak process memory, hours-long use and lower-spec supported Macs; short cleanup loops do not close these items.
+  - [x] Qualify a [one-hour repeated JSON cleanup workload](qa/json-performance-and-accessibility.md#one-hour-packaged-result-26-october-2026): 6,365 cycles within retained-resource limits.
+  - [x] Add and run [process-memory checks without forced collection](qa/json-performance-and-accessibility.md#packaged-process-memory-result-27-october-2026): six scenarios, 180 cycles, maximum sampled total 1,193.84 MiB within the calibrated 1.5 GiB reference ceiling.
+  - [ ] Qualify peak process memory, hours-long typical use and lower-spec supported Macs; the repeated-cleanup scenario does not close these broader items.
 - [ ] **V1-06 — Decide minimum result-export scope** · Product · After initial V1-03 observations
   - [ ] Record whether a real core task is blocked without export.
   - [ ] Decide explicit deferral or a bounded feature with format, row scope, size, cancellation, fidelity and spreadsheet handling specified.

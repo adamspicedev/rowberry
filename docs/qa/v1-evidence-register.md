@@ -30,6 +30,8 @@ Keep [the baseline register](../upgrade-baselines.md) authoritative for accepted
 
 [26 October performance follow-up](json-performance-and-accessibility.md#packaged-follow-up-26-october-2026): nine packaged checks across three repetitions passed, retaining 60 measured cleanup cycles and 60 selections of a 10 MB scalar. Memory/DOM and local interaction budgets passed; peak process memory, hours-long use and lower-spec hardware remain open.
 
+[26–27 October sustained and process-memory checks](json-performance-and-accessibility.md#sustained-cleanup-qualification): the one-hour forced-collection cleanup scenario passed 6,365 cycles. Separately, six short scenarios without forced collection passed 180 cycles with a maximum sampled combined working set of 1,193.84 MiB against the calibrated 1.5 GiB ceiling. Initial calibration failures are retained. These results do not establish exact transient peaks, hours of typical use or lower-spec performance.
+
 [Native VoiceOver qualification](native-voiceover-harness.md#automatic-announcement-fix-26-october-2026): six automatic-speech checks passed on the recorded candidate after fixing expansion/collapse announcements. It also verifies scalar naming, modal focus and passed-through Escape. Large-array position announcements and broader human usability remain open. Later recovery packages have not repeated this native speech run.
 
 ## Existing evidence and limits
