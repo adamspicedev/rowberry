@@ -58,3 +58,16 @@ Use the matching unsigned package with a disposable connection. Turn on VoiceOve
 4. Filter to a nested match, clear the filter, and close the inspector using the keyboard. Record any lost focus, missing announcements or unexpected jumps.
 
 This check remains pending until a person reports the actual result; it does not require Apple signing or access to production data.
+
+## Packaged follow-up — 26 October 2026
+
+The rebuilt Apple-silicon candidate passed all nine tests across three consecutive repetitions with performance, memory and large-scalar qualification enabled. [Every retained measurement](2026-10-26-json-qualification.json) includes PostgreSQL 14 and 18 scenarios, six warm-up cycles and 60 measured cleanup cycles.
+
+- Large-tree expansion: 21.3–34.4 ms; ordinary selection: 6.1–11.3 ms.
+- Selection with a 10,000,000-byte string: 2.6–13 ms across 60 samples. This path now enforces the same 100 ms local interaction budget when `DBAPP_PERFORMANCE_BUDGETS=1`; previously it only recorded timings.
+- Maximum renderer heap growth after collection: 1,116,752 bytes above its warm baseline, within the 16 MiB limit. Maximum DOM growth: four nodes, within the 100-node limit. Each worker was released on close.
+- Candidate `app.asar`: `c8e2a90d4c51c6a1ec5e6000cf7bf493cb48752e34fd4570760c066155321f9f`; application source is unchanged from merged commit `4a97c9a6692044a9c5db1b081f59783ef05620a6`.
+
+An initial attempt had six connection failures because OrbStack and both fixtures were stopped; its three standalone worker checks passed. Both existing fixtures were started and verified ready before the complete nine-test rerun. These failures were environmental and are recorded in the retained evidence.
+
+The [native VoiceOver harness](native-voiceover-harness.md#automatic-announcement-fix-26-october-2026) also verified automatic expansion/collapse speech on this candidate. Large-array position announcements and the remaining human tasks above are still open. These short repeated-use checks do not establish peak process memory, hours-long stability or lower-spec Mac performance.
