@@ -1,6 +1,12 @@
 import { afterEach, expect, test, vi } from "vitest";
 import { emptyWorkspace } from "../../shared/workspace";
-import { failure, type Command, type Reply } from "../../shared/protocol";
+import {
+  boundedCommand,
+  CommandSchema,
+  failure,
+  type Command,
+  type Reply,
+} from "../../shared/protocol";
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllGlobals();
@@ -202,3 +208,71 @@ test("legacy migration retry recovers SQL while retaining new local drafts", asy
     }),
   );
 });
+
+test.each([
+  [
+    "oversized ASCII",
+    {
+      drafts: [
+        { id: "large", kind: "json" as const, label: "large", text: "x".repeat(1024 * 1024 + 1) },
+      ],
+    },
+  ],
+  [
+    "oversized UTF-8",
+    {
+      drafts: [
+        { id: "unicode", kind: "json" as const, label: "unicode", text: "雪".repeat(349526) },
+      ],
+    },
+  ],
+  [
+    "too many copies",
+    {
+      drafts: Array.from({ length: 33 }, (_, index) => ({
+        id: String(index),
+        kind: "json" as const,
+        label: "copy",
+        text: `{unfinished ${index}`,
+      })),
+    },
+  ],
+  ["too many SQL tabs", { sql: Array.from({ length: 17 }, (_, index) => `SELECT ${index}`) }],
+])(
+  "recovery limit guidance preserves live work and the saved snapshot: %s",
+  async (_name, update) => {
+    vi.useFakeTimers();
+    let stored = { ...emptyWorkspace(), sql: ["SELECT saved_before_limit"] };
+    vi.stubGlobal("localStorage", { getItem: () => null, removeItem: vi.fn() });
+    vi.stubGlobal("window", {
+      dbapp: {
+        request: async (command: Command): Promise<Reply> => {
+          // Match the real preload boundary, including UTF-8 and array limits.
+          if (!boundedCommand(command) || !CommandSchema.safeParse(command).success)
+            return failure("VALIDATION_ERROR", command.requestId);
+          if (command.kind === "workspace.load")
+            return { ok: true, kind: command.kind, requestId: command.requestId, data: stored };
+          if (command.kind === "workspace.save") {
+            stored = command.state;
+            return { ok: true, kind: command.kind, requestId: command.requestId, data: {} };
+          }
+          return failure("INTERNAL_ERROR", command.requestId);
+        },
+      },
+    });
+    const workspace = await import("./workspace");
+    await workspace.loadWorkspace();
+    workspace.updateWorkspace(update);
+    expect(await workspace.flushWorkspace()).toBe(false);
+    expect(workspace.workspaceError()).toContain("supported limit");
+    expect(workspace.workspaceError()).not.toContain("Free disk space");
+    expect(workspace.workspaceState()).toMatchObject(update);
+    expect(stored.sql).toEqual(["SELECT saved_before_limit"]);
+    expect(stored.drafts).toEqual([]);
+    expect(workspace.canRetryWorkspaceSave()).toBe(true);
+    workspace.updateWorkspace({ sql: ["SELECT corrected"], drafts: [] });
+    expect(await workspace.flushWorkspace()).toBe(true);
+    expect(workspace.workspaceError()).toBe("");
+    expect(stored.sql).toEqual(["SELECT corrected"]);
+  },
+);
