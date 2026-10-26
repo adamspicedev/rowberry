@@ -349,6 +349,8 @@ for (const version of [14, 18])
           contentType: "application/json",
         });
         console.log("Large scalar selection", JSON.stringify(durations));
+        if (process.env.DBAPP_PERFORMANCE_BUDGETS === "1")
+          for (const duration of durations) expect(duration).toBeLessThan(100);
       }
     } finally {
       // Test teardown explicitly discards live editors; user close remains guarded.

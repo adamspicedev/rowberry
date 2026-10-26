@@ -1,0 +1,591 @@
+{
+  "sourceCommit": "4a97c9a6692044a9c5db1b081f59783ef05620a6",
+  "appAsarSha256": "c8e2a90d4c51c6a1ec5e6000cf7bf493cb48752e34fd4570760c066155321f9f",
+  "stats": {
+    "startTime": "2026-10-26T01:28:45.720Z",
+    "duration": 60283.645,
+    "expected": 9,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "qualificationFlags": [
+    "DBAPP_PERFORMANCE_BUDGETS",
+    "DBAPP_MEMORY_QUALIFICATION",
+    "DBAPP_SCALAR_QUALIFICATION"
+  ],
+  "priorAttempt": {
+    "failed": 6,
+    "passed": 3,
+    "reason": "OrbStack stopped; PostgreSQL 14 and 18 fixtures unreachable. Both existing fixtures started and readiness verified before this complete rerun."
+  },
+  "measurements": [
+    {
+      "scenario": "JSON draft worker, collapsed search, precise edits, invalid text and close PG14",
+      "repetition": 1,
+      "measurement": "json-ui-performance",
+      "status": "passed",
+      "values": {
+        "expandMs": 34.400000005960464,
+        "selectMs": 8.400000005960464
+      }
+    },
+    {
+      "scenario": "JSON draft worker, collapsed search, precise edits, invalid text and close PG14",
+      "repetition": 1,
+      "measurement": "json-retained-memory",
+      "status": "passed",
+      "values": [
+        {
+          "cycle": 0,
+          "usedHeapBytes": 31847900,
+          "nodes": 491
+        },
+        {
+          "cycle": 1,
+          "usedHeapBytes": 32006368,
+          "nodes": 495
+        },
+        {
+          "cycle": 2,
+          "usedHeapBytes": 32012788,
+          "nodes": 491
+        },
+        {
+          "cycle": 3,
+          "usedHeapBytes": 32061588,
+          "nodes": 491
+        },
+        {
+          "cycle": 4,
+          "usedHeapBytes": 32146612,
+          "nodes": 491
+        },
+        {
+          "cycle": 5,
+          "usedHeapBytes": 32700176,
+          "nodes": 491
+        },
+        {
+          "cycle": 6,
+          "usedHeapBytes": 32812516,
+          "nodes": 491
+        },
+        {
+          "cycle": 7,
+          "usedHeapBytes": 32837004,
+          "nodes": 491
+        },
+        {
+          "cycle": 8,
+          "usedHeapBytes": 32900240,
+          "nodes": 491
+        },
+        {
+          "cycle": 9,
+          "usedHeapBytes": 32944464,
+          "nodes": 495
+        },
+        {
+          "cycle": 10,
+          "usedHeapBytes": 32923100,
+          "nodes": 491
+        }
+      ]
+    },
+    {
+      "scenario": "JSON draft worker, collapsed search, precise edits, invalid text and close PG14",
+      "repetition": 1,
+      "measurement": "json-large-scalar-selection",
+      "status": "passed",
+      "values": {
+        "bytes": 10000000,
+        "durations": [
+          7.4000000059604645, 8.300000011920929, 9, 8.400000005960464, 2.5999999940395355,
+          4.700000017881393, 13, 11.099999994039536, 4.9000000059604645, 2.5999999940395355
+        ]
+      }
+    },
+    {
+      "scenario": "JSON draft worker, collapsed search, precise edits, invalid text and close PG18",
+      "repetition": 1,
+      "measurement": "json-ui-performance",
+      "status": "passed",
+      "values": {
+        "expandMs": 29.69999998807907,
+        "selectMs": 9.5
+      }
+    },
+    {
+      "scenario": "JSON draft worker, collapsed search, precise edits, invalid text and close PG18",
+      "repetition": 1,
+      "measurement": "json-retained-memory",
+      "status": "passed",
+      "values": [
+        {
+          "cycle": 0,
+          "usedHeapBytes": 31899200,
+          "nodes": 495
+        },
+        {
+          "cycle": 1,
+          "usedHeapBytes": 32033984,
+          "nodes": 495
+        },
+        {
+          "cycle": 2,
+          "usedHeapBytes": 32071336,
+          "nodes": 495
+        },
+        {
+          "cycle": 3,
+          "usedHeapBytes": 32100204,
+          "nodes": 491
+        },
+        {
+          "cycle": 4,
+          "usedHeapBytes": 32229152,
+          "nodes": 495
+        },
+        {
+          "cycle": 5,
+          "usedHeapBytes": 32744100,
+          "nodes": 491
+        },
+        {
+          "cycle": 6,
+          "usedHeapBytes": 32830232,
+          "nodes": 491
+        },
+        {
+          "cycle": 7,
+          "usedHeapBytes": 32941544,
+          "nodes": 495
+        },
+        {
+          "cycle": 8,
+          "usedHeapBytes": 32967052,
+          "nodes": 495
+        },
+        {
+          "cycle": 9,
+          "usedHeapBytes": 32971048,
+          "nodes": 495
+        },
+        {
+          "cycle": 10,
+          "usedHeapBytes": 32963116,
+          "nodes": 495
+        }
+      ]
+    },
+    {
+      "scenario": "JSON draft worker, collapsed search, precise edits, invalid text and close PG18",
+      "repetition": 1,
+      "measurement": "json-large-scalar-selection",
+      "status": "passed",
+      "values": {
+        "bytes": 10000000,
+        "durations": [
+          5.4000000059604645, 9.200000017881393, 9.400000005960464, 10.100000023841858, 10.5,
+          9.599999994039536, 9.099999994039536, 10.199999988079071, 8.899999976158142, 9.5
+        ]
+      }
+    },
+    {
+      "scenario": "Chromium JSON worker large parse, search, cancellation and stale identity",
+      "repetition": 1,
+      "measurement": "json-worker-performance",
+      "status": "passed",
+      "values": {
+        "bytes": 11888891,
+        "scalars": 100000,
+        "parseMs": 242.09999999403954,
+        "searchMs": 24.700000017881393,
+        "cancelSearchMs": 6,
+        "cancelParseMs": 5.9000000059604645,
+        "matches": 1,
+        "editable": true
+      }
+    },
+    {
+      "scenario": "JSON draft worker, collapsed search, precise edits, invalid text and close PG14",
+      "repetition": 2,
+      "measurement": "json-ui-performance",
+      "status": "passed",
+      "values": {
+        "expandMs": 26.099999994039536,
+        "selectMs": 10.199999988079071
+      }
+    },
+    {
+      "scenario": "JSON draft worker, collapsed search, precise edits, invalid text and close PG14",
+      "repetition": 2,
+      "measurement": "json-retained-memory",
+      "status": "passed",
+      "values": [
+        {
+          "cycle": 0,
+          "usedHeapBytes": 31847876,
+          "nodes": 491
+        },
+        {
+          "cycle": 1,
+          "usedHeapBytes": 32027444,
+          "nodes": 495
+        },
+        {
+          "cycle": 2,
+          "usedHeapBytes": 32012820,
+          "nodes": 491
+        },
+        {
+          "cycle": 3,
+          "usedHeapBytes": 32079896,
+          "nodes": 491
+        },
+        {
+          "cycle": 4,
+          "usedHeapBytes": 32172556,
+          "nodes": 491
+        },
+        {
+          "cycle": 5,
+          "usedHeapBytes": 32743500,
+          "nodes": 495
+        },
+        {
+          "cycle": 6,
+          "usedHeapBytes": 32844104,
+          "nodes": 495
+        },
+        {
+          "cycle": 7,
+          "usedHeapBytes": 32908228,
+          "nodes": 495
+        },
+        {
+          "cycle": 8,
+          "usedHeapBytes": 32964628,
+          "nodes": 495
+        },
+        {
+          "cycle": 9,
+          "usedHeapBytes": 32962932,
+          "nodes": 495
+        },
+        {
+          "cycle": 10,
+          "usedHeapBytes": 32907860,
+          "nodes": 491
+        }
+      ]
+    },
+    {
+      "scenario": "JSON draft worker, collapsed search, precise edits, invalid text and close PG14",
+      "repetition": 2,
+      "measurement": "json-large-scalar-selection",
+      "status": "passed",
+      "values": {
+        "bytes": 10000000,
+        "durations": [
+          8.400000005960464, 9.299999982118607, 9.400000005960464, 9.800000011920929,
+          9.699999988079071, 9.199999988079071, 8.799999982118607, 10.5, 9.099999994039536,
+          9.200000017881393
+        ]
+      }
+    },
+    {
+      "scenario": "JSON draft worker, collapsed search, precise edits, invalid text and close PG18",
+      "repetition": 2,
+      "measurement": "json-ui-performance",
+      "status": "passed",
+      "values": {
+        "expandMs": 25.69999998807907,
+        "selectMs": 7.9000000059604645
+      }
+    },
+    {
+      "scenario": "JSON draft worker, collapsed search, precise edits, invalid text and close PG18",
+      "repetition": 2,
+      "measurement": "json-retained-memory",
+      "status": "passed",
+      "values": [
+        {
+          "cycle": 0,
+          "usedHeapBytes": 31885912,
+          "nodes": 489
+        },
+        {
+          "cycle": 1,
+          "usedHeapBytes": 32019244,
+          "nodes": 489
+        },
+        {
+          "cycle": 2,
+          "usedHeapBytes": 32040220,
+          "nodes": 489
+        },
+        {
+          "cycle": 3,
+          "usedHeapBytes": 32090160,
+          "nodes": 489
+        },
+        {
+          "cycle": 4,
+          "usedHeapBytes": 32179432,
+          "nodes": 489
+        },
+        {
+          "cycle": 5,
+          "usedHeapBytes": 32664880,
+          "nodes": 489
+        },
+        {
+          "cycle": 6,
+          "usedHeapBytes": 32757680,
+          "nodes": 489
+        },
+        {
+          "cycle": 7,
+          "usedHeapBytes": 32803524,
+          "nodes": 489
+        },
+        {
+          "cycle": 8,
+          "usedHeapBytes": 32843076,
+          "nodes": 489
+        },
+        {
+          "cycle": 9,
+          "usedHeapBytes": 32873828,
+          "nodes": 489
+        },
+        {
+          "cycle": 10,
+          "usedHeapBytes": 32865464,
+          "nodes": 489
+        }
+      ]
+    },
+    {
+      "scenario": "JSON draft worker, collapsed search, precise edits, invalid text and close PG18",
+      "repetition": 2,
+      "measurement": "json-large-scalar-selection",
+      "status": "passed",
+      "values": {
+        "bytes": 10000000,
+        "durations": [
+          7.700000017881393, 9.400000005960464, 9.699999988079071, 9.300000011920929,
+          10.199999988079071, 7.0999999940395355, 8.400000005960464, 9.200000017881393,
+          8.700000017881393, 9.900000005960464
+        ]
+      }
+    },
+    {
+      "scenario": "Chromium JSON worker large parse, search, cancellation and stale identity",
+      "repetition": 2,
+      "measurement": "json-worker-performance",
+      "status": "passed",
+      "values": {
+        "bytes": 11888891,
+        "scalars": 100000,
+        "parseMs": 272.5,
+        "searchMs": 17.299999982118607,
+        "cancelSearchMs": 5.9000000059604645,
+        "cancelParseMs": 11.5,
+        "matches": 1,
+        "editable": true
+      }
+    },
+    {
+      "scenario": "JSON draft worker, collapsed search, precise edits, invalid text and close PG14",
+      "repetition": 3,
+      "measurement": "json-ui-performance",
+      "status": "passed",
+      "values": {
+        "expandMs": 21.30000001192093,
+        "selectMs": 11.299999982118607
+      }
+    },
+    {
+      "scenario": "JSON draft worker, collapsed search, precise edits, invalid text and close PG14",
+      "repetition": 3,
+      "measurement": "json-retained-memory",
+      "status": "passed",
+      "values": [
+        {
+          "cycle": 0,
+          "usedHeapBytes": 31875552,
+          "nodes": 495
+        },
+        {
+          "cycle": 1,
+          "usedHeapBytes": 31986560,
+          "nodes": 495
+        },
+        {
+          "cycle": 2,
+          "usedHeapBytes": 32021144,
+          "nodes": 495
+        },
+        {
+          "cycle": 3,
+          "usedHeapBytes": 32070912,
+          "nodes": 495
+        },
+        {
+          "cycle": 4,
+          "usedHeapBytes": 32161236,
+          "nodes": 495
+        },
+        {
+          "cycle": 5,
+          "usedHeapBytes": 32651636,
+          "nodes": 495
+        },
+        {
+          "cycle": 6,
+          "usedHeapBytes": 32776848,
+          "nodes": 495
+        },
+        {
+          "cycle": 7,
+          "usedHeapBytes": 32807872,
+          "nodes": 495
+        },
+        {
+          "cycle": 8,
+          "usedHeapBytes": 32859140,
+          "nodes": 495
+        },
+        {
+          "cycle": 9,
+          "usedHeapBytes": 32865344,
+          "nodes": 495
+        },
+        {
+          "cycle": 10,
+          "usedHeapBytes": 32865848,
+          "nodes": 495
+        }
+      ]
+    },
+    {
+      "scenario": "JSON draft worker, collapsed search, precise edits, invalid text and close PG14",
+      "repetition": 3,
+      "measurement": "json-large-scalar-selection",
+      "status": "passed",
+      "values": {
+        "bytes": 10000000,
+        "durations": [
+          7.4000000059604645, 8.900000005960464, 9.400000005960464, 9.5, 9.799999982118607,
+          9.599999994039536, 7.5, 9.100000023841858, 9.099999994039536, 8.599999994039536
+        ]
+      }
+    },
+    {
+      "scenario": "JSON draft worker, collapsed search, precise edits, invalid text and close PG18",
+      "repetition": 3,
+      "measurement": "json-ui-performance",
+      "status": "passed",
+      "values": {
+        "expandMs": 22.599999994039536,
+        "selectMs": 6.0999999940395355
+      }
+    },
+    {
+      "scenario": "JSON draft worker, collapsed search, precise edits, invalid text and close PG18",
+      "repetition": 3,
+      "measurement": "json-retained-memory",
+      "status": "passed",
+      "values": [
+        {
+          "cycle": 0,
+          "usedHeapBytes": 31895416,
+          "nodes": 495
+        },
+        {
+          "cycle": 1,
+          "usedHeapBytes": 32022776,
+          "nodes": 495
+        },
+        {
+          "cycle": 2,
+          "usedHeapBytes": 32045488,
+          "nodes": 495
+        },
+        {
+          "cycle": 3,
+          "usedHeapBytes": 32088636,
+          "nodes": 495
+        },
+        {
+          "cycle": 4,
+          "usedHeapBytes": 32160468,
+          "nodes": 495
+        },
+        {
+          "cycle": 5,
+          "usedHeapBytes": 32689328,
+          "nodes": 495
+        },
+        {
+          "cycle": 6,
+          "usedHeapBytes": 32790900,
+          "nodes": 495
+        },
+        {
+          "cycle": 7,
+          "usedHeapBytes": 32828688,
+          "nodes": 495
+        },
+        {
+          "cycle": 8,
+          "usedHeapBytes": 32848816,
+          "nodes": 495
+        },
+        {
+          "cycle": 9,
+          "usedHeapBytes": 32878820,
+          "nodes": 495
+        },
+        {
+          "cycle": 10,
+          "usedHeapBytes": 32871120,
+          "nodes": 495
+        }
+      ]
+    },
+    {
+      "scenario": "JSON draft worker, collapsed search, precise edits, invalid text and close PG18",
+      "repetition": 3,
+      "measurement": "json-large-scalar-selection",
+      "status": "passed",
+      "values": {
+        "bytes": 10000000,
+        "durations": [
+          11.099999994039536, 8.299999982118607, 7.4000000059604645, 10.099999994039536, 10,
+          8.799999982118607, 9.199999988079071, 9.099999994039536, 9.200000017881393,
+          9.599999994039536
+        ]
+      }
+    },
+    {
+      "scenario": "Chromium JSON worker large parse, search, cancellation and stale identity",
+      "repetition": 3,
+      "measurement": "json-worker-performance",
+      "status": "passed",
+      "values": {
+        "bytes": 11888891,
+        "scalars": 100000,
+        "parseMs": 223.10000002384186,
+        "searchMs": 35.79999998211861,
+        "cancelSearchMs": 6.100000023841858,
+        "cancelParseMs": 6.100000023841858,
+        "matches": 1,
+        "editable": true
+      }
+    }
+  ]
+}
