@@ -67,6 +67,19 @@ test("schema tree, reusable menus and toast undo preserve database data", async 
     await expect(page.getByRole("menuitem", { name: "View structure", exact: true })).toBeFocused();
     await page.keyboard.press("Escape");
     await expect(table).toBeFocused();
+    await page.keyboard.press("Shift+F10");
+    await page.keyboard.press("Tab");
+    await expect(page.getByRole("menu")).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: `Actions for ${schema}.odd"table` }),
+    ).toBeFocused();
+    await table.focus();
+    await page.keyboard.press("Shift+F10");
+    await page.keyboard.press("Shift+Tab");
+    await expect(page.getByRole("menu")).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: `Collapse ${schema}.odd"table columns` }),
+    ).toBeFocused();
     await table.click({ button: "right" });
     await page.getByRole("menuitem", { name: "Copy qualified name", exact: true }).click();
     expect(await app.evaluate(({ clipboard }) => clipboard.readText())).toBe(
@@ -78,6 +91,14 @@ test("schema tree, reusable menus and toast undo preserve database data", async 
     await expect(page.getByRole("dialog")).toContainText("Nullable");
     await expect(page.getByRole("dialog")).toContainText("Key");
     await page.getByRole("button", { name: "Close structure" }).click();
+    await expect(table).toBeFocused();
+    await page.keyboard.press("Shift+F10");
+    await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(table).toBeFocused();
     await page.clock.install();
     await table.click({ button: "right" });
     await page.getByRole("menuitem", { name: "Hide from sidebar" }).click();
