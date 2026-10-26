@@ -122,7 +122,9 @@ export async function flushWorkspace() {
   });
   error = reply.ok
     ? ""
-    : "Workspace could not be saved. Free disk space and Retry. Keep this window open or copy your drafts before closing.";
+    : reply.error.code === "VALIDATION_ERROR"
+      ? "Workspace recovery exceeds a supported limit: 1 MiB per draft, 16 SQL tabs, 32 recovered copies, or the total saved size. Keep this window open. Copy important drafts elsewhere, then reduce large drafts or remove unneeded copies and retry saving."
+      : "Workspace could not be saved. Free disk space and Retry. Keep this window open or copy your drafts before closing.";
   notify();
   return reply.ok;
 }

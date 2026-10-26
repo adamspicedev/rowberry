@@ -86,7 +86,40 @@ for (const version of [14, 18])
         await page.keyboard.press("ControlOrMeta+A");
         await page.keyboard.type(sql);
       }
+      await text("SELECT preserved_before_recovery_limit");
+      const storedSql = async () => {
+        const reply = await request({ kind: "workspace.load" });
+        if (!reply.ok || reply.kind !== "workspace.load") throw new Error("Recovery unavailable");
+        return reply.data.sql;
+      };
+      await expect.poll(storedSql).toEqual(["SELECT preserved_before_recovery_limit"]);
+      await editor.focus();
+      await page.keyboard.press("ControlOrMeta+A");
+      await editor.evaluate((element) => {
+        const clipboardData = new DataTransfer();
+        clipboardData.setData("text/plain", "x".repeat(1024 * 1024 + 1));
+        element.dispatchEvent(
+          new ClipboardEvent("paste", { bubbles: true, cancelable: true, clipboardData }),
+        );
+      });
+      const recoveryAlert = page
+        .getByRole("alert")
+        .filter({ hasText: "Workspace recovery exceeds" });
+      await expect(recoveryAlert).toContainText("supported limit");
+      await expect(recoveryAlert).not.toContainText("Free disk space");
+      expect(await storedSql()).toEqual(["SELECT preserved_before_recovery_limit"]);
+      await editor.focus();
+      await page.keyboard.press("ControlOrMeta+A");
+      const fullDraftIntact = await editor.evaluate((element) => {
+        const clipboardData = new DataTransfer();
+        element.dispatchEvent(
+          new ClipboardEvent("copy", { bubbles: true, cancelable: true, clipboardData }),
+        );
+        return clipboardData.getData("text/plain") === "x".repeat(1024 * 1024 + 1);
+      });
+      expect(fullDraftIntact).toBe(true);
       await text("SELECT 12345678901234567890.123456789::numeric AS exact, NULL::text AS absent");
+      await expect(recoveryAlert).toHaveCount(0);
       await page.getByRole("button", { name: "Connections", exact: true }).click();
       await page.getByRole("button", { name: "Select SQL fixture", exact: true }).click();
       await expect(page.getByLabel("Host", { exact: true })).toBeDisabled();
