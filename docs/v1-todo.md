@@ -22,12 +22,14 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026. I
   - [ ] Exercise saved credentials, deletion and genuinely unavailable/denied native storage on each target.
   - [x] Add packaged regressions for verbatim invalid JSON/Unicode/large-number recovery and explicit recovered-copy discard across restart.
   - [x] Verify interrupted JSON recovery, invalid JSON, Unicode, exact large numbers and durable discard in the [unsigned packaged scenarios](qa/2026-10-24-integrity-mapping.md); final-candidate qualification remains required.
-  - [ ] Retain outcomes tied to package hashes. Keep inaccessible scenarios blocked rather than passed by simulation.
+  - [x] Fix retry-after-read-failure draft persistence and preserve displaced SQL as detached copies; verify [abrupt process termination after acknowledged persistence](qa/2026-10-26-recovery-retry.md).
+  - [x] Retain completed development outcomes tied to package hashes. Native denied-store access remains explicitly blocked; no simulated result closes that gate.
 - [ ] **V1-05 — Audit integrity and interruption coverage** · Engineering · In progress; before signed preview acceptance
   - [x] Run the [PG18 write-integrity and packaged guarded-save baseline](qa/2026-10-24-integrity-and-package.md); fix the stale Intel packaging target.
   - [x] Map contract tasks A04–A09 to [existing regression coverage and remaining gaps](qa/2026-10-24-integrity-mapping.md).
-  - [ ] Verify conflicts, stale connection operations, ambiguous writes, cancellation and transaction/tab lifecycle behaviour.
-  - [ ] Agree performance budgets on reference hardware, measure bounded large workloads and fix demonstrated blockers. [Initial M4 JSON latency budgets and three packaged repetitions](qa/json-performance-and-accessibility.md) pass; 30 packaged cleanup cycles also pass; peak memory, sustained-session and lower-spec qualification remain open.
+  - [x] Verify development coverage for conflicts, stale connection operations, ambiguous writes, cancellation and transaction/tab lifecycle in the [integrity map](qa/2026-10-24-integrity-mapping.md); requalify the final release candidate separately.
+  - [x] Establish working M4 development budgets and qualify bounded large JSON workloads. [Three latest packaged repetitions](qa/json-performance-and-accessibility.md#packaged-follow-up-26-october-2026) passed nine tests, 60 cleanup cycles and 60 large-string selection samples; large-string selection now enforces the 100 ms budget.
+  - [ ] Qualify peak process memory, hours-long use and lower-spec supported Macs; short cleanup loops do not close these items.
 - [ ] **V1-06 — Decide minimum result-export scope** · Product · After initial V1-03 observations
   - [ ] Record whether a real core task is blocked without export.
   - [ ] Decide explicit deferral or a bounded feature with format, row scope, size, cancellation, fidelity and spreadsheet handling specified.
@@ -37,6 +39,7 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026. I
   - [ ] Complete downloaded-package, native installation, credential and recovery checks for each distributed architecture.
   - [ ] Record maintainer acceptance and, if applicable, the explicit first-release bootstrap exception; update the baseline register.
 - [ ] **V1-08 — Preview feedback and targeted polish** · Product + Engineering · Depends on V1-07
+  - [x] Build the [native VoiceOver harness](qa/native-voiceover-harness.md) and fix automatic JSON expansion/collapse announcements on the recorded unsigned candidate.
   - [ ] Observe actual task completion, collect reproducible findings and fix release blockers.
   - [ ] Re-test affected workflows and record evidence; silence or elapsed time alone is not acceptance.
 - [ ] **V1-09 — Final candidate, upgrades and distribution** · Release engineering + QA · Depends on V1-08
