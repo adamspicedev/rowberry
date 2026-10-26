@@ -123,7 +123,9 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
                 );
                 const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
                 if (event.key === "Escape" || event.key === "Tab") {
-                  event.preventDefault();
+                  // Escape returns to the trigger. Tab continues the browser's
+                  // normal forward/backward navigation from that same trigger.
+                  if (event.key === "Escape") event.preventDefault();
                   setMenu(null);
                   menu.trigger.focus();
                   return;

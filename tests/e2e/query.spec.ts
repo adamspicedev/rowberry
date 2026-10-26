@@ -155,22 +155,46 @@ for (const version of [14, 18])
         "true",
       );
       await page.keyboard.press("ArrowRight");
+      await expect(page.getByRole("tab", { name: /^documents/ })).toBeFocused();
+      await page.keyboard.press("End");
+      await expect(page.getByRole("tab", { name: /^writes/ })).toBeFocused();
+      await page.keyboard.press("ArrowRight");
+      await expect(page.getByRole("tab", { name: /^SQL 1/ })).toBeFocused();
+      await page.keyboard.press("ArrowLeft");
+      await expect(page.getByRole("tab", { name: /^writes/ })).toBeFocused();
+      await page.keyboard.press("Home");
+      await expect(page.getByRole("tab", { name: /^SQL 1/ })).toBeFocused();
+      await page.keyboard.press("ArrowRight");
       await expect(page.getByRole("textbox", { name: "Cell draft", exact: true })).toHaveValue(
         "Retained draft",
       );
       page.once("dialog", (dialog) => dialog.dismiss());
       await page.getByRole("button", { name: "Close documents", exact: true }).click();
+      await expect(
+        page.getByRole("button", { name: "Close documents", exact: true }),
+      ).toBeFocused();
+      await page.getByRole("tab", { name: /^writes/ }).click();
+      await page.getByRole("button", { name: "Close writes", exact: true }).focus();
+      await page.keyboard.press("Enter");
+      await expect(page.getByRole("tab", { name: /^documents/ })).toBeFocused();
       await expect(page.getByRole("textbox", { name: "Cell draft", exact: true })).toHaveValue(
         "Retained draft",
       );
+      await page
+        .getByRole("button", { name: `writes ${schema} · table · read-only`, exact: true })
+        .click();
       await page.getByRole("tab", { name: /^SQL 1/ }).click();
       await expect(page.getByRole("table", { name: "SQL results" })).toContainText(
         "12345678901234567890.123456789",
       );
       // Closing a hidden table must not close or discard the active query.
       page.once("dialog", (dialog) => dialog.accept());
-      await page.getByRole("button", { name: "Close documents", exact: true }).click();
-      await page.getByRole("button", { name: "Close writes", exact: true }).click();
+      await page.getByRole("button", { name: "Close documents", exact: true }).focus();
+      await page.keyboard.press("Enter");
+      await expect(page.getByRole("tab", { name: /^SQL 1/ })).toBeFocused();
+      await page.getByRole("button", { name: "Close writes", exact: true }).focus();
+      await page.keyboard.press("Enter");
+      await expect(page.getByRole("tab", { name: /^SQL 1/ })).toBeFocused();
       await expect(page.getByRole("tab")).toHaveCount(1);
       await expect(editor).toHaveValue(
         "SELECT 12345678901234567890.123456789::numeric AS exact, NULL::text AS absent",
@@ -319,6 +343,7 @@ for (const version of [14, 18])
       await expect(runButton).toBeEnabled();
       page.once("dialog", (dialog) => void dialog.accept());
       await page.getByRole("button", { name: /^Close SQL \d+$/ }).click();
+      await expect(page.getByRole("button", { name: "New SQL tab", exact: true })).toBeFocused();
       const a = crypto.randomUUID(),
         b = crypto.randomUUID();
       for (const tabId of [a, b])

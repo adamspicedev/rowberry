@@ -1,5 +1,13 @@
 import { createPortal } from "react-dom";
-import { useCallback, useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
+import {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type Ref,
+} from "react";
 import { TableView } from "../table/TableView";
 import { QueryTab } from "../query/QueryTab";
 import { loadDrafts, saveDrafts } from "../query/query-state";
@@ -42,14 +50,14 @@ export function DocumentWorkspace({
   });
   const [active, setActive] = useState(tabs[0]?.id);
   const focusAfterClose = useRef(false);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = active ? document.getElementById(`tab-${active}`) : null;
     element?.scrollIntoView({ block: "nearest", inline: "nearest" });
     if (focusAfterClose.current) {
       (element ?? tabHost?.querySelector<HTMLButtonElement>(".new-document"))?.focus();
       focusAfterClose.current = false;
     }
-  }, [active, tabHost]);
+  }, [active, tabHost, tabs.length]);
   const currentTabs = useRef(tabs);
   const connectionLive = useRef(connected);
   useEffect(() => {
@@ -113,6 +121,13 @@ export function DocumentWorkspace({
     );
   }, []);
   const close = (id: string) => {
+    // An inactive tab's close button can own focus too. Restore it after the
+    // button is removed without changing which document remains selected.
+    if (
+      document.activeElement === document.getElementById(`close-${id}`) ||
+      document.activeElement === document.getElementById(`tab-${id}`)
+    )
+      focusAfterClose.current = true;
     const table = tabs.find((tab) => tab.id === id)?.table;
     if (table)
       void window.dbapp.request({
@@ -211,6 +226,7 @@ export function DocumentWorkspace({
                     {tabState[tab.id]?.dirty && <span aria-label="Unsaved changes"> •</span>}
                   </button>
                   <button
+                    id={`close-${tab.id}`}
                     className="document-close"
                     aria-label={`Close ${tab.title}`}
                     disabled={tabState[tab.id]?.busy}
