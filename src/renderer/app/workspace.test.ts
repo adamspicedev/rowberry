@@ -69,37 +69,54 @@ test("disabled recovery removes legacy storage and never persists live SQL or JS
   expect(removeItem).toHaveBeenCalledWith("rowberry.sql.drafts");
 });
 
-test("retrying an initial read failure merges pending local copies with stored recovery", async () => {
-  vi.useFakeTimers();
-  let reads = 0;
-  vi.stubGlobal("localStorage", { getItem: () => null, removeItem: vi.fn() });
-  vi.stubGlobal("window", {
-    dbapp: {
-      request: async (command: Command): Promise<Reply> => {
-        if (command.kind !== "workspace.load" || ++reads === 1)
-          return failure("INTERNAL_ERROR", command.requestId);
-        return {
-          ok: true,
-          kind: command.kind,
-          requestId: command.requestId,
-          data: {
-            ...emptyWorkspace(),
-            drafts: [{ id: "older", kind: "json", label: "stored", text: "{older" }],
-          },
-        };
+test.each([false, true])(
+  "retrying an initial read persists merged copies (save failure: %s)",
+  async (initialSaveFailure) => {
+    vi.useFakeTimers();
+    let reads = 0;
+    let failSave = initialSaveFailure;
+    let stored: ReturnType<typeof emptyWorkspace> = {
+      ...emptyWorkspace(),
+      drafts: [{ id: "older", kind: "json" as const, label: "stored", text: "{older" }],
+    };
+    vi.stubGlobal("localStorage", { getItem: () => null, removeItem: vi.fn() });
+    vi.stubGlobal("window", {
+      dbapp: {
+        request: async (command: Command): Promise<Reply> => {
+          if (command.kind === "workspace.save") {
+            if (failSave) return failure("INTERNAL_ERROR", command.requestId);
+            stored = command.state;
+            return { ok: true, kind: command.kind, requestId: command.requestId, data: {} };
+          }
+          if (command.kind !== "workspace.load" || ++reads === 1)
+            return failure("INTERNAL_ERROR", command.requestId);
+          return { ok: true, kind: command.kind, requestId: command.requestId, data: stored };
+        },
       },
-    },
-  });
-  const workspace = await import("./workspace");
-  await workspace.loadWorkspace();
-  workspace.recordDraft("newer", "json", "local copy", "{newer");
-  await workspace.loadWorkspace();
-  expect(workspace.workspaceState().drafts.map((draft) => draft.text)).toEqual([
-    "{older",
-    "{newer",
-  ]);
-  expect(workspace.canReadWorkspace()).toBe(false);
-});
+    });
+    const workspace = await import("./workspace");
+    await workspace.loadWorkspace();
+    workspace.recordDraft("newer", "json", "local copy", "{newer 雪 12345678901234567890");
+    await workspace.loadWorkspace();
+    expect(workspace.workspaceState().drafts.map((draft) => draft.text)).toEqual([
+      "{older",
+      "{newer 雪 12345678901234567890",
+    ]);
+    expect(workspace.canReadWorkspace()).toBe(false);
+    expect(workspace.canRetryWorkspaceSave()).toBe(initialSaveFailure);
+    if (initialSaveFailure) {
+      expect(stored.drafts).toHaveLength(1);
+      failSave = false;
+      expect(await workspace.flushWorkspace()).toBe(true);
+    }
+    expect(stored.drafts).toHaveLength(2);
+    vi.resetModules();
+    const restarted = await import("./workspace");
+    await restarted.loadWorkspace();
+    expect(restarted.workspaceState().drafts).toEqual(workspace.workspaceState().drafts);
+    expect(restarted.workspaceError()).toBe("");
+  },
+);
 
 test("legacy migration retry recovers SQL while retaining new local drafts", async () => {
   vi.useFakeTimers();
