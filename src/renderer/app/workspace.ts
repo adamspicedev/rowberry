@@ -27,6 +27,7 @@ export async function loadWorkspace() {
   if (initialized) return state;
   const reply = await window.dbapp.request({ kind: "workspace.load", requestId: requestId() });
   if (initialized) return state;
+  const hadPendingUpdates = Object.keys(pendingInitialUpdates).length > 0;
   if (reply.ok && reply.kind === "workspace.load") {
     const drafts = new Map(reply.data.drafts.map((draft) => [draft.id, draft]));
     for (const draft of pendingInitialUpdates.drafts ?? []) drafts.set(draft.id, draft);
@@ -38,7 +39,12 @@ export async function loadWorkspace() {
     error =
       "Workspace recovery could not be read. Your stored data was left untouched. Use Retry to read it again, or continue with local drafts and export them before closing.";
   initialized = reply.ok;
-  if (initialized) await retryLegacyMigration();
+  if (initialized) {
+    await retryLegacyMigration();
+    // Edits made before a successful read could not schedule persistence.
+    // Save the merged live snapshot even if the user makes no further edits.
+    if (hadPendingUpdates) await flushWorkspace();
+  }
   notify();
   return state;
 }
