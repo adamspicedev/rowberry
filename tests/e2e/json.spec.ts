@@ -277,14 +277,24 @@ for (const version of [14, 18])
       await page.screenshot({ path: "/tmp/rowberry-json-dark-task7.png" });
       await page.getByLabel("Appearance", { exact: true }).selectOption("system");
       if (process.env.DBAPP_MEMORY_QUALIFICATION === "1") {
-        test.setTimeout(120000);
+        const soakMinutes = Number(process.env.DBAPP_MEMORY_SOAK_MINUTES ?? 0);
+        if (!Number.isInteger(soakMinutes) || soakMinutes < 0 || soakMinutes > 120)
+          throw new Error("DBAPP_MEMORY_SOAK_MINUTES must be an integer from 0 to 120");
+        const soakMs = soakMinutes * 60_000;
+        test.setTimeout(120000 + soakMs);
         const cdp = await page.context().newCDPSession(page);
-        const samples: { cycle: number; usedHeapBytes: number; nodes: number }[] = [];
+        const samples: {
+          cycle: number;
+          elapsedMs: number;
+          usedHeapBytes: number;
+          nodes: number;
+        }[] = [];
         try {
           await panel.getByRole("button", { name: "Close JSON", exact: true }).click();
           await expect(panel).toHaveCount(0);
-          // Cycle zero warms the same path before ten measured repetitions.
-          for (let cycle = 0; cycle <= 10; cycle++) {
+          // Always measure ten cycles; opt-in soak runs continue for the full duration.
+          const started = performance.now();
+          for (let cycle = 0; cycle <= 10 || performance.now() - started < soakMs; cycle++) {
             await page.getByRole("button", { name: "Inspect JSON", exact: true }).click();
             await panel.getByRole("button", { name: "Expand items", exact: true }).click();
             await expect(panel.getByRole("treeitem").nth(2)).toBeVisible();
@@ -302,19 +312,32 @@ for (const version of [14, 18])
             await cdp.send("HeapProfiler.collectGarbage");
             const heap = await cdp.send("Runtime.getHeapUsage");
             const dom = await cdp.send("Memory.getDOMCounters");
-            samples.push({ cycle, usedHeapBytes: heap.usedSize, nodes: dom.nodes });
+            samples.push({
+              cycle,
+              elapsedMs: performance.now() - started,
+              usedHeapBytes: heap.usedSize,
+              nodes: dom.nodes,
+            });
+            const baseline = samples[0]!;
+            expect(heap.usedSize - baseline.usedHeapBytes).toBeLessThan(16 * 1024 * 1024);
+            expect(dom.nodes - baseline.nodes).toBeLessThan(100);
+            if (soakMs && cycle % 25 === 0)
+              console.log("JSON soak progress", JSON.stringify(samples.at(-1)));
           }
+
+          console.log(
+            "JSON retained renderer heap after GC",
+            JSON.stringify(
+              soakMs
+                ? { samples: samples.length, first: samples[0], last: samples.at(-1) }
+                : samples,
+            ),
+          );
+        } finally {
           await test.info().attach("json-retained-memory", {
             body: JSON.stringify(samples),
             contentType: "application/json",
           });
-          console.log("JSON retained renderer heap after GC", JSON.stringify(samples));
-          const baseline = samples[0]!;
-          for (const sample of samples.slice(1)) {
-            expect(sample.usedHeapBytes - baseline.usedHeapBytes).toBeLessThan(16 * 1024 * 1024);
-            expect(sample.nodes - baseline.nodes).toBeLessThan(100);
-          }
-        } finally {
           await cdp.detach();
         }
       }
