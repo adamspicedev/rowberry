@@ -1,8 +1,9 @@
 import { test, expect, _electron as electron } from "@playwright/test";
 import path from "node:path";
+import { once } from "node:events";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-test("restart recovers invalid JSON as a detached copy with no connection or query execution", async () => {
+test("process crash recovers acknowledged JSON as a detached copy without executing SQL", async () => {
   const recoveredText = '{"name":"Pōhutukawa 🌳","exact":900719925474099312345,"unfinished":';
   const directory = mkdtempSync(path.join(tmpdir(), "rowberry-recovery-"));
   const launch = () =>
@@ -37,7 +38,12 @@ test("restart recovers invalid JSON as a detached copy with no connection or que
       recoveredText,
     );
     expect(reply.ok).toBe(true);
-    await app.close();
+    // Kill only this test's isolated main process after SQLite acknowledged the
+    // save. No beforeunload or graceful app shutdown can finish persistence.
+    const crashed = once(app.process(), "exit");
+    expect(app.process().kill("SIGKILL")).toBe(true);
+    const [, signal] = await crashed;
+    expect(signal).toBe("SIGKILL");
     app = await launch();
     page = await app.firstWindow();
     await expect(page.getByLabel("Recovered json draft")).toHaveValue(recoveredText);
