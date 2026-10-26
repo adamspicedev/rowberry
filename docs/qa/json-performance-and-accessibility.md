@@ -93,3 +93,31 @@ This extends the duration of the specific repeated-cleanup scenario. It does not
 The PostgreSQL 18 packaged scenario passed a full hour: **6,365 open/expand/close cycles**, including the initial baseline cycle. [All retained samples](2026-10-26-json-soak.json) cover 3,600,138 ms. Maximum retained renderer heap growth was **5,574,304 bytes (5.32 MiB)**, below 16 MiB; maximum DOM growth was zero. Every cycle verified worker release. The runner completed with one pass, no retries and no failures.
 
 The unsigned Apple-silicon candidate's `app.asar` SHA-256 is `8009de1a208c5523a6a907e2403021d657b49a6466889d78cae53edb0c9c57f5`; application source matches `a54843c6d1cbbc6ac38269ee3a50a682f7ca6cb7`. This qualifies the sustained cleanup workload only; the broader memory and hardware gates remain open.
+
+## Process-memory qualification without forced collection
+
+Set `DBAPP_PROCESS_MEMORY_QUALIFICATION=1` to measure the packaged application's processes during 30 open/expand/close cycles of the 100,000-value document. Run it separately from `DBAPP_MEMORY_QUALIFICATION`; combining them fails before launching the app so forced collection cannot contaminate this result. Ordinary CI does not enable either qualification flag.
+
+```sh
+DBAPP_PROCESS_MEMORY_QUALIFICATION=1 DBAPP_PERFORMANCE_BUDGETS=1 \
+DBAPP_PACKAGE_EXECUTABLE="$PWD/release/mac-arm64/Rowberry.app/Contents/MacOS/Rowberry" \
+PLAYWRIGHT_JSON_OUTPUT_NAME=/tmp/rowberry-process-memory.json \
+bunx playwright test --config playwright.postgres.config.ts tests/e2e/json.spec.ts \
+  --grep PG --repeat-each=3 --reporter=json
+```
+
+Each repetition records a closed baseline, then expanded and closed samples for every cycle. [Electron's process metrics](https://www.electronjs.org/docs/latest/api/structures/memory-info) report working-set and per-process lifetime peak values in KiB. The attachment retains process identity and type, including main, renderer, GPU and utility processes returned by Electron. Missing positive main/renderer/utility measurements fail the check. JSON workers must also terminate after every close.
+
+A **1.5 GiB sum of sampled process working sets** is the reference-machine regression ceiling, enforced only with `DBAPP_PERFORMANCE_BUDGETS=1`. Without that flag the run records measurements, not budget acceptance. Calibration observed a 1,080 MiB maximum with regular natural-collection drops; 1.5 GiB provides roughly 42% headroom for runtime variation while catching substantial growth in this bounded workload. It is not a supported-machine RAM requirement. The sum can count shared pages more than once and excludes database/test-driver processes; it is not Activity Monitor's memory-pressure measurement. Samples can miss transient peaks, and individual process lifetime peaks may precede the measured loop or occur at different times. They must not be added together and described as a simultaneous application peak.
+
+Attachments survive assertion failures. No explicit garbage collection is invoked in this mode. This provides bounded normal-collection evidence, not hours of typical user work, exact peak physical footprint, or qualification on lower-spec Macs.
+
+### Packaged process-memory result — 27 October 2026
+
+Six packaged scenarios passed (three repetitions each on PostgreSQL 14 and 18), with **180 cycles and 366 process snapshots**. The maximum sampled sum was **1,193.84 MiB**, below the calibrated 1.5 GiB ceiling. Each cycle verified worker release; normal garbage collection was allowed throughout. [All measurements and prior attempts](2026-10-27-json-process-memory.json) are retained. Typecheck, lint and formatting also passed.
+
+Reference hardware: Apple M4, 32 GiB RAM, macOS 27.2 (26B118), arm64. Application source matches `308a481b07d37ab4e9a6eefdea03d61d18283c31`; the unchanged unsigned package archive SHA-256 is `8009de1a208c5523a6a907e2403021d657b49a6466889d78cae53edb0c9c57f5`.
+
+The initial 1 GiB calibration produced five budget failures shortly after the loop began and one timeout waiting for the initial JSON inspection button, before memory measurement. The timeout's cause was not established; it is not counted as passing. A subsequent measurement-only 30-cycle diagnostic showed regular natural-collection drops, with closed totals between about 890 and 1,065 MiB and a 1,080 MiB overall sampled maximum. This informed the 1.5 GiB reference ceiling before the fresh six-scenario qualification. The diagnostic was not budget acceptance, and the original failures remain recorded. No application memory fix is claimed.
+
+This closes the bounded sampled-process measurement task. Exact transient peaks, hours-long typical use and lower-spec hardware remain open.

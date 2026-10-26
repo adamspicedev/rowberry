@@ -6,6 +6,9 @@ import { ReplySchema } from "../../src/shared/protocol";
 for (const version of [14, 18])
   test(`JSON draft worker, collapsed search, precise edits, invalid text and close PG${version}`, async () => {
     test.setTimeout(60000);
+    const qualifyProcessMemory = process.env.DBAPP_PROCESS_MEMORY_QUALIFICATION === "1";
+    if (qualifyProcessMemory && process.env.DBAPP_MEMORY_QUALIFICATION === "1")
+      throw new Error("Run process-memory qualification separately from forced-GC qualification");
     const directory = mkdtempSync(path.join(tmpdir(), "rowberry-json-"));
     const app = await electron.launch({
       executablePath: process.env.DBAPP_PACKAGE_EXECUTABLE,
@@ -339,6 +342,89 @@ for (const version of [14, 18])
             contentType: "application/json",
           });
           await cdp.detach();
+        }
+      }
+      if (qualifyProcessMemory) {
+        test.setTimeout(120000);
+        type ProcessSample = {
+          cycle: number;
+          phase: "baseline" | "expanded" | "closed";
+          elapsedMs: number;
+          processes: {
+            pid: number;
+            creationTime: number;
+            type: string;
+            workingSetKiB: number;
+            peakWorkingSetKiB: number;
+          }[];
+          totalWorkingSetKiB: number;
+        };
+        const samples: ProcessSample[] = [];
+        const started = performance.now();
+        // A provisional reference-machine regression ceiling, not a minimum RAM requirement.
+        const budgetKiB = 1536 * 1024;
+        const sample = async (cycle: number, phase: ProcessSample["phase"]) => {
+          const processes = await app.evaluate(({ app }) =>
+            app.getAppMetrics().map((metric) => ({
+              pid: metric.pid,
+              creationTime: metric.creationTime,
+              type: metric.type,
+              workingSetKiB: metric.memory.workingSetSize,
+              peakWorkingSetKiB: metric.memory.peakWorkingSetSize,
+            })),
+          );
+          const totalWorkingSetKiB = processes.reduce((sum, item) => sum + item.workingSetKiB, 0);
+          samples.push({
+            cycle,
+            phase,
+            elapsedMs: performance.now() - started,
+            processes,
+            totalWorkingSetKiB,
+          });
+          // Missing metrics must fail rather than falsely passing a zero-memory budget.
+          for (const type of ["Browser", "Tab", "Utility"])
+            expect(processes.some((item) => item.type === type && item.workingSetKiB > 0)).toBe(
+              true,
+            );
+          for (const item of processes) {
+            expect(Number.isFinite(item.workingSetKiB)).toBe(true);
+            expect(item.workingSetKiB).toBeGreaterThanOrEqual(0);
+          }
+          if (process.env.DBAPP_PERFORMANCE_BUDGETS === "1")
+            expect(totalWorkingSetKiB).toBeLessThan(budgetKiB);
+        };
+        try {
+          await panel.getByRole("button", { name: "Close JSON", exact: true }).click();
+          await expect(panel).toHaveCount(0);
+          await sample(0, "baseline");
+          for (let cycle = 1; cycle <= 30; cycle++) {
+            await page.getByRole("button", { name: "Inspect JSON", exact: true }).click();
+            await panel.getByRole("button", { name: "Expand items", exact: true }).click();
+            await expect(panel.getByRole("treeitem").nth(2)).toBeVisible();
+            expect(
+              page.workers().filter((worker) => /\/worker-[^/]+\.js/.test(worker.url())),
+            ).toHaveLength(1);
+            await sample(cycle, "expanded");
+            await panel.getByRole("button", { name: "Close JSON", exact: true }).click();
+            await expect(panel).toHaveCount(0);
+            await expect
+              .poll(
+                () =>
+                  page.workers().filter((worker) => /\/worker-[^/]+\.js/.test(worker.url())).length,
+              )
+              .toBe(0);
+            await sample(cycle, "closed");
+          }
+        } finally {
+          await test.info().attach("json-process-memory", {
+            body: JSON.stringify({
+              budgetKiB,
+              budgetEnforced: process.env.DBAPP_PERFORMANCE_BUDGETS === "1",
+              forcedGarbageCollection: false,
+              samples,
+            }),
+            contentType: "application/json",
+          });
         }
       }
       if (process.env.DBAPP_SCALAR_QUALIFICATION === "1") {
