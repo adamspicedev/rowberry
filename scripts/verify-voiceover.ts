@@ -8,6 +8,7 @@ import { _electron as electron, expect } from "@playwright/test";
 import { Client } from "pg";
 import { ReplySchema } from "../src/shared/protocol";
 import { captureSpeech } from "../tests/voiceover/speech";
+import { installInputTrace, type InputTraceReport } from "../tests/voiceover/input-trace";
 
 const exec = promisify(execFile);
 async function appleScript(script: string) {
@@ -75,6 +76,7 @@ const schema = `voiceover_${crypto.randomUUID().replaceAll("-", "")}`;
 let connected = false;
 let created = false;
 let app: Awaited<ReturnType<typeof electron.launch>> | undefined;
+let inputTrace: Awaited<ReturnType<typeof installInputTrace>> | undefined;
 try {
   await client.connect();
   connected = true;
@@ -145,13 +147,18 @@ try {
   const grid = page.getByRole("grid", { name: "Table rows" });
   await grid.getByRole("gridcell").nth(2).dblclick();
   const panel = page.getByRole("region", { name: "JSON inspector", exact: true });
+  const tree = panel.getByRole("tree", { name: "JSON tree", exact: true });
   const items = panel.getByRole("treeitem", { name: "items: array, 2 items", exact: true });
+  inputTrace = await installInputTrace(running, page);
   async function step(
     name: string,
     action: () => Promise<void>,
     expected: string[],
     forbidden: string[] = [],
+    verify?: () => Promise<void>,
   ) {
+    await inputTrace?.start();
+    let input: InputTraceReport | undefined;
     try {
       const result = await captureSpeech({
         read: () => appleScript('tell application "VoiceOver" to get content of last phrase'),
@@ -159,17 +166,31 @@ try {
         focused,
         expected,
         forbidden,
+        verify,
       });
-      report.steps.push({ name, status: "passed", ...result });
+      input = await inputTrace?.stop();
       await page.screenshot({ path: path.join(evidence, `${name}.png`) });
+      report.steps.push({ name, status: "passed", ...result, input });
       console.log(`PASS ${name}: ${result.phrase}`);
     } catch (error) {
-      report.steps.push({ name, status: "failed", error: String(error) });
+      input ??= await inputTrace?.stop();
+      report.steps.push({ name, status: "failed", error: String(error), input });
       await page.screenshot({ path: path.join(evidence, `${name}-failed.png`) }).catch(() => {});
       throw error;
     }
   }
-  await step("select-items", () => items.click(), ["items", "collapsed"], ["items items"]);
+  const verifyItems = async (expanded: boolean) => {
+    await expect(items).toHaveAttribute("aria-selected", "true");
+    await expect(items).toHaveAttribute("aria-expanded", String(expanded));
+    await expect(tree).toBeFocused();
+  };
+  await step(
+    "select-items",
+    () => items.click(),
+    ["items", "collapsed"],
+    ["items items"],
+    () => verifyItems(false),
+  );
   await appleScript('tell application "VoiceOver" to tell vo cursor to move into item');
   async function changeExpansion(code: number, expanded: boolean) {
     await nativeKey(code);
@@ -183,21 +204,44 @@ try {
     () => changeExpansion(124, true),
     ["items", "expanded"],
     ["items items"],
+    () => verifyItems(true),
   );
-  await step("collapse-items", () => changeExpansion(123, false), ["items", "collapsed"]);
+  await step(
+    "collapse-items",
+    () => changeExpansion(123, false),
+    ["items", "collapsed"],
+    [],
+    () => verifyItems(false),
+  );
   await step(
     "select-name",
     () => panel.getByRole("treeitem", { name: "name: Rowberry", exact: true }).click(),
     ["name", "rowberry"],
     ["expand name", "name name"],
+    async () => {
+      await expect(panel.getByRole("treeitem", { selected: true })).toHaveAccessibleName(
+        "name: Rowberry",
+      );
+      await expect(tree).toBeFocused();
+    },
   );
   await panel.getByRole("button", { name: "Close JSON", exact: true }).click();
   if (largeArray) {
     await grid.getByRole("gridcell").nth(5).dblclick();
-    const tree = panel.getByRole("tree", { name: "JSON tree", exact: true });
     const array = panel.getByRole("treeitem", { name: "items: array, 100000 items", exact: true });
     const selected = panel.getByRole("treeitem", { selected: true });
-    await step("large-select-items", () => array.click(), ["items", "collapsed"]);
+    const verifyArray = async (expanded: boolean) => {
+      await expect(array).toHaveAttribute("aria-selected", "true");
+      await expect(array).toHaveAttribute("aria-expanded", String(expanded));
+      await expect(tree).toBeFocused();
+    };
+    await step(
+      "large-select-items",
+      () => array.click(),
+      ["items", "collapsed"],
+      [],
+      () => verifyArray(false),
+    );
     await appleScript('tell application "VoiceOver" to tell vo cursor to move into item');
     await step(
       "large-expand-items",
@@ -207,6 +251,8 @@ try {
         if (requestedReadback) await nativeKey(99, true);
       },
       ["items", "expanded"],
+      [],
+      () => verifyArray(true),
     );
     const assertPosition = async (position: number) => {
       await expect(selected).toHaveAccessibleName(`${position - 1}: ${position - 1}`);
@@ -217,19 +263,17 @@ try {
     };
     await step(
       "large-first-position",
-      async () => {
-        await nativeKey(124);
-        await assertPosition(1);
-      },
+      () => nativeKey(124),
       ["1 of 100000"],
+      [],
+      () => assertPosition(1),
     );
     await step(
       "large-last-position",
-      async () => {
-        await nativeKey(119);
-        await assertPosition(100000);
-      },
+      () => nativeKey(119),
       ["99999", "100000 of 100000"],
+      [],
+      () => assertPosition(100000),
     );
     await tree.evaluate((element) => element.scrollTo({ top: 0 }));
     await expect(tree).toHaveAttribute(
@@ -239,20 +283,20 @@ try {
     await expect(selected).toHaveCount(1);
     await step(
       "large-offscreen-navigation",
-      async () => {
-        await nativeKey(126);
-        await assertPosition(99999);
-      },
+      () => nativeKey(126),
       ["99998", "99999 of 100000"],
+      [],
+      () => assertPosition(99999),
     );
     await step(
       "large-home",
+      () => nativeKey(115),
+      ["json root"],
+      [],
       async () => {
-        await nativeKey(115);
         await expect(selected).toHaveAccessibleName("JSON root: object, 1 keys");
         await expect(tree).toBeFocused();
       },
-      ["json root"],
     );
     await panel.getByRole("button", { name: "Close JSON", exact: true }).click();
   }
@@ -265,8 +309,13 @@ try {
     "open-preview",
     () => page.getByRole("button", { name: "Preview changes", exact: true }).click(),
     ["cancel preview"],
+    [],
+    async () => {
+      await expect(
+        preview.getByRole("button", { name: "Cancel preview", exact: true }),
+      ).toBeFocused();
+    },
   );
-  await expect(preview.getByRole("button", { name: "Cancel preview", exact: true })).toBeFocused();
   await step(
     "cancel-preview-passed-through",
     async () => {
@@ -275,9 +324,14 @@ try {
       await nativeKey(53);
     },
     ["preview changes"],
+    [],
+    async () => {
+      await expect(preview).not.toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Preview changes", exact: true }),
+      ).toBeFocused();
+    },
   );
-  await expect(preview).not.toBeVisible();
-  await expect(page.getByRole("button", { name: "Preview changes", exact: true })).toBeFocused();
   if (
     (await client.query(`SELECT note FROM "${schema}".records WHERE id=1`)).rows[0].note !==
     "original"
@@ -289,6 +343,7 @@ try {
   report.error = String(error);
   process.exitCode = 1;
 } finally {
+  await inputTrace?.dispose();
   if (app) {
     await app
       .evaluate(({ BrowserWindow }) =>

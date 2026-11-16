@@ -39,4 +39,24 @@ Experimental changes to virtual-row order, ancestor retention, previous-row rete
 
 Keep native Home open in the v1 evidence register. Reproduce it with a confirmed physical Home event, inspect native event modifiers/routing and compare with the browser-dispatched control before changing application focus behavior. Preserve this failure when a later candidate passes. Repeat the full native run, including preview cancellation, after a demonstrated fix.
 
+### Input-path controls with VoiceOver off
+
+Six further controls passed on the same signed 0.1.4 package: native System Events Home and browser-dispatched Home in each of three application accessibility configurations. [The complete key/focus traces](2026-11-16-keyboard-mode-controls.json) are retained; no speech was captured or qualified.
+
+The disposable profile/schema and small JSON fixture were the same as the native harness. For each case, the diagnostic requested the feature set below, clicked `name: Rowberry`, confirmed tree focus, cleared the event buffers, sent Home and inspected selection/focus after 200 ms. It observed Electron's `before-input-event`, window focus/blur and DOM key/focus events without changing event handling. The temporary diagnostic script was removed after the experiment; these controls describe the procedure and preserve its actual output.
+
+| Requested application configuration   | Features observed before input                                       | Native Home | Browser Home |
+| ------------------------------------- | -------------------------------------------------------------------- | ----------- | ------------ |
+| Empty feature set                     | `nativeAPIs`, `webContents`                                          | Passed      | Passed       |
+| Accessibility support                 | `nativeAPIs`, `webContents`, `inlineTextBoxes`, `extendedProperties` | Passed      | Passed       |
+| Accessibility plus screen-reader mode | Same four features plus `screenReader`                               | Passed      | Passed       |
+
+The first configuration was **not accessibility-disabled** in practice. Application accessibility configuration is distinct from running the macOS VoiceOver service; the service stayed off for these controls.
+
+Native Home reached Electron's input hook as `key: Home`, `code: Home`, location 0, no reported modifiers. Browser-dispatched Home produced no `before-input-event` record. Both paths delivered Home to the JSON tree, whose DOM handler set `defaultPrevented: true`; the root was selected and focus remained on the tree. Therefore matching DOM events do not establish equivalent native input paths.
+
+These results show that the tested Chromium accessibility modes alone are insufficient to reproduce the failure. They do not rule out interactions that require the running VoiceOver service, and reported modifier fields do not establish the complete native macOS event flags. The linked Electron [Windows alert/confirm issue](https://github.com/electron/electron/issues/41602) and [older Windows dialog-focus issue](https://github.com/electron/electron/issues/20821) have different reproduction conditions; no blur/refocus workaround was added.
+
+The harness now records bounded navigation/focus traces and verifies UI state after matching speech and input complete. During the next live run, compare focus movement with the [Electron input hook](https://www.electronjs.org/docs/latest/api/web-contents#event-before-input-event), not just DOM keydown, and use native Up-to-root as the passing control. The stronger harness has not yet repeated native speech qualification.
+
 This record does not qualify all VoiceOver settings, minimum-supported macOS, other screen readers or broader unfamiliar-user task completion. The separate [signed performance refresh](json-performance-and-accessibility.md#signed-014-refresh-16-november-2026) passed all six bounded scenarios; that result is not screen-reader evidence.

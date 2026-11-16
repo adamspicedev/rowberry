@@ -1,0 +1,796 @@
+{
+  "appAsarSha256": "3fe78a8edbb9b45163635b74797de1b3367d3faab36195486a40e416a296661e",
+  "speechMode": "diagnostic-no-speech",
+  "largeArrayItems": 0,
+  "status": "passed",
+  "steps": [
+    {
+      "mode": "normal",
+      "source": "native",
+      "status": "passed",
+      "featuresBefore": ["nativeAPIs", "webContents"],
+      "native": {
+        "features": ["nativeAPIs", "webContents"],
+        "focused": true,
+        "trace": [
+          {
+            "time": 1794799859707,
+            "layer": "electron",
+            "type": "keyDown",
+            "key": "Home",
+            "code": "Home",
+            "isAutoRepeat": false,
+            "isComposing": false,
+            "shift": false,
+            "control": false,
+            "alt": false,
+            "meta": false,
+            "location": 0,
+            "_modifiers": 0,
+            "modifiers": []
+          },
+          {
+            "time": 1794799859708,
+            "layer": "electron",
+            "type": "keyUp",
+            "key": "Home",
+            "code": "Home",
+            "isAutoRepeat": false,
+            "isComposing": false,
+            "shift": false,
+            "control": false,
+            "alt": false,
+            "meta": false,
+            "location": 0,
+            "_modifiers": 0,
+            "modifiers": []
+          }
+        ]
+      },
+      "renderer": {
+        "active": "JSON tree",
+        "selected": "JSON root: object, 2 keys",
+        "trace": [
+          {
+            "time": 1794799859707,
+            "kind": "keydown",
+            "capture": true,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": false,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          },
+          {
+            "time": 1794799859709,
+            "kind": "keydown",
+            "capture": false,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": true,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          },
+          {
+            "time": 1794799859709,
+            "kind": "keyup",
+            "capture": true,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": false,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          },
+          {
+            "time": 1794799859709,
+            "kind": "keyup",
+            "capture": false,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": false,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "mode": "normal",
+      "source": "browser",
+      "status": "passed",
+      "featuresBefore": ["nativeAPIs", "webContents"],
+      "native": {
+        "features": ["nativeAPIs", "webContents"],
+        "focused": true,
+        "trace": []
+      },
+      "renderer": {
+        "active": "JSON tree",
+        "selected": "JSON root: object, 2 keys",
+        "trace": [
+          {
+            "time": 1794799859914,
+            "kind": "keydown",
+            "capture": true,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": false,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          },
+          {
+            "time": 1794799859915,
+            "kind": "keydown",
+            "capture": false,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": true,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          },
+          {
+            "time": 1794799859916,
+            "kind": "keyup",
+            "capture": true,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": false,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          },
+          {
+            "time": 1794799859916,
+            "kind": "keyup",
+            "capture": false,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": false,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "mode": "accessibility",
+      "source": "native",
+      "status": "passed",
+      "featuresBefore": ["nativeAPIs", "webContents", "inlineTextBoxes", "extendedProperties"],
+      "native": {
+        "features": ["nativeAPIs", "webContents", "inlineTextBoxes", "extendedProperties"],
+        "focused": true,
+        "trace": [
+          {
+            "time": 1794799860360,
+            "layer": "electron",
+            "type": "keyDown",
+            "key": "Home",
+            "code": "Home",
+            "isAutoRepeat": false,
+            "isComposing": false,
+            "shift": false,
+            "control": false,
+            "alt": false,
+            "meta": false,
+            "location": 0,
+            "_modifiers": 0,
+            "modifiers": []
+          },
+          {
+            "time": 1794799860364,
+            "layer": "electron",
+            "type": "keyUp",
+            "key": "Home",
+            "code": "Home",
+            "isAutoRepeat": false,
+            "isComposing": false,
+            "shift": false,
+            "control": false,
+            "alt": false,
+            "meta": false,
+            "location": 0,
+            "_modifiers": 0,
+            "modifiers": []
+          }
+        ]
+      },
+      "renderer": {
+        "active": "JSON tree",
+        "selected": "JSON root: object, 2 keys",
+        "trace": [
+          {
+            "time": 1794799860361,
+            "kind": "keydown",
+            "capture": true,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": false,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          },
+          {
+            "time": 1794799860362,
+            "kind": "keydown",
+            "capture": false,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": true,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          },
+          {
+            "time": 1794799860364,
+            "kind": "keyup",
+            "capture": true,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": false,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          },
+          {
+            "time": 1794799860364,
+            "kind": "keyup",
+            "capture": false,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": false,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "mode": "accessibility",
+      "source": "browser",
+      "status": "passed",
+      "featuresBefore": ["nativeAPIs", "webContents", "inlineTextBoxes", "extendedProperties"],
+      "native": {
+        "features": ["nativeAPIs", "webContents", "inlineTextBoxes", "extendedProperties"],
+        "focused": true,
+        "trace": []
+      },
+      "renderer": {
+        "active": "JSON tree",
+        "selected": "JSON root: object, 2 keys",
+        "trace": [
+          {
+            "time": 1794799860592,
+            "kind": "keydown",
+            "capture": true,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": false,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          },
+          {
+            "time": 1794799860594,
+            "kind": "keydown",
+            "capture": false,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": true,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          },
+          {
+            "time": 1794799860594,
+            "kind": "keyup",
+            "capture": true,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": false,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          },
+          {
+            "time": 1794799860595,
+            "kind": "keyup",
+            "capture": false,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": false,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "mode": "screenReader",
+      "source": "native",
+      "status": "passed",
+      "featuresBefore": [
+        "nativeAPIs",
+        "webContents",
+        "inlineTextBoxes",
+        "extendedProperties",
+        "screenReader"
+      ],
+      "native": {
+        "features": [
+          "nativeAPIs",
+          "webContents",
+          "inlineTextBoxes",
+          "extendedProperties",
+          "screenReader"
+        ],
+        "focused": true,
+        "trace": [
+          {
+            "time": 1794799861056,
+            "layer": "electron",
+            "type": "keyDown",
+            "key": "Home",
+            "code": "Home",
+            "isAutoRepeat": false,
+            "isComposing": false,
+            "shift": false,
+            "control": false,
+            "alt": false,
+            "meta": false,
+            "location": 0,
+            "_modifiers": 0,
+            "modifiers": []
+          },
+          {
+            "time": 1794799861058,
+            "layer": "electron",
+            "type": "keyUp",
+            "key": "Home",
+            "code": "Home",
+            "isAutoRepeat": false,
+            "isComposing": false,
+            "shift": false,
+            "control": false,
+            "alt": false,
+            "meta": false,
+            "location": 0,
+            "_modifiers": 0,
+            "modifiers": []
+          }
+        ]
+      },
+      "renderer": {
+        "active": "JSON tree",
+        "selected": "JSON root: object, 2 keys",
+        "trace": [
+          {
+            "time": 1794799861056,
+            "kind": "keydown",
+            "capture": true,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": false,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          },
+          {
+            "time": 1794799861057,
+            "kind": "keydown",
+            "capture": false,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": true,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          },
+          {
+            "time": 1794799861059,
+            "kind": "keyup",
+            "capture": true,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": false,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          },
+          {
+            "time": 1794799861059,
+            "kind": "keyup",
+            "capture": false,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": false,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "mode": "screenReader",
+      "source": "browser",
+      "status": "passed",
+      "featuresBefore": [
+        "nativeAPIs",
+        "webContents",
+        "inlineTextBoxes",
+        "extendedProperties",
+        "screenReader"
+      ],
+      "native": {
+        "features": [
+          "nativeAPIs",
+          "webContents",
+          "inlineTextBoxes",
+          "extendedProperties",
+          "screenReader"
+        ],
+        "focused": true,
+        "trace": []
+      },
+      "renderer": {
+        "active": "JSON tree",
+        "selected": "JSON root: object, 2 keys",
+        "trace": [
+          {
+            "time": 1794799861288,
+            "kind": "keydown",
+            "capture": true,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": false,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          },
+          {
+            "time": 1794799861290,
+            "kind": "keydown",
+            "capture": false,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": true,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          },
+          {
+            "time": 1794799861291,
+            "kind": "keyup",
+            "capture": true,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": false,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          },
+          {
+            "time": 1794799861291,
+            "kind": "keyup",
+            "capture": false,
+            "key": "Home",
+            "code": "Home",
+            "location": 0,
+            "ctrl": false,
+            "alt": false,
+            "meta": false,
+            "shift": false,
+            "defaultPrevented": false,
+            "target": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            },
+            "active": {
+              "tag": "DIV",
+              "role": "tree",
+              "label": "JSON tree"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "candidateVersion": "0.1.4",
+  "appSourceCommit": "eecd6736d369476b01a765af32afa576ae48d982",
+  "host": {
+    "chip": "Apple M4",
+    "memoryGiB": 32,
+    "os": "macOS 27.3",
+    "build": "26C5035r",
+    "arch": "arm64"
+  },
+  "scope": "VoiceOver-off input-path diagnostic only; no speech or native VoiceOver qualification",
+  "observationDelayMs": 200
+}
