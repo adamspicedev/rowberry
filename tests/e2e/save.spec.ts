@@ -185,6 +185,41 @@ for (const version of [14, 18])
       page.once("dialog", (dialog) => dialog.accept());
       await page.getByRole("button", { name: "Discard drafts and reload" }).click();
       await expect(grid.getByRole("gridcell").nth(1)).toHaveText("external");
+      // A comparison started on an old draft must not block a newly filtered page.
+      await stage(1, "discarded comparison draft");
+      await client.query("BEGIN");
+      try {
+        await client.query("LOCK TABLE dbapp_save_ui.records IN ACCESS EXCLUSIVE MODE");
+        await page.getByRole("button", { name: "Compare current database rows" }).click();
+        await expect
+          .poll(async () => {
+            // This observer is inside a transaction; do not reuse its statistics snapshot.
+            await client.query("SELECT pg_stat_clear_snapshot()");
+            return Number(
+              (
+                await client.query(
+                  "SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid() AND wait_event_type='Lock' AND query LIKE '%dbapp_save_ui%records%'",
+                )
+              ).rows[0].count,
+            );
+          })
+          .toBeGreaterThan(0);
+        await page.getByLabel("Filter column", { exact: true }).selectOption("id");
+        await page.getByLabel("Filter value", { exact: true }).fill("2");
+        page.once("dialog", (dialog) => dialog.accept());
+        await page.getByRole("button", { name: "Apply filter", exact: true }).click();
+      } finally {
+        await client.query("COMMIT");
+      }
+      await expect(grid.getByRole("gridcell").nth(0)).toHaveText("2");
+      await expect(
+        page.getByRole("region", { name: "Compare database with preserved drafts" }),
+      ).toHaveCount(0);
+      await expect(
+        page.getByRole("button", { name: "Edit selected cell", exact: true }),
+      ).toBeEnabled();
+      await page.getByRole("button", { name: "Clear", exact: true }).click();
+      await expect(grid.getByRole("gridcell").nth(0)).toHaveText("1");
       await stage(1, "must roll back");
       await stage(4, "invalid integer");
       await stage(5, "second row rollback draft");
