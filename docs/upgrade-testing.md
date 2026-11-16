@@ -21,6 +21,12 @@ No existing user profile is accepted or modified. Successful runs remove the tem
 
 This is a packaged **profile compatibility** test. It does not install/replace an application, test a fresh OS account, establish signing/notarization, or qualify an actual locked credential store. Profile-only mode does not test database connectivity. Both packages must run natively on the test host. Run the installer and native-platform procedures in [the release checklist](release-checklist.md) separately.
 
+## Retrieved 0.1.8 development-candidate check — 16 November 2026
+
+The [retained candidate follow-up](qa/2026-11-16-retained-018.md#retrieved-development-profile-compatibility-follow-up) passed from signed 0.1.7 to the authenticated GitHub download of signed 0.1.8, with `--native-vault`. Both launches preserved connection metadata, named queries, unsaved SQL and exact invalid Unicode JSON, then authenticated over verified TLS without password resubmission. Native credential and temporary-profile cleanup succeeded. The record includes exact package hashes and command output.
+
+Neither package is an accepted release baseline. This is development-build profile compatibility; fresh-account installer replacement and release-to-release qualification remain separate.
+
 ## Interactive macOS Keychain denial and retry
 
 With the PostgreSQL 18 fixture running, use an interactive terminal:

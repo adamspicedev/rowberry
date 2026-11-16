@@ -33,7 +33,7 @@ VoiceOver testing found a remaining issue: Home can move focus from the JSON tre
 
 A preview must be installable through the normal macOS download and installation process. Local signing, Gatekeeper and automated persistence checks have passed; downloaded-package and fresh-account installation acceptance still need to be completed.
 
-The [exact 0.1.8 candidate is now retained privately](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/2026-11-16-retained-018.md), together with its source, native app archive, notes, notices and checksums. All downloaded files matched their hashes, and the retrieved app passed signature, notarization-ticket and launch checks. This gives us a reproducible candidate for later comparisons; it is not an accepted baseline or a public download.
+The [exact 0.1.8 candidate is now retained privately](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/2026-11-16-retained-018.md), together with its source, native app archive, notes, notices and checksums. All downloaded files matched their hashes, and the retrieved app passed signature, notarization-ticket and launch checks. This gives us a reproducible candidate for later comparisons; it is not an accepted baseline or a public download. The retrieved 0.1.8 app also preserved a disposable 0.1.7 workspace and reconnected with its saved password on both launches. This automated profile check does not replace the clean-account installation test.
 
 Accepted packages will remain available for future upgrade tests. A successful build or retained draft alone does not qualify a release.
 

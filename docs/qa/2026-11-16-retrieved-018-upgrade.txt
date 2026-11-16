@@ -1,0 +1,21 @@
+$ bun scripts/verify-upgrade.ts "/Users/spicey/Projects/dbapp/release-signed/0.1.7/mac-arm64/Rowberry.app" "/tmp/rowberry-018-retrieved-app/Rowberry.app" --native-vault
+PASS upgrade: connection, saved query, SQL draft and exact recovered JSON, authenticated native credential
+PASS candidate restart: connection, saved query, SQL draft and exact recovered JSON, authenticated native credential
+{
+  "baseline": {
+    "root": "/Users/spicey/Projects/dbapp/release-signed/0.1.7/mac-arm64/Rowberry.app",
+    "executable": "/Users/spicey/Projects/dbapp/release-signed/0.1.7/mac-arm64/Rowberry.app/Contents/MacOS/Rowberry",
+    "sha256": "c81f33c3e6cd13c533c4167da4a441f0025d0f706f8dac25e3dbbd06427c26e3"
+  },
+  "candidate": {
+    "root": "/private/tmp/rowberry-018-retrieved-app/Rowberry.app",
+    "executable": "/private/tmp/rowberry-018-retrieved-app/Rowberry.app/Contents/MacOS/Rowberry",
+    "sha256": "1326ad1107e1c1ec38259477d5bb450040aff90b5ae969804b396584c774c844"
+  },
+  "nativeVault": true,
+  "denyFirst": false,
+  "denyWrite": false,
+  "platform": "darwin",
+  "architecture": "arm64"
+}
+PASS packaged profile upgrade; installer replacement and signing are not covered.

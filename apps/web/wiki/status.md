@@ -6,7 +6,7 @@ Turning recovery off and back on now captures open SQL, JSON and table/cell work
 
 All 30 signed 0.1.8 package tests passed with no skips. App and installer signing, notarization, stapling, Gatekeeper and embedded branding checks passed; 0.1.8 is the latest verified local candidate. Earlier connection-deletion and keyboard repairs remain in the [evidence register](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/v1-evidence-register.md).
 
-The [exact candidate and source are retained privately](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/2026-11-16-retained-018.md), with successful download/checksum and native app verification. This is preparation for future upgrade qualification, not an accepted baseline or public download.
+The [exact candidate and source are retained privately](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/2026-11-16-retained-018.md), with successful download/checksum and native app verification. This is preparation for future upgrade qualification, not an accepted baseline or public download. The downloaded app passed a development-profile compatibility check from 0.1.7, retaining saved work and native credentials across two launches; installer replacement remains unqualified.
 
 ## Current scope
 
