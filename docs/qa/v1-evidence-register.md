@@ -6,23 +6,23 @@ The signing budget blocker was resolved on 16 November 2026. Developer ID signat
 
 ## Candidate status
 
-| Field                                        | macOS arm64                                                                                                      | macOS Intel x64           |
-| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| Final v1 source/version/package              | Not selected                                                                                                     | Deferred                  |
-| Signed artifact identifiers and hashes       | [Local 0.1.7 candidate](2026-11-16-connection-delete-keyboard.md#candidate-qualification); final v1 not selected | Not required for v1       |
-| Accepted upgrade baseline                    | None registered                                                                                                  | None registered; deferred |
-| Contract A01–A12 qualification               | Not run on final candidate                                                                                       | Outside v1 scope          |
-| Maintainer acceptance / publication approval | Pending / pending                                                                                                | Not applicable to v1      |
+| Field                                        | macOS arm64                                                                                           | macOS Intel x64           |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------- |
+| Final v1 source/version/package              | Not selected                                                                                          | Deferred                  |
+| Signed artifact identifiers and hashes       | [Local 0.1.8 candidate](2026-11-16-recovery-toggle.md#candidate-qualification); final v1 not selected | Not required for v1       |
+| Accepted upgrade baseline                    | None registered                                                                                       | None registered; deferred |
+| Contract A01–A12 qualification               | Not run on final candidate                                                                            | Outside v1 scope          |
+| Maintainer acceptance / publication approval | Pending / pending                                                                                     | Not applicable to v1      |
 
 Scope decision, 23 October 2026: the maintainer approved Apple silicon-only v1 because purchasing Intel test hardware is outside the current budget. Intel build checks are paused; native qualification and supported downloads are deferred.
 
 Keep [the baseline register](../upgrade-baselines.md) authoritative for accepted artifacts. Neither local development packages nor green CI automatically become a baseline.
 
-The [0.1.7 candidate](2026-11-16-connection-delete-keyboard.md#candidate-qualification) is the latest with completed local app and installer verification. Its recorded 28-test package pass applies to the unchanged application in the verified installer; notarization did not trigger a new suite run. Historical 0.1.6 evidence remains below, and no accepted release baseline is registered.
+The [0.1.8 candidate](2026-11-16-recovery-toggle.md#candidate-qualification) is the latest with completed local app and installer verification. All 30 signed-package tests passed with no skips; app/DMG signing, notarization, stapling, Gatekeeper and embedded branding checks passed. Historical candidate evidence remains below, and no accepted release baseline is registered.
 
 ## Current development checks
 
-[16 November recovery re-enable](2026-11-16-recovery-toggle.md): signed 0.1.7 reproduced empty stored SQL/drafts after toggling recovery off/on. The 0.1.8 repair passed real-editor crash/restart checks on PostgreSQL 14 and 18, including inactive editors, exact invalid JSON, staged/unfinished cell work and non-resurrection of discarded peers. Signed 0.1.8 qualification is recorded separately in the report.
+[16 November recovery re-enable](2026-11-16-recovery-toggle.md): signed 0.1.7 reproduced empty stored SQL/drafts after toggling recovery off/on. The 0.1.8 repair passed real-editor crash/restart checks on PostgreSQL 14 and 18, including inactive editors, exact invalid JSON, staged/unfinished cell work and non-resurrection of discarded peers. All 30 signed-package tests and separate app/DMG verification passed; the report records exact hashes and remaining release gates.
 
 [16 November signed 0.1.3 qualification](2026-11-16-signed-013-qualification.md): signed app and DMG verification, production package workflows and native-vault upgrade/restart evidence are now recorded together. Local storage is not a durable release baseline; unavailable-store and unfamiliar-user acceptance remain open.
 
