@@ -283,9 +283,172 @@ for (const version of [14, 18])
         await page.getByRole("table", { name: "SQL results" }).locator("tbody tr").count(),
       ).toBe(200);
       await text("SELECT 999");
+      const endResult = page.getByRole("button", { name: "End unfinished result…", exact: true });
+      const endDialog = page.getByRole("alertdialog", { name: "End unfinished result" });
+      const keepResult = endDialog.getByRole("button", { name: "Keep result", exact: true });
+      const confirmEnd = endDialog.getByRole("button", {
+        name: "End result and allow possible commit",
+        exact: true,
+      });
+      const results = page.getByRole("table", { name: "SQL results" });
+      async function expectUnfinishedResultPreserved() {
+        await expect(editor).toHaveValue("SELECT 999");
+        await expect(results.locator("tbody tr")).toHaveCount(200);
+        await expect(results.locator("tbody tr").first().getByRole("cell").nth(1)).toHaveText(
+          "201",
+        );
+        await expect(endResult).toBeEnabled();
+      }
+      for (const trigger of [endResult, runButton]) {
+        await trigger.focus();
+        await page.keyboard.press("Enter");
+        await expect(endDialog).toContainText("commit an implicit mutation");
+        await expect(keepResult).toBeFocused();
+        await page.keyboard.press("Tab");
+        await expect(confirmEnd).toBeFocused();
+        await page.keyboard.press("Tab");
+        await expect(keepResult).toBeFocused();
+        await page.keyboard.press("Shift+Tab");
+        await expect(confirmEnd).toBeFocused();
+        await page.keyboard.press("Escape");
+        await expect(endDialog).not.toBeVisible();
+        await expect(trigger).toBeFocused();
+        await expectUnfinishedResultPreserved();
+
+        await page.keyboard.press("Enter");
+        await expect(keepResult).toBeFocused();
+        await page.keyboard.press("Enter");
+        await expect(endDialog).not.toBeVisible();
+        await expect(trigger).toBeFocused();
+        await expectUnfinishedResultPreserved();
+      }
+      // Control one IPC reply in this disposable app. This verifies the UI during
+      // delay/failure without claiming a native database or transport failure.
+      const endGateKey = `queryEndGate_${crypto.randomUUID()}`;
+      const endFailure = "Controlled failure: the result could not be ended.";
+      await app.evaluate(
+        ({ ipcMain }, { key, message }) => {
+          const handlers = Reflect.get(ipcMain, "_invokeHandlers") as Map<
+            string,
+            (...args: unknown[]) => Promise<unknown>
+          >;
+          const original = handlers.get("dbapp:request");
+          if (!original) throw new Error("Missing application IPC handler");
+          const control = { started: false, release: () => {}, original };
+          const gate = new Promise<void>((resolve) => {
+            control.release = resolve;
+          });
+          Reflect.set(globalThis, key, control);
+          ipcMain.removeHandler("dbapp:request");
+          ipcMain.handle("dbapp:request", async (event, command) => {
+            if (command.kind === "queries.close" && !control.started) {
+              control.started = true;
+              await gate;
+              return {
+                ok: false,
+                requestId: command.requestId,
+                error: { code: "QUERY_UNAVAILABLE", message, retryable: true, outcome: "failed" },
+              };
+            }
+            return original(event, command);
+          });
+        },
+        { key: endGateKey, message: endFailure },
+      );
+      try {
+        await endResult.focus();
+        await page.keyboard.press("Enter");
+        await expect(keepResult).toBeFocused();
+        await page.keyboard.press("Tab");
+        await expect(confirmEnd).toBeFocused();
+        await page.keyboard.press("Enter");
+        await expect
+          .poll(() => app.evaluate((_, key) => Reflect.get(globalThis, key).started, endGateKey))
+          .toBe(true);
+        await expect(endDialog).toHaveAttribute("aria-busy", "true");
+        await expect(endDialog).toContainText("Ending result…");
+        await expect(keepResult).toBeDisabled();
+        await expect(confirmEnd).toBeDisabled();
+        await page.keyboard.press("Escape");
+        await expect(endDialog).toBeVisible();
+
+        await app.evaluate((_, key) => Reflect.get(globalThis, key).release(), endGateKey);
+        await expect(endDialog.getByRole("alert")).toHaveText(endFailure);
+        await expect(endDialog).toHaveAttribute("aria-busy", "false");
+        await expect(keepResult).toBeFocused();
+        await expect(confirmEnd).toBeEnabled();
+        await page.keyboard.press("Escape");
+        await expect(endDialog).not.toBeVisible();
+        await expect(endResult).toBeFocused();
+        await expectUnfinishedResultPreserved();
+      } finally {
+        await app.evaluate(({ ipcMain }, key) => {
+          const control = Reflect.get(globalThis, key);
+          control.release();
+          ipcMain.removeHandler("dbapp:request");
+          ipcMain.handle("dbapp:request", control.original);
+          Reflect.deleteProperty(globalThis, key);
+        }, endGateKey);
+      }
+      await endResult.focus();
+      await page.keyboard.press("Enter");
+      await expect(keepResult).toBeFocused();
+      await expect(endDialog.getByRole("alert")).toHaveCount(0);
+      await page.keyboard.press("Tab");
+      await expect(confirmEnd).toBeFocused();
+      await page.keyboard.press("Enter");
+      await expect(endDialog).not.toBeVisible();
+      await expect(results).toHaveCount(0);
+      await expect(page.locator(".query-tab output")).toContainText(
+        "Result ended. Run explicitly to execute more SQL.",
+      );
+      await expect(editor).toHaveValue("SELECT 999");
+      await expect(endResult).toBeDisabled();
+      await expect(runButton).toBeFocused();
+      // Ending the old result does not execute the pending SQL; it needs a separate Run.
+      await page.keyboard.press("Enter");
+      await expect(results.locator("tbody tr")).toHaveCount(1);
+      await expect(results.locator("tbody tr").first().getByRole("cell").nth(1)).toHaveText("999");
+      // Kill only this disposable query's identified backend while its warning
+      // is open. Run becomes disabled, so both exit paths need a usable focus target.
+      await text("SELECT pg_backend_pid() AS backend_pid, i FROM generate_series(1,1200) i");
       await runButton.click();
-      await expect(page.getByRole("alertdialog")).toContainText("commit an implicit mutation");
-      await page.getByRole("button", { name: "Keep result" }).click();
+      await expect(results.locator("tbody tr")).toHaveCount(200);
+      const terminatedResultPid = Number(
+        await results.locator("tbody tr").first().getByRole("cell").nth(1).textContent(),
+      );
+      expect(Number.isInteger(terminatedResultPid) && terminatedResultPid > 0).toBe(true);
+      await text("SELECT 888");
+      await runButton.focus();
+      await page.keyboard.press("Enter");
+      await expect(keepResult).toBeFocused();
+      await client.query("SELECT pg_terminate_backend($1)", [terminatedResultPid]);
+      // The background is inert while the native modal is open.
+      await expect(page.locator(".query-run")).toBeDisabled();
+      await page.keyboard.press("Escape");
+      await expect(endDialog).not.toBeVisible();
+      await expect(reopen).toBeFocused();
+      await expect(editor).toHaveValue("SELECT 888");
+      await expect(results.locator("tbody tr")).toHaveCount(200);
+      await expect(results.locator("tbody tr").first().getByRole("cell").nth(2)).toHaveText("1");
+      await endResult.focus();
+      await page.keyboard.press("Enter");
+      await expect(keepResult).toBeFocused();
+      await page.keyboard.press("Tab");
+      await expect(confirmEnd).toBeFocused();
+      await page.keyboard.press("Enter");
+      await expect(endDialog).not.toBeVisible();
+      await expect(results).toHaveCount(0);
+      await expect(editor).toHaveValue("SELECT 888");
+      await expect(runButton).toBeDisabled();
+      await expect(reopen).toBeFocused();
+      await page.keyboard.press("Enter");
+      await expect(runButton).toBeEnabled();
+      await expect(page.locator(".query-tab output")).toContainText(
+        "Session reopened. Run SQL explicitly. · Transaction: idle",
+      );
+      await expect(editor).toHaveValue("SELECT 888");
+      await expect(results).toHaveCount(0);
       page.once("dialog", (dialog) => void dialog.accept());
       await page.getByRole("button", { name: /^Close SQL \d+$/ }).click();
       await page.getByRole("button", { name: "New SQL tab" }).click();

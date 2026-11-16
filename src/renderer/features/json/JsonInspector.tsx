@@ -518,7 +518,7 @@ export function JsonInspector({
       )}
       <dialog
         ref={discardDialog}
-        className="json-discard-dialog"
+        className="confirmation-dialog"
         role="alertdialog"
         aria-label="Discard JSON draft"
         aria-modal="true"

@@ -3,7 +3,7 @@ import { Button } from "../../components/ui/button";
 import { rowJson } from "../../../json/viewer";
 import { recordDraft } from "../../app/workspace";
 import { JsonInspector } from "../json/JsonInspector";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   QueryIdSchema,
   RequestIdSchema,
@@ -45,6 +45,34 @@ export function QueryTab({
   const [transaction, setTransaction] = useState("idle");
   const [message, setMessage] = useState("Opening dedicated session…");
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [endError, setEndError] = useState("");
+  const endDialog = useRef<HTMLDialogElement>(null);
+  const keepResult = useRef<HTMLButtonElement>(null);
+  const runButton = useRef<HTMLButtonElement>(null);
+  const reopenButton = useRef<HTMLButtonElement>(null);
+  const endDescriptionId = useId();
+  useEffect(() => {
+    const dialog = endDialog.current;
+    if (!dialog) return;
+    if (confirmEnd) {
+      if (!dialog.open) {
+        dialog.showModal();
+        keepResult.current?.focus();
+      }
+    } else if (dialog.open) {
+      dialog.close();
+      // A lost session or an ended result can disable the original opener.
+      if (!ready) reopenButton.current?.focus();
+      else if (!page) runButton.current?.focus();
+    }
+  }, [confirmEnd, page, ready]);
+  useEffect(() => {
+    if (confirmEnd && !busy && endError) keepResult.current?.focus();
+  }, [confirmEnd, busy, endError]);
+  function requestEnd() {
+    setEndError("");
+    setConfirmEnd(true);
+  }
   const [name, setName] = useState("");
   const live = useRef(true);
   const editor = useRef<SqlEditorHandle | null>(null);
@@ -119,7 +147,7 @@ export function QueryTab({
       return;
     }
     if (page && !page.done) {
-      setConfirmEnd(true);
+      requestEnd();
       return;
     }
     setBusy(true);
@@ -163,7 +191,10 @@ export function QueryTab({
         setQueryId(null);
         setConfirmEnd(false);
         setMessage("Result ended. Run explicitly to execute more SQL.");
-      } else setMessage(reply.error.message);
+      } else {
+        setMessage(reply.error.message);
+        setEndError(reply.error.message);
+      }
       setBusy(false);
     }
   }
@@ -200,6 +231,7 @@ export function QueryTab({
       )}
       <div className="query-toolbar">
         <Button
+          ref={runButton}
           className="query-run"
           disabled={!ready || busy}
           onClick={() => void run(editor.current?.selected() || editor.current?.text() || sql)}
@@ -232,11 +264,12 @@ export function QueryTab({
             </button>
           ))}
         </fieldset>
-        <button disabled={busy || !page || page.done} onClick={() => setConfirmEnd(true)}>
+        <button disabled={busy || !page || page.done} onClick={requestEnd}>
           End unfinished result…
         </button>
         {!ready && (
           <button
+            ref={reopenButton}
             disabled={busy}
             onClick={() => {
               setBusy(true);
@@ -271,18 +304,35 @@ export function QueryTab({
         )}
       </div>
       <SqlEditor value={sql} onChange={onChange} onReady={editorReady} tables={tables} />
-      {confirmEnd && (
-        <div role="alertdialog" aria-label="End unfinished result">
-          <p>
-            Ending an unfinished result can commit an implicit mutation. It does not undo changes.
-            Close the SQL tab to disconnect and roll back its open transaction.
-          </p>
-          <button disabled={busy} onClick={() => void closeResult()}>
+      <dialog
+        ref={endDialog}
+        className="confirmation-dialog"
+        role="alertdialog"
+        aria-label="End unfinished result"
+        aria-modal="true"
+        aria-describedby={endDescriptionId}
+        aria-busy={busy}
+        onCancel={(event) => {
+          event.preventDefault();
+          if (!busy) setConfirmEnd(false);
+        }}
+      >
+        <h2>End unfinished result?</h2>
+        <p id={endDescriptionId}>
+          Ending an unfinished result can commit an implicit mutation. It does not undo changes.
+          Close the SQL tab to disconnect and roll back its open transaction.
+        </p>
+        {confirmEnd && busy && <output aria-live="polite">Ending result…</output>}
+        {endError && <p role="alert">{endError}</p>}
+        <div className="dialog-actions">
+          <Button ref={keepResult} disabled={busy} onClick={() => setConfirmEnd(false)}>
+            Keep result
+          </Button>
+          <Button variant="outline" disabled={busy} onClick={() => void closeResult()}>
             End result and allow possible commit
-          </button>
-          <button onClick={() => setConfirmEnd(false)}>Keep result</button>
+          </Button>
         </div>
-      )}
+      </dialog>
       <div className="query-toolbar">
         <input
           aria-label="Saved query name"
