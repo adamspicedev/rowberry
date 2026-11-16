@@ -25,6 +25,25 @@ Source commit: `9c89e69f490cc1fee4832da425c28d300b603bf2`.
 
 ## Candidate qualification
 
-Signed 0.1.8 package checks are pending. The [0.1.7 record](2026-11-16-connection-delete-keyboard.md#candidate-qualification) remains the latest completed local installer verification until this section is updated.
+[PR #41](https://github.com/adamspicedev/rowberry/pull/41) merged after all required CI checks passed. Main commit `a5f5c9b1f341d4a9ae7879d119adb1ad46d91b77` has identical application and test source to the build commit above.
+
+- Host: macOS 27.3, build `26C5035r`, arm64.
+- Application: `release-signed/0.1.8/mac-arm64/Rowberry.app`.
+- Installer: `release-signed/0.1.8/Rowberry-0.1.8-mac-arm64.dmg`.
+- Final DMG SHA-256: `4f51bb26d9e84196ed846283c65341052894dba6c795d772b1eac4c7cb0ff0fb`.
+- `app.asar` SHA-256: `1326ad1107e1c1ec38259477d5bb450040aff90b5ae969804b396584c774c844`.
+- Embedded version: 0.1.8. All 15 bundled application files match the frozen build output.
+
+```sh
+DBAPP_NATIVE_CREDENTIAL_TEST=1 bun run verify:package /Users/spicey/Projects/dbapp/release-signed/0.1.8/mac-arm64/Rowberry.app arm64
+```
+
+**30 passed, zero skipped, in 1.7 minutes.** This includes available native Keychain checks, both new PostgreSQL 14/18 recovery-toggle cases, existing recovery and guarded-save regressions, connection workflows and security checks. Executable architecture, renderer assets, IPC and sandboxed renderer smoke also passed.
+
+Both app and DMG passed Developer ID signature verification, Apple notarization, stapled-ticket validation and Gatekeeper assessment. The separately signed DMG submission `7f2bc828-57e0-4fa0-b839-9ed38b62d1c2` was Accepted. Its checksum was generated after final stapling.
+
+A read-only mount verified the exact tested app archive, matching branded background and volume icon, Finder background reference and Applications link. The mounted app passed deep/strict signature and stapled-ticket validation. These embedded branding checks do not establish a fresh-account Finder installation.
+
+Version 0.1.8 is the latest completed local app/installer record. These local artifacts are not a durable accepted baseline or a published release. Fresh-account installation, minimum-supported-OS coverage, native unavailable-store checks and final-release acceptance remain open.
 
 The desktop regression begins after a successful workspace load. Initial-read failure/retry behavior uses controlled unit coverage, not a native disk failure. These tests do not establish persistence before acknowledgement, machine power-loss recovery, native VoiceOver behavior or final-release acceptance.

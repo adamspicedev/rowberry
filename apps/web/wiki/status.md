@@ -1,12 +1,12 @@
 # Project status
 
-Rowberry is an early **0.1.x** project, licensed under **GPL-3.0-only**. Public distribution is not yet qualified. The current supported way to evaluate it is to [run from source](getting-started.md). See the [0.1.7 candidate notes](https://github.com/adamspicedev/rowberry/blob/main/docs/release-notes-0.1.7.md) for the latest connection-deletion repair.
+Rowberry is an early **0.1.x** project, licensed under **GPL-3.0-only**. Public distribution is not yet qualified. The current supported way to evaluate it is to [run from source](getting-started.md). See the [0.1.8 candidate notes](https://github.com/adamspicedev/rowberry/blob/main/docs/release-notes-0.1.8.md) for the latest recovery repair.
 
-The [0.1.7 connection-deletion checks](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/2026-11-16-connection-delete-keyboard.md#candidate-qualification) cover focus return, cancellation, pending requests and failure recovery. Deletion stays modal until its request settles, preventing a late reply from closing another connection's unsaved editor. The recorded package run passed all 28 tests with no skips. App and installer signing, notarization, stapling, Gatekeeper and embedded branding checks are complete on the unchanged application; 0.1.7 is the latest verified local candidate.
+Turning recovery off and back on now captures open SQL, JSON and table/cell work without requiring another edit. It also clears pending copies after a failed startup read so retrying cannot revive those discarded drafts. [Source and signed-package recovery checks](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/2026-11-16-recovery-toggle.md#candidate-qualification) cover exact drafts, explicit discard and crash/restart without automatic database writes.
+
+All 30 signed 0.1.8 package tests passed with no skips. App and installer signing, notarization, stapling, Gatekeeper and embedded branding checks passed; 0.1.8 is the latest verified local candidate. Earlier connection-deletion and keyboard repairs remain in the [evidence register](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/v1-evidence-register.md).
 
 ## Current scope
-
-The [0.1.8 candidate](https://github.com/adamspicedev/rowberry/blob/main/docs/release-notes-0.1.8.md) fixes missing recovery copies after turning recovery off and back on. SQL, JSON and table/cell work are captured from open editors without another edit. [Source crash/restart checks passed on PostgreSQL 14 and 18](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/2026-11-16-recovery-toggle.md); signed package qualification is tracked separately.
 
 - PostgreSQL connection profiles and verified TLS.
 - Schema navigation, table browsing, and mixed table/query tabs.

@@ -50,7 +50,7 @@ The [evidence register](qa/v1-evidence-register.md) links signed 0.1.3 package c
 
 The [0.1.6 query-confirmation repair](qa/2026-11-16-query-confirmation-keyboard.md) adds safe modal focus, cancellation and failure feedback, including focus recovery when the query connection dies. Source query and JSON workflows passed on PostgreSQL 14 and 18. The exact signed candidate passed all 27 packaged tests with no skips; app/DMG signing, notarization, stapling, Gatekeeper and embedded branding checks passed. This development-candidate evidence does not close the installation, native VoiceOver or final-release gates.
 
-The [0.1.7 connection-deletion repair](qa/2026-11-16-connection-delete-keyboard.md#candidate-qualification) fixes lost cancellation focus and a delayed reply that could close another connection's unsaved editor. Source checks, independent review and light/dark inspection passed. Its recorded package run passed all 28 tests with no skips in 1.6 minutes. App/DMG signing, notarization, stapling, Gatekeeper and embedded branding checks are complete on the unchanged tested application; 0.1.7 is the latest verified local candidate. Installation, native VoiceOver and final-release gates remain open.
+The [0.1.7 connection-deletion repair](qa/2026-11-16-connection-delete-keyboard.md#candidate-qualification) fixes lost cancellation focus and a delayed reply that could close another connection's unsaved editor. Source checks, independent review and light/dark inspection passed. Its recorded package run passed all 28 tests with no skips in 1.6 minutes. App/DMG signing, notarization, stapling, Gatekeeper and embedded branding checks are complete on the unchanged tested application; the exact 0.1.7 artifact remains historical candidate evidence. Installation, native VoiceOver and final-release gates remain open.
 
 The [23 October installation report](qa/2026-10-23-macos-installation.md) records successful operator-reported core workflows in a fresh account, but also a JSON save discoverability problem. That report predates later interface changes: repeat the task on the new candidate rather than treating the old failure as a confirmed current bug or the redesign as a verified fix. Locked-Keychain testing was blocked on that host; it did not pass.
 
@@ -90,7 +90,7 @@ Fix observed navigation, naming, focus, menu, error and save-feedback failures. 
 
 ### M2 — Prove integrity, recovery and responsiveness
 
-The [0.1.8 recovery repair](qa/2026-11-16-recovery-toggle.md) captures open edits when recovery is turned back on, without requiring another edit. PostgreSQL 14/18 regressions verify exact content after acknowledged persistence and a process crash, while closed/discarded peers stay absent. Signed candidate qualification is tracked separately in that report.
+The [0.1.8 recovery repair](qa/2026-11-16-recovery-toggle.md) captures open edits when recovery is turned back on, without requiring another edit. PostgreSQL 14/18 regressions verify exact content after acknowledged persistence and a process crash, while closed/discarded peers stay absent. All 30 signed-package tests passed with no skips. App/DMG signing, notarization, stapling, Gatekeeper and embedded branding checks passed; 0.1.8 is the latest verified local candidate. Installation, native VoiceOver and final-release gates remain open.
 
 **Owner roles:** desktop engineering and QA. **Dependencies:** stable core flows from M1; can start alongside usability work.
 
