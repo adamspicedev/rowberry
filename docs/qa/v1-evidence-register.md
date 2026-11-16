@@ -6,19 +6,19 @@ The signing budget blocker was resolved on 16 November 2026. Developer ID signat
 
 ## Candidate status
 
-| Field                                        | macOS arm64                                                                                                    | macOS Intel x64           |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------- |
-| Final v1 source/version/package              | Not selected                                                                                                   | Deferred                  |
-| Signed artifact identifiers and hashes       | [Local 0.1.6 candidate](2026-11-16-query-confirmation-keyboard.md#signed-016-candidate); final v1 not selected | Not required for v1       |
-| Accepted upgrade baseline                    | None registered                                                                                                | None registered; deferred |
-| Contract A01–A12 qualification               | Not run on final candidate                                                                                     | Outside v1 scope          |
-| Maintainer acceptance / publication approval | Pending / pending                                                                                              | Not applicable to v1      |
+| Field                                        | macOS arm64                                                                                                      | macOS Intel x64           |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| Final v1 source/version/package              | Not selected                                                                                                     | Deferred                  |
+| Signed artifact identifiers and hashes       | [Local 0.1.7 candidate](2026-11-16-connection-delete-keyboard.md#candidate-qualification); final v1 not selected | Not required for v1       |
+| Accepted upgrade baseline                    | None registered                                                                                                  | None registered; deferred |
+| Contract A01–A12 qualification               | Not run on final candidate                                                                                       | Outside v1 scope          |
+| Maintainer acceptance / publication approval | Pending / pending                                                                                                | Not applicable to v1      |
 
 Scope decision, 23 October 2026: the maintainer approved Apple silicon-only v1 because purchasing Intel test hardware is outside the current budget. Intel build checks are paused; native qualification and supported downloads are deferred.
 
 Keep [the baseline register](../upgrade-baselines.md) authoritative for accepted artifacts. Neither local development packages nor green CI automatically become a baseline.
 
-Version 0.1.6 remains the latest candidate with completed app and installer verification. The [0.1.7 candidate](2026-11-16-connection-delete-keyboard.md) has a valid app signature and 28 passing packaged tests, but installer verification remains pending.
+The [0.1.7 candidate](2026-11-16-connection-delete-keyboard.md#candidate-qualification) is the latest with completed local app and installer verification. Its recorded 28-test package pass applies to the unchanged application in the verified installer; notarization did not trigger a new suite run. Historical 0.1.6 evidence remains below, and no accepted release baseline is registered.
 
 ## Current development checks
 
@@ -54,7 +54,7 @@ Version 0.1.6 remains the latest candidate with completed app and installer veri
 
 [Unfinished-result confirmation keyboard repair and signed 0.1.6 qualification](2026-11-16-query-confirmation-keyboard.md): reproduced missing safe focus on signed 0.1.5, then reproduced lost focus after an actual disposable query backend termination on the 0.1.6 development build. Source query and JSON workflows passed on PostgreSQL 14 and 18 after repair. Coverage includes both confirmation entry points, cancellation preserving SQL and results, controlled delayed/failed replies, explicit execution after ending a result, and focus on **Reopen session** after connection loss. The exact signed candidate passed all 27 packaged tests with no skips in 1.6 minutes. App/DMG signing, notarization, stapling and Gatekeeper passed; a read-only mount verified branding assets and the exact tested application archive. This does not establish live VoiceOver, fresh-account installation or final-release acceptance.
 
-[Connection-deletion keyboard and race repair](2026-11-16-connection-delete-keyboard.md): reproduced missing cancellation focus and a late deletion reply closing a different connection's unsaved editor on signed 0.1.6. The 0.1.7 repair keeps pending deletion modal, restores usable focus, and retains failure feedback in the confirmation. Source checks, independent review and light/dark inspection passed. The app signature is valid and all 28 packaged tests passed with no skips in 1.6 minutes. Installer verification remains pending; controlled failure tests do not qualify native Keychain denial, live VoiceOver or final-release acceptance.
+[Connection-deletion keyboard and race repair](2026-11-16-connection-delete-keyboard.md#candidate-qualification): reproduced missing cancellation focus and a late deletion reply closing a different connection's unsaved editor on signed 0.1.6. The 0.1.7 repair keeps pending deletion modal, restores usable focus, and retains failure feedback in the confirmation. Source checks, independent review and light/dark inspection passed. The recorded package run passed all 28 tests with no skips in 1.6 minutes. App/DMG signing, notarization, stapling and Gatekeeper passed; a read-only mount verified the branded background, icon, Finder reference, Applications link and unchanged tested application archive. These results do not qualify native denied credential deletion, live VoiceOver, fresh-account installation or final-release acceptance.
 
 ## Existing evidence and limits
 
