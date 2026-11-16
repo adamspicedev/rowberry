@@ -19,7 +19,11 @@ export function ConnectionDialog({
 }: {
   profile?: ConnectionProfile;
   secureStorage: boolean;
-  onSaved: (message: string, profile: ConnectionProfile) => Promise<void>;
+  onSaved: (
+    message: string,
+    profile: ConnectionProfile,
+    passwordStorage?: "secure" | "session",
+  ) => Promise<void>;
   onClose: () => void;
   onDirty: (dirty: boolean) => void;
   onBusy: (busy: boolean) => void;
@@ -113,6 +117,7 @@ export function ConnectionDialog({
         return;
       }
       let message = "Connection saved. Select Connect to open a session.";
+      let passwordStorage: "secure" | "session" | undefined;
       if (secret !== "") {
         const pending = window.dbapp.request({
           kind: "connections.submitSecret",
@@ -129,14 +134,16 @@ export function ConnectionDialog({
           );
           return;
         }
-        if (reply.kind === "connections.submitSecret")
+        if (reply.kind === "connections.submitSecret") {
+          passwordStorage = reply.data.storage;
           message =
-            reply.data.storage === "secure"
+            passwordStorage === "secure"
               ? "Connection saved. Password stored in the OS credential store."
               : "Connection saved. Password is session-only and will be forgotten when the app quits.";
+        }
       }
       onDirty(false);
-      await onSaved(message, validated.data);
+      await onSaved(message, validated.data, passwordStorage);
       savedProfile = validated.data;
     } catch {
       setError(

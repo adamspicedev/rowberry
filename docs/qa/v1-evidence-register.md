@@ -24,6 +24,8 @@ Keep [the baseline register](../upgrade-baselines.md) authoritative for accepted
 
 [16 November native Keychain denial](2026-11-16-native-keychain-denial.md): the operator denied a real credential-read prompt, then allowed retry. The signed candidate stayed disconnected after denial, retained metadata/query/drafts, reconnected with the retained credential and passed both subsequent launches. Cleanup succeeded. Denied writes/deletion and locked/unavailable storage remain open; this is partial A03 evidence.
 
+[16 November session-only warning](2026-11-16-session-password-warning.md): fixed the lost password-storage notice after Connect. Controlled unavailable-store and rejected-write cases verify a persistent warning, usable verified-TLS session and forgetting the password after restart. These regressions do not substitute for actual native denied writes.
+
 [24 October workflow baseline](2026-10-24-v1-workflows.md): 20 automated desktop tests passed on source build `db7f1d3c871da448ab3a599a267330728d30c506`, with one packaged-vault test skipped. This is supplementary V1-03 evidence, not participant observation or final-candidate qualification.
 
 [Integrity and unsigned package follow-through](2026-10-24-integrity-and-package.md): 14 PG18 integration tests, 5 source desktop checks, 5 packaged connection/native-vault checks and 2 packaged guarded-save checks passed. Two additional packaged recovery checks passed after adding Unicode/large-number text and durable explicit discard assertions. Those checks initially left denied-store, live-editor interruption, coverage mapping and performance budgets open; subsequent records below narrow those gaps. The build configuration now produces arm64 only.
