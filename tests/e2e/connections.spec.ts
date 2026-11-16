@@ -339,3 +339,174 @@ test("finishing an earlier connection attempt cannot unlock a later save", async
     });
   }
 });
+
+test("connection deletion keeps pending work modal and restores keyboard focus", async () => {
+  const page = await launch();
+  const targetId = await page.evaluate(async () => {
+    let target = "";
+    for (const name of ["Delete target", "Other connection"]) {
+      const id = crypto.randomUUID();
+      const reply = await window.dbapp.request({
+        kind: "connections.save",
+        requestId: crypto.randomUUID() as never,
+        profile: {
+          id: id as never,
+          name,
+          host: "127.0.0.1",
+          port: 1,
+          database: "postgres",
+          user: "postgres",
+          tls: { kind: "verify-full" },
+          environmentColor: "#7c3aed",
+        },
+      });
+      if (!reply.ok) throw new Error("Could not seed disposable connection metadata");
+      if (name === "Delete target") target = id;
+    }
+    return target;
+  });
+  await page.reload();
+  const target = page.getByRole("button", { name: "Select Delete target", exact: true });
+  const other = page.getByRole("button", { name: "Select Other connection", exact: true });
+  await target.click();
+  const more = page.getByRole("button", { name: "More connection actions", exact: true });
+  const confirmation = page.getByRole("dialog", { name: "Delete Delete target?", exact: true });
+  const cancel = confirmation.getByRole("button", { name: "Cancel", exact: true });
+  const confirmDelete = confirmation.getByRole("button", {
+    name: "Delete connection",
+    exact: true,
+  });
+  async function openDelete() {
+    await more.focus();
+    await page.keyboard.press("Enter");
+    await page.getByRole("button", { name: "Delete Delete target", exact: true }).focus();
+    await page.keyboard.press("Enter");
+    await expect(confirmation).toBeVisible();
+    expect(await confirmation.evaluate((element) => element.matches(":modal"))).toBe(true);
+    await expect(cancel).toBeFocused();
+  }
+  // The popover item that opened the modal is now hidden. Cancellation must
+  // restore its visible More actions trigger, while keeping the profile editor.
+  for (const exitKey of ["Escape", "Enter"]) {
+    await openDelete();
+    await page.keyboard.press("Shift+Tab");
+    await expect(confirmDelete).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(cancel).toBeFocused();
+    await page.keyboard.press(exitKey);
+    await expect(confirmation).toBeHidden();
+    await expect(more).toBeFocused();
+    await expect(page.getByLabel("Name", { exact: true })).toHaveValue("Delete target");
+    await expect(target).toBeVisible();
+  }
+
+  // Hold only this disposable profile's deletion at IPC, then return the same
+  // sanitized failure shape used for credential/store errors. No native password
+  // is created or deleted, and this is not a Keychain-denial qualification.
+  const gateKey = `connectionDeleteGate_${crypto.randomUUID()}`;
+  const failureMessage = "The operation could not be completed.";
+  await application.evaluate(
+    ({ ipcMain }, { key, id, message }) => {
+      const handlers = Reflect.get(ipcMain, "_invokeHandlers") as Map<
+        string,
+        (...args: unknown[]) => Promise<unknown>
+      >;
+      const original = handlers.get("dbapp:request");
+      if (!original) throw new Error("Missing application IPC handler");
+      const control = { calls: 0, release: () => {}, original };
+      const gate = new Promise<void>((resolve) => {
+        control.release = resolve;
+      });
+      Reflect.set(globalThis, key, control);
+      ipcMain.removeHandler("dbapp:request");
+      ipcMain.handle("dbapp:request", async (event, command) => {
+        if (command.kind === "connections.delete" && command.id === id) {
+          control.calls++;
+          await gate;
+          return {
+            ok: false,
+            requestId: command.requestId,
+            error: { code: "INTERNAL_ERROR", message, retryable: false, outcome: "failed" },
+          };
+        }
+        return original(event, command);
+      });
+    },
+    { key: gateKey, id: targetId, message: failureMessage },
+  );
+  try {
+    await openDelete();
+    await page.keyboard.press("Tab");
+    await expect(confirmDelete).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect
+      .poll(() => application.evaluate((_, key) => Reflect.get(globalThis, key).calls, gateKey))
+      .toBe(1);
+    await expect(confirmation).toHaveAttribute("aria-busy", "true");
+    await expect(page.locator(".connection-manager-host")).toHaveAttribute(
+      "data-connection-saving",
+      "true",
+    );
+    await expect(cancel).toBeDisabled();
+    await expect(confirmDelete).toBeDisabled();
+    await page.keyboard.press("Escape");
+    await expect(confirmation).toBeVisible();
+    expect(await confirmation.evaluate((element) => element.matches(":modal"))).toBe(true);
+    await page.keyboard.press("Enter");
+    expect(
+      await application.evaluate((_, key) => Reflect.get(globalThis, key).calls, gateKey),
+    ).toBe(1);
+
+    await application.evaluate((_, key) => Reflect.get(globalThis, key).release(), gateKey);
+    await expect(confirmation.getByRole("alert")).toContainText(failureMessage);
+    await expect(confirmation).toHaveAttribute("aria-busy", "false");
+    await expect(page.locator(".connection-manager-host")).toHaveAttribute(
+      "data-connection-saving",
+      "false",
+    );
+    await expect(cancel).toBeFocused();
+    await expect(confirmDelete).toBeEnabled();
+    // This gate never called the deletion service; verify metadata really remains
+    // instead of inferring it solely from the still-rendered sidebar.
+    const names = await page.evaluate(async () => {
+      const reply = await window.dbapp.request({
+        kind: "connections.list",
+        requestId: crypto.randomUUID() as never,
+        offset: 0,
+      });
+      if (!reply.ok || reply.kind !== "connections.list")
+        throw new Error("Could not list profiles");
+      return reply.data.profiles.map((profile) => profile.name).sort();
+    });
+    expect(names).toEqual(["Delete target", "Other connection"]);
+    await page.keyboard.press("Escape");
+    await expect(confirmation).toBeHidden();
+    await expect(more).toBeFocused();
+    await expect(page.getByLabel("Name", { exact: true })).toHaveValue("Delete target");
+  } finally {
+    await application.evaluate(({ ipcMain }, key) => {
+      const control = Reflect.get(globalThis, key);
+      control.release();
+      ipcMain.removeHandler("dbapp:request");
+      ipcMain.handle("dbapp:request", control.original);
+      Reflect.deleteProperty(globalThis, key);
+    }, gateKey);
+  }
+
+  // Retry through the real service. These profiles have no saved credentials.
+  await openDelete();
+  await expect(confirmation.getByRole("alert")).toHaveCount(0);
+  await page.keyboard.press("Tab");
+  await expect(confirmDelete).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(confirmation).toBeHidden();
+  await expect(target).toHaveCount(0);
+  await expect(other).toBeVisible();
+  await expect(page.getByRole("button", { name: "New connection", exact: true })).toBeFocused();
+  await other.click();
+  await page.getByLabel("Name", { exact: true }).fill("Other unsaved draft");
+  await expect(page.getByLabel("Name", { exact: true })).toHaveValue("Other unsaved draft");
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await expect(page.getByLabel("Name", { exact: true })).toHaveValue("Other connection");
+});
