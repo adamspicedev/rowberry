@@ -10,7 +10,7 @@ Electron, React, TypeScript, Monaco Editor, and PostgreSQL drivers; Bun 1.4.2 fo
 
 ## Current phase
 
-Early 0.1.0 development. Source builds and platform packaging workflows exist. Public distribution remains subject to platform qualification, signing, and installation checks. macOS arm64/x64, Windows x64, and Linux x64 are qualification targets.
+Early 0.1.x development with locally signed and notarized Apple-silicon candidates. macOS arm64 is the only v1 release target; Intel Macs, Windows and Linux are deferred. Public distribution remains subject to the remaining installation, usability and release checks. See the [v1 to-do list](docs/v1-todo.md) for current evidence and open work.
 
 ## Key constraints
 

@@ -6,6 +6,8 @@ The [0.1.7 connection-deletion checks](https://github.com/adamspicedev/rowberry/
 
 ## Current scope
 
+The [0.1.8 candidate](https://github.com/adamspicedev/rowberry/blob/main/docs/release-notes-0.1.8.md) fixes missing recovery copies after turning recovery off and back on. SQL, JSON and table/cell work are captured from open editors without another edit. [Source crash/restart checks passed on PostgreSQL 14 and 18](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/2026-11-16-recovery-toggle.md); signed package qualification is tracked separately.
+
 - PostgreSQL connection profiles and verified TLS.
 - Schema navigation, table browsing, and mixed table/query tabs.
 - SQL completion, saved queries, cancellation, and explicit transactions.

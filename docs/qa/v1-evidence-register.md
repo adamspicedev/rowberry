@@ -22,6 +22,8 @@ The [0.1.7 candidate](2026-11-16-connection-delete-keyboard.md#candidate-qualifi
 
 ## Current development checks
 
+[16 November recovery re-enable](2026-11-16-recovery-toggle.md): signed 0.1.7 reproduced empty stored SQL/drafts after toggling recovery off/on. The 0.1.8 repair passed real-editor crash/restart checks on PostgreSQL 14 and 18, including inactive editors, exact invalid JSON, staged/unfinished cell work and non-resurrection of discarded peers. Signed 0.1.8 qualification is recorded separately in the report.
+
 [16 November signed 0.1.3 qualification](2026-11-16-signed-013-qualification.md): signed app and DMG verification, production package workflows and native-vault upgrade/restart evidence are now recorded together. Local storage is not a durable release baseline; unavailable-store and unfamiliar-user acceptance remain open.
 
 [16 November native Keychain denial](2026-11-16-native-keychain-denial.md): the operator denied a real credential-read prompt, then allowed retry. The signed candidate stayed disconnected after denial, retained metadata/query/drafts, reconnected with the retained credential and passed both subsequent launches. Cleanup succeeded; this is partial A03 evidence.
