@@ -38,6 +38,22 @@ This mode needs real macOS prompts and an operator. Use a baseline and candidate
 
 Record the operator's actual Deny/Allow observations alongside the automated results. The generic connection-failure assertion alone cannot distinguish denial from another connection error. If no prompt appears, do not record a denial pass; automatic successful access fails the expected-error assertion. This is a denied **read** and recovery test, not qualification of a locked/unavailable store or denial while saving/deleting credentials. It is intentionally not an unattended CI job. `--deny-first` rejects invocation without `--native-vault`, macOS or an interactive terminal before launching packages.
 
+## Interactive macOS denied password save
+
+Use the same fixture and differently trusted package pair with `--deny-write` instead of `--deny-first`:
+
+```sh
+DBAPP_POSTGRES_FIXTURES=/tmp/rowberry-upgrade-fixtures.json bun run verify:upgrade /path/to/baseline/Rowberry.app /path/to/candidate/Rowberry.app --native-vault --deny-write
+```
+
+The baseline saves a valid disposable password and authenticates. The candidate must initially advertise available native storage. The runner opens that profile in the connection editor, enters the fixture password and prints the unique item identifier. At the terminal pause, press Enter and choose **Deny** if macOS asks to allow the password save for that item. No existing user credential or Keychain access rule is changed. If the OS permits the write without prompting, the expected session-only outcome fails; that is not evidence of denial.
+
+The runner allows up to five minutes for the native prompt, then requires a cleared password field and both the inline session-only message and persistent alert introduced in 0.1.4. It verifies saved queries/drafts and absence of the plaintext fixture password in the isolated profile database files, then authenticates using the transient password. After quitting, two candidate launches must retain the data but fail to reconnect without password resubmission. An explicit connection test verifies fixture health without repopulating the profile's transient password. Cleanup checks that the baseline's original valid credential still exists, then removes it even if that assertion fails. This distinguishes forgotten transient state from a missing or invalid old credential.
+
+Record the actual operator action and outcome. This scenario exercises denial during password storage, not a locked store or denied deletion. The two denial flags are mutually exclusive and require macOS, `--native-vault` and an interactive terminal. Normal cleanup and failed-profile retention rules apply.
+
+The [16 November signed 0.1.4 run](qa/2026-11-16-native-keychain-save-denial.md) passed with a real operator-denied prompt, authenticated session-only use and both restart checks.
+
 ## Recorded local run — 21 October 2026
 
 Passed on macOS arm64 with native Keychain checks enabled:
