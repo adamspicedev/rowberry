@@ -13,6 +13,8 @@ Local Apple-silicon candidates now have Developer ID signatures and Apple notari
 
 Version 0.1.5 fixes the JSON discard confirmation's keyboard navigation: focus starts on **Keep editing JSON**, Tab stays in the prompt, and cancelling preserves the draft and returns focus. Its source change passed CI, and the exact signed candidate passed all 27 packaged tests with no skips. App/installer notarization and Gatekeeper checks passed. Results and remaining limits are recorded in the [evidence register](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/v1-evidence-register.md).
 
+The [0.1.6 query-confirmation repair](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/2026-11-16-query-confirmation-keyboard.md) keeps keyboard focus in the unfinished-result warning, preserves the draft and results when cancelled, and offers **Reopen session** after connection loss. Ending a result does not run the pending SQL. Source query and JSON workflows passed on PostgreSQL 14 and 18, and the exact signed candidate passed all 27 packaged tests with no skips. App and installer signing, notarization, Gatekeeper and embedded branding checks also passed.
+
 The next work is qualification of the installation and real-user experience:
 
 - Make connecting, finding data and saving JSON understandable without coaching.

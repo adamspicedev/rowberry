@@ -6,13 +6,13 @@ The signing budget blocker was resolved on 16 November 2026. Developer ID signat
 
 ## Candidate status
 
-| Field                                        | macOS arm64                                                                                              | macOS Intel x64           |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------- |
-| Final v1 source/version/package              | Not selected                                                                                             | Deferred                  |
-| Signed artifact identifiers and hashes       | [Local 0.1.5 candidate](2026-11-16-json-discard-keyboard.md#signed-015-candidate); final v1 not selected | Not required for v1       |
-| Accepted upgrade baseline                    | None registered                                                                                          | None registered; deferred |
-| Contract A01–A12 qualification               | Not run on final candidate                                                                               | Outside v1 scope          |
-| Maintainer acceptance / publication approval | Pending / pending                                                                                        | Not applicable to v1      |
+| Field                                        | macOS arm64                                                                                                    | macOS Intel x64           |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| Final v1 source/version/package              | Not selected                                                                                                   | Deferred                  |
+| Signed artifact identifiers and hashes       | [Local 0.1.6 candidate](2026-11-16-query-confirmation-keyboard.md#signed-016-candidate); final v1 not selected | Not required for v1       |
+| Accepted upgrade baseline                    | None registered                                                                                                | None registered; deferred |
+| Contract A01–A12 qualification               | Not run on final candidate                                                                                     | Outside v1 scope          |
+| Maintainer acceptance / publication approval | Pending / pending                                                                                              | Not applicable to v1      |
 
 Scope decision, 23 October 2026: the maintainer approved Apple silicon-only v1 because purchasing Intel test hardware is outside the current budget. Intel build checks are paused; native qualification and supported downloads are deferred.
 
@@ -49,6 +49,8 @@ Keep [the baseline register](../upgrade-baselines.md) authoritative for accepted
 [Additional input-path controls](2026-11-16-signed-voiceover.md#input-path-controls-with-voiceover-off): native and browser Home passed all six cases with VoiceOver off, including application screen-reader mode. Native input reached Electron's input hook while browser input bypassed it. The harness now retains bounded event/focus traces and checks final UI state after speech; these controls and harness regressions do not close the live VoiceOver failure.
 
 [JSON discard keyboard repair and signed 0.1.5 qualification](2026-11-16-json-discard-keyboard.md): reproduced missing initial focus on signed 0.1.4 and verified both discard entry points, keyboard containment, safe cancellation, focus restoration and exact invalid-draft preservation. All 27 signed-package tests passed with no skips; app/DMG notarization, Gatekeeper and embedded branding assets were verified. This is separate from native screen-reader, fresh-account installation and final-release qualification.
+
+[Unfinished-result confirmation keyboard repair and signed 0.1.6 qualification](2026-11-16-query-confirmation-keyboard.md): reproduced missing safe focus on signed 0.1.5, then reproduced lost focus after an actual disposable query backend termination on the 0.1.6 development build. Source query and JSON workflows passed on PostgreSQL 14 and 18 after repair. Coverage includes both confirmation entry points, cancellation preserving SQL and results, controlled delayed/failed replies, explicit execution after ending a result, and focus on **Reopen session** after connection loss. The exact signed candidate passed all 27 packaged tests with no skips in 1.6 minutes. App/DMG signing, notarization, stapling and Gatekeeper passed; a read-only mount verified branding assets and the exact tested application archive. This does not establish live VoiceOver, fresh-account installation or final-release acceptance.
 
 ## Existing evidence and limits
 

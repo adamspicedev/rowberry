@@ -1,6 +1,8 @@
 # Project status
 
-Rowberry is an early **0.1.x** project, licensed under **GPL-3.0-only**. Public distribution is not yet qualified. The current supported way to evaluate it is to [run from source](getting-started.md). See the [0.1.5 candidate notes](https://github.com/adamspicedev/rowberry/blob/main/docs/release-notes-0.1.5.md) for the latest keyboard-navigation repair.
+Rowberry is an early **0.1.x** project, licensed under **GPL-3.0-only**. Public distribution is not yet qualified. The current supported way to evaluate it is to [run from source](getting-started.md). See the [0.1.6 candidate notes](https://github.com/adamspicedev/rowberry/blob/main/docs/release-notes-0.1.6.md) for the latest query-confirmation repair.
+
+The [0.1.6 keyboard checks](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/2026-11-16-query-confirmation-keyboard.md) cover the unfinished-result warning, cancellation, delayed or failed requests, and focus after connection loss. Source query and JSON workflows passed on PostgreSQL 14 and 18. The exact signed candidate passed all 27 packaged tests with no skips; app and installer signing, notarization, Gatekeeper and embedded branding checks also passed.
 
 ## Current scope
 

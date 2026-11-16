@@ -15,9 +15,9 @@ Verification accepts an unpacked application directory or a macOS `.app`, checks
 
 GitHub Actions scopes website and desktop changes separately. The desktop scope includes macOS source/Electron checks, arm64 package asset and negative checks, PG14/18 integration/workflow checks on Ubuntu with Xvfb, and PG15–17 connection/TLS compatibility checks. Website builds and tests have their own scoped job; formatting and the aggregate CI gate remain shared. These configured jobs are distinct from a recorded run, and Ubuntu test execution does not qualify Linux desktop distribution.
 
-The local [signed 0.1.5 candidate](qa/2026-11-16-json-discard-keyboard.md#signed-015-candidate) passed app/DMG signing, notarization, Gatekeeper, packaged branding verification and all 27 production package checks. Downloaded/fresh-account installation, minimum supported macOS, remaining native credential/accessibility scenarios and final-release acceptance remain open; there is no qualified public release.
+The local [signed 0.1.6 candidate](qa/2026-11-16-query-confirmation-keyboard.md#signed-016-candidate) passed app/DMG signing, notarization, stapling, Gatekeeper, packaged branding verification and all 27 production package checks with no skips. Downloaded/fresh-account installation, minimum supported macOS, remaining native credential/accessibility scenarios and final-release acceptance remain open; there is no qualified public release.
 
-See [platform requirements](supported-platforms.md), [release checklist](release-checklist.md), [security](security.md), and [candidate release notes](release-notes-0.1.5.md). Rowberry is licensed under [GPL-3.0-only](../LICENSE); Baloo 2 retains its OFL license.
+See [platform requirements](supported-platforms.md), [release checklist](release-checklist.md), [security](security.md), and [candidate release notes](release-notes-0.1.6.md). Rowberry is licensed under [GPL-3.0-only](../LICENSE); Baloo 2 retains its OFL license.
 
 ## Security boundary
 
