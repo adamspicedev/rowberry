@@ -9,7 +9,9 @@ Rowberry is still in early development. No qualified public release is available
 
 ## Now: qualify the signed preview
 
-Local Apple-silicon candidates now have Developer ID signatures and Apple notarization. On 16 November 2026, signed version 0.1.3 passed all 25 production package workflow tests and a saved-credential upgrade/restart check. These are development-candidate results, not a public release.
+Local Apple-silicon candidates now have Developer ID signatures and Apple notarization. Recorded development checks include signed 0.1.3 package and saved-credential upgrade/restart tests, real denied Keychain reads and saves, and bounded performance checks on signed 0.1.4. These results do not establish a public release.
+
+Version 0.1.5 fixes the JSON discard confirmation's keyboard navigation: focus starts on **Keep editing JSON**, Tab stays in the prompt, and cancelling preserves the draft and returns focus. Its source change passed CI, and the exact signed candidate passed all 27 packaged tests with no skips. App/installer notarization and Gatekeeper checks passed. Results and remaining limits are recorded in the [evidence register](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/v1-evidence-register.md).
 
 The next work is qualification of the installation and real-user experience:
 
@@ -19,7 +21,9 @@ The next work is qualification of the installation and real-user experience:
 - Audit cancellation, connection switching and large-data behaviour.
 - Decide whether result export is essential for the first release based on actual user tasks.
 
-Automated checks now cover the signed candidate. Human acceptance, genuinely denied Keychain access, minimum supported macOS testing and final-release qualification remain open.
+Unfamiliar preview participants are not yet available, so observed task completion and the result-export decision remain pending while focused reliability work continues. Locked or unavailable Keychain storage, denied credential deletion, minimum supported macOS testing and final-release qualification also remain open.
+
+VoiceOver testing found a remaining issue: Home can move focus from the JSON tree to its resize control. Other recorded speech checks passed, but a complete native screen-reader run is still required after that issue is resolved.
 
 ## Next: retain and distribute an accepted preview
 

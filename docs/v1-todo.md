@@ -1,6 +1,6 @@
 # V1 to-do list
 
-Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026. IDs are repository tracking labels, not GitHub issues. A checked item means its stated deliverable is complete; it does not imply release approval. Owner names below are responsibility roles, not assignments to external people.
+Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026 and updated 16 November 2026. IDs are repository tracking labels, not GitHub issues. A checked item means its stated deliverable is complete; it does not imply release approval. Owner names below are responsibility roles, not assignments to external people.
 
 - [x] **V1-01 — Release contract and evidence register** · Maintainer + QA
   - [x] Define scope, observable acceptance tasks and release blockers in the [release contract](v1-release-contract.md).
@@ -12,9 +12,10 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026. I
   - [ ] Refresh disposable-account installer qualification and verify the minimum supported macOS version. The current host alone does not establish supported OS coverage.
   - [ ] Configure and exercise the protected GitHub signing environment if remote signing is used; local Keychain setup does not provision CI secrets.
   - Intel qualification remains deferred by the 23 October 2026 scope decision.
-- [ ] **V1-03 — Observe current JSON save and workspace usability** · Product + QA · In progress
+- [ ] **V1-03 — Observe current JSON save and workspace usability** · Product + QA · Awaiting unfamiliar participants
   - [x] Run the [24 October automated workflow baseline](qa/2026-10-24-v1-workflows.md): 20 passed, 1 packaged-vault test skipped.
   - [x] Prepare a [moderated task script and recording template](qa/v1-usability-session.md).
+  - No unfamiliar tester is currently available. Continue independent reliability work; automated workflows do not satisfy participant acceptance.
   - [ ] Select a known package, disposable fixture and three unfamiliar preview participants.
   - [ ] Observe connect, browse, query, edit, save, verify and recovery tasks without coaching; record intervention and failure points.
   - [ ] Identify focused fixes; re-run failed tasks after changes, including keyboard, light/dark and narrow-window checks.
@@ -49,10 +50,11 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026. I
 - [ ] **V1-08 — Preview feedback and targeted polish** · Product + Engineering · Depends on V1-07
   - [x] Build the [native VoiceOver harness](qa/native-voiceover-harness.md) and fix automatic JSON expansion/collapse announcements on the recorded unsigned candidate.
   - [x] Extend the harness with 100,000-item positions, offscreen navigation and native Home. [Signed 0.1.4 evidence](qa/2026-11-16-signed-voiceover.md) records nine passing speech steps and a failing Home check; this is not a complete native pass.
+  - [x] Retain [VoiceOver-off input-path controls](qa/2026-11-16-signed-voiceover.md#input-path-controls-with-voiceover-off) and add bounded input/focus traces plus post-speech UI verification. These controls do not qualify live VoiceOver behavior.
   - [ ] Resolve native Home moving focus to Resize JSON panel with VoiceOver active; confirm physical-key input and repeat the full native run, including preview cancellation. The physical Fn–Left attempt was inconclusive.
   - [x] Fix [notification expiry during overlapping pointer and keyboard interaction](qa/2026-10-27-toast-interaction.md); packaged regression verifies pause, keyboard Undo and resumed dismissal.
   - [x] Fix [inactive-tab close focus and context-menu Tab navigation](qa/2026-10-27-workspace-keyboard-focus.md); verify tab cycling, close cancellation and structure-dialog focus return in the package.
-  - [x] Fix [JSON discard confirmation keyboard focus](qa/2026-11-16-json-discard-keyboard.md): safe initial focus, contained Tab navigation, Escape cancellation, focus return and draft preservation from both entry points.
+  - [x] Fix [JSON discard confirmation keyboard focus](qa/2026-11-16-json-discard-keyboard.md) in 0.1.5: safe initial focus, contained Tab navigation, Escape cancellation, focus return and draft preservation from both entry points. PR #36 merged after CI passed; all 27 signed-package tests and separate app/DMG verification passed.
   - [ ] Observe actual task completion, collect reproducible findings and fix release blockers.
   - [x] Fix Keychain approval timing and announce credential access; [0.1.3 connection regressions](qa/2026-11-16-keychain-wait.md) cover delayed resolution, cancellation and switching.
   - [ ] Re-test affected workflows and record evidence; silence or elapsed time alone is not acceptance.
@@ -62,4 +64,4 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026. I
   - [ ] Finish versioned downloads, checksums, source/notices, limitations, manual-update instructions and support/security reporting routes.
   - [ ] Obtain explicit maintainer publication approval, verify published downloads/docs, and register the accepted baselines.
 
-Update this file and the evidence register when work completes. A failed acceptance task reopens the relevant item. Changes to platform or feature scope must be recorded in the release contract before qualification.
+Update this file, the evidence register and affected user guidance when work completes. Keep the internal and public roadmaps aligned when status or priorities change. A failed acceptance task reopens the relevant item. Changes to platform or feature scope must be recorded in the release contract before qualification.

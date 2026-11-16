@@ -4,7 +4,7 @@ Rowberry is currently available to try from source. There is no signed public do
 
 ## What you need
 
-- A graphical desktop. macOS 13 or later is the current priority, on Apple silicon or Intel.
+- An Apple silicon Mac with a graphical desktop. macOS 13 or later is the current target; minimum-version qualification is still pending. Intel Macs, Windows and Linux are deferred.
 - [Git](https://git-scm.com/), [Bun](https://bun.sh/) **1.4.2**, and [Node.js](https://nodejs.org/) **22.12 or later** for the desktop app.
 - Access to a PostgreSQL database. Begin with disposable data while evaluating Rowberry.
 
