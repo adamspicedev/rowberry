@@ -1,8 +1,8 @@
 # Project status
 
-Rowberry is an early **0.1.x** project, licensed under **GPL-3.0-only**. Public distribution is not yet qualified. The current supported way to evaluate it is to [run from source](getting-started.md). See the [0.1.6 candidate notes](https://github.com/adamspicedev/rowberry/blob/main/docs/release-notes-0.1.6.md) for the latest query-confirmation repair.
+Rowberry is an early **0.1.x** project, licensed under **GPL-3.0-only**. Public distribution is not yet qualified. The current supported way to evaluate it is to [run from source](getting-started.md). See the [0.1.7 candidate notes](https://github.com/adamspicedev/rowberry/blob/main/docs/release-notes-0.1.7.md) for the latest connection-deletion repair.
 
-The [0.1.6 keyboard checks](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/2026-11-16-query-confirmation-keyboard.md) cover the unfinished-result warning, cancellation, delayed or failed requests, and focus after connection loss. Source query and JSON workflows passed on PostgreSQL 14 and 18. The exact signed candidate passed all 27 packaged tests with no skips; app and installer signing, notarization, Gatekeeper and embedded branding checks also passed.
+The [0.1.7 connection-deletion checks](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/2026-11-16-connection-delete-keyboard.md) cover focus return, cancellation, pending requests and failure recovery. Deletion stays modal until its request settles, preventing a late reply from closing another connection's unsaved editor. The app signature is valid and all 28 packaged tests passed with no skips. Installer verification is pending; 0.1.6 remains the latest candidate with completed app and installer checks.
 
 ## Current scope
 

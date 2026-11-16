@@ -2,13 +2,14 @@
 
 Local signed candidates require a valid **Developer ID Application** identity, including its private key, in the login Keychain. Keep certificates' private keys and notarization credentials outside the repository.
 
-Store notarization credentials interactively with `xcrun notarytool store-credentials rowberry-notary --apple-id YOUR_APPLE_ID --team-id YOUR_TEAM_ID`. The omitted password is requested through a secure prompt and validated before being saved to Keychain.
+The commands below select the login Keychain explicitly. Store notarization credentials interactively with `xcrun notarytool store-credentials rowberry-notary --apple-id YOUR_APPLE_ID --team-id YOUR_TEAM_ID --keychain ~/Library/Keychains/login.keychain-db`. The omitted password is requested through a secure prompt and validated before being saved to Keychain. If your profile is stored in a different Keychain, use that same path for storage, builds and verification.
 
 Build a signed Apple-silicon candidate:
 
 ```sh
 bun run build
 APPLE_KEYCHAIN_PROFILE=rowberry-notary \
+APPLE_KEYCHAIN="$HOME/Library/Keychains/login.keychain-db" \
 CSC_IDENTITY_AUTO_DISCOVERY=true \
 bun x --no-install electron-builder --mac --arm64 --publish never \
   -c.forceCodeSigning=true -c.directories.output=release-signed
@@ -26,4 +27,4 @@ xcrun stapler validate release-signed/mac-arm64/Rowberry.app
 
 Run packaged regression tests against `release-signed/mac-arm64/Rowberry.app/Contents/MacOS/Rowberry` and follow the [release checklist](release-checklist.md). A successful signature or notarization does not establish application correctness or authorize public publication.
 
-The build command notarizes the app. To also notarize the final DMG, sign it with the Developer ID identity, submit it with `xcrun notarytool submit PATH_TO_DMG --keychain-profile rowberry-notary --wait`, and check that Apple reports **Accepted**. Then run `xcrun stapler staple PATH_TO_DMG`, `xcrun stapler validate PATH_TO_DMG`, and `spctl --assess --type open --context context:primary-signature --verbose=2 PATH_TO_DMG`. Generate the checksum after stapling, since stapling changes the installer bytes.
+The build command notarizes the app. To also notarize the final DMG, sign it with the Developer ID identity, submit it with `xcrun notarytool submit PATH_TO_DMG --keychain-profile rowberry-notary --keychain ~/Library/Keychains/login.keychain-db --wait`, and check that Apple reports **Accepted**. Then run `xcrun stapler staple PATH_TO_DMG`, `xcrun stapler validate PATH_TO_DMG`, and `spctl --assess --type open --context context:primary-signature --verbose=2 PATH_TO_DMG`. Generate the checksum after stapling, since stapling changes the installer bytes.

@@ -2,7 +2,7 @@
 
 Started 23 October 2026 for [V1-01](../v1-todo.md). This register separates evidence already recorded from qualification still required by the [release contract](../v1-release-contract.md). It is a planning inventory, not a new test run.
 
-The signing budget blocker was resolved on 16 November 2026. Developer ID signatures and Apple notarization now pass for local arm64 candidates; see [signed 0.1.3 qualification](2026-11-16-signed-013-qualification.md). Protected GitHub signing secrets, final-release acceptance and public distribution remain separate work. The [usability session protocol](v1-usability-session.md) is ready; unfamiliar participants are not yet available, so those observations and the dependent export decision remain pending.
+The signing budget blocker was resolved on 16 November 2026. Developer ID signatures and Apple notarization have passed for local arm64 candidates; see [signed 0.1.3 qualification](2026-11-16-signed-013-qualification.md). Protected GitHub signing secrets, final-release acceptance and public distribution remain separate work. The [usability session protocol](v1-usability-session.md) is ready; unfamiliar participants are not yet available, so those observations and the dependent export decision remain pending.
 
 ## Candidate status
 
@@ -17,6 +17,8 @@ The signing budget blocker was resolved on 16 November 2026. Developer ID signat
 Scope decision, 23 October 2026: the maintainer approved Apple silicon-only v1 because purchasing Intel test hardware is outside the current budget. Intel build checks are paused; native qualification and supported downloads are deferred.
 
 Keep [the baseline register](../upgrade-baselines.md) authoritative for accepted artifacts. Neither local development packages nor green CI automatically become a baseline.
+
+Version 0.1.6 remains the latest candidate with completed app and installer verification. The [0.1.7 candidate](2026-11-16-connection-delete-keyboard.md) has a valid app signature and 28 passing packaged tests, but installer verification remains pending.
 
 ## Current development checks
 
@@ -51,6 +53,8 @@ Keep [the baseline register](../upgrade-baselines.md) authoritative for accepted
 [JSON discard keyboard repair and signed 0.1.5 qualification](2026-11-16-json-discard-keyboard.md): reproduced missing initial focus on signed 0.1.4 and verified both discard entry points, keyboard containment, safe cancellation, focus restoration and exact invalid-draft preservation. All 27 signed-package tests passed with no skips; app/DMG notarization, Gatekeeper and embedded branding assets were verified. This is separate from native screen-reader, fresh-account installation and final-release qualification.
 
 [Unfinished-result confirmation keyboard repair and signed 0.1.6 qualification](2026-11-16-query-confirmation-keyboard.md): reproduced missing safe focus on signed 0.1.5, then reproduced lost focus after an actual disposable query backend termination on the 0.1.6 development build. Source query and JSON workflows passed on PostgreSQL 14 and 18 after repair. Coverage includes both confirmation entry points, cancellation preserving SQL and results, controlled delayed/failed replies, explicit execution after ending a result, and focus on **Reopen session** after connection loss. The exact signed candidate passed all 27 packaged tests with no skips in 1.6 minutes. App/DMG signing, notarization, stapling and Gatekeeper passed; a read-only mount verified branding assets and the exact tested application archive. This does not establish live VoiceOver, fresh-account installation or final-release acceptance.
+
+[Connection-deletion keyboard and race repair](2026-11-16-connection-delete-keyboard.md): reproduced missing cancellation focus and a late deletion reply closing a different connection's unsaved editor on signed 0.1.6. The 0.1.7 repair keeps pending deletion modal, restores usable focus, and retains failure feedback in the confirmation. Source checks, independent review and light/dark inspection passed. The app signature is valid and all 28 packaged tests passed with no skips in 1.6 minutes. Installer verification remains pending; controlled failure tests do not qualify native Keychain denial, live VoiceOver or final-release acceptance.
 
 ## Existing evidence and limits
 
