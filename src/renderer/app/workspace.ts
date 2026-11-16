@@ -143,6 +143,8 @@ export function updateWorkspace(update: Partial<Workspace>) {
   if (!state.recoveryEnabled) {
     // Keep live editors in their components, but persist no recoverable content.
     state = { ...state, sql: [], drafts: [] };
+    // A later initial-read retry must not revive copies cleared while disabled.
+    if (!initialized) pendingInitialUpdates = { ...pendingInitialUpdates, sql: [], drafts: [] };
   }
   notify();
   if (initialized) {
