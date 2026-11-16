@@ -15,6 +15,8 @@ Recent keyboard repairs cover JSON discard and unfinished-query confirmations: f
 
 The [0.1.7 connection-deletion repair](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/2026-11-16-connection-delete-keyboard.md#candidate-qualification) restores focus after cancellation and keeps a pending deletion modal, preventing its late reply from closing another connection's unsaved editor. Source checks, independent review and light/dark inspection passed. The recorded package run passed all 28 tests with no skips. App and installer signing, notarization, stapling, Gatekeeper and embedded branding checks are now complete on the unchanged application; 0.1.7 is the latest verified local candidate.
 
+The [0.1.8 recovery repair](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/2026-11-16-recovery-toggle.md) also makes turning recovery back on protect open edits without another change. Real-editor crash/restart checks pass on PostgreSQL 14 and 18; signed package verification is tracked separately in the report. See [draft recovery](recovery.md) for how the setting works.
+
 The next work is qualification of the installation and real-user experience:
 
 - Make connecting, finding data and saving JSON understandable without coaching.

@@ -90,6 +90,8 @@ Fix observed navigation, naming, focus, menu, error and save-feedback failures. 
 
 ### M2 — Prove integrity, recovery and responsiveness
 
+The [0.1.8 recovery repair](qa/2026-11-16-recovery-toggle.md) captures open edits when recovery is turned back on, without requiring another edit. PostgreSQL 14/18 regressions verify exact content after acknowledged persistence and a process crash, while closed/discarded peers stay absent. Signed candidate qualification is tracked separately in that report.
+
 **Owner roles:** desktop engineering and QA. **Dependencies:** stable core flows from M1; can start alongside usability work.
 
 Audit existing coverage first. Reuse passing behavioural tests and add tests only for uncovered risks. These are scenarios to verify, not claims of current defects:
