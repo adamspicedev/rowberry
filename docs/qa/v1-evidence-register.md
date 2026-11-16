@@ -2,23 +2,25 @@
 
 Started 23 October 2026 for [V1-01](../v1-todo.md). This register separates evidence already recorded from qualification still required by the [release contract](../v1-release-contract.md). It is a planning inventory, not a new test run.
 
-Signing is deferred by the maintainer as of 24 October 2026 due to Apple Developer Program cost. Unsigned local V1-03 QA continues; public distribution still requires signing. The [usability session protocol](v1-usability-session.md) is ready; participant observations remain pending.
+The signing budget blocker was resolved on 16 November 2026. Developer ID signatures and Apple notarization now pass for local arm64 candidates; see [signed 0.1.3 qualification](2026-11-16-signed-013-qualification.md). Protected GitHub signing secrets, final-release acceptance and public distribution remain separate work. The [usability session protocol](v1-usability-session.md) is ready; participant observations remain pending.
 
 ## Candidate status
 
-| Field                                        | macOS arm64                | macOS Intel x64           |
-| -------------------------------------------- | -------------------------- | ------------------------- |
-| Final v1 source/version/package              | Not selected               | Deferred                  |
-| Signed artifact identifiers and hashes       | Pending                    | Not required for v1       |
-| Accepted upgrade baseline                    | None registered            | None registered; deferred |
-| Contract A01–A12 qualification               | Not run on final candidate | Outside v1 scope          |
-| Maintainer acceptance / publication approval | Pending / pending          | Not applicable to v1      |
+| Field                                        | macOS arm64                                                                            | macOS Intel x64           |
+| -------------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------- |
+| Final v1 source/version/package              | Not selected                                                                           | Deferred                  |
+| Signed artifact identifiers and hashes       | [Local 0.1.3 candidate](2026-11-16-signed-013-qualification.md); final v1 not selected | Not required for v1       |
+| Accepted upgrade baseline                    | None registered                                                                        | None registered; deferred |
+| Contract A01–A12 qualification               | Not run on final candidate                                                             | Outside v1 scope          |
+| Maintainer acceptance / publication approval | Pending / pending                                                                      | Not applicable to v1      |
 
 Scope decision, 23 October 2026: the maintainer approved Apple silicon-only v1 because purchasing Intel test hardware is outside the current budget. Intel build checks are paused; native qualification and supported downloads are deferred.
 
 Keep [the baseline register](../upgrade-baselines.md) authoritative for accepted artifacts. Neither local development packages nor green CI automatically become a baseline.
 
 ## Current development checks
+
+[16 November signed 0.1.3 qualification](2026-11-16-signed-013-qualification.md): signed app and DMG verification, production package workflows and native-vault upgrade/restart evidence are now recorded together. Local storage is not a durable release baseline; unavailable-store and unfamiliar-user acceptance remain open.
 
 [24 October workflow baseline](2026-10-24-v1-workflows.md): 20 automated desktop tests passed on source build `db7f1d3c871da448ab3a599a267330728d30c506`, with one packaged-vault test skipped. This is supplementary V1-03 evidence, not participant observation or final-candidate qualification.
 
@@ -48,18 +50,18 @@ The earlier installation report identifies its exact installer/archive digests. 
 
 All rows remain open until linked results satisfy the contract. “Pending” means work has not yet supplied the required evidence; “blocked historically” describes the recorded test access limitation, not a newly verified machine state.
 
-| Gap / acceptance tasks                                                                       | Status                                                  | Responsible role                      | Next item and required record                                                                                                      |
-| -------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Signing/notarization and arm64 test readiness / A01                                          | Pending                                                 | Release engineering                   | V1-02: protected signing result and native test access; V1-07: actual downloaded signed package results                            |
-| Redesigned workspace and uncoached JSON saving / A04, A05, A10                               | Pending                                                 | Product + QA                          | V1-03: package identity, participant task observations, coaching/failures and retest results                                       |
-| Denied/unavailable native credential store / A03                                             | Blocked historically: Keychain lock control unavailable | Engineering + QA                      | V1-04: native scenario, exact outcome and persistence checks on macOS arm64; keep blocked if test access is unavailable            |
-| JSON recovery and durable discard / A08                                                      | Development restart/crash checks passed                 | Engineering + QA                      | V1-04: interrupted/invalid JSON, Unicode and precise numeric recovery plus discard on known packages                               |
-| TLS, conflicts, ambiguous writes, stale operations and transaction lifecycle / A02, A06, A07 | Development coverage mapped and exercised               | Engineering + QA                      | V1-05: requalify the final candidate; retain controlled-failure limits                                                             |
-| Cancellation and large-workload budgets / A09                                                | Recorded local budgets and repeated checks              | Engineering + QA                      | V1-05: peak process memory, hours-long sessions and lower-spec hardware; retain local budget evidence                              |
-| Result export scope                                                                          | Decision pending                                        | Product                               | V1-06: blocked user task or explicit deferral; if included, acceptance criteria and delivered results                              |
-| Exact signed preview and retained baseline / A01–A11 as applicable                           | Pending                                                 | Release engineering + QA              | V1-07: durable artifacts, per-target native checks, maintainer acceptance and any bootstrap exception                              |
-| Actual preview use and accessibility / A04, A05, A10                                         | Pending                                                 | Product + Engineering + QA            | V1-08: completed task records, resolved blocker queue and targeted retests                                                         |
-| Final package upgrades and distribution / A01–A12                                            | Pending                                                 | Release engineering + QA + Maintainer | V1-09: exact-candidate qualification, baseline installer replacement, download/docs verification and explicit publication decision |
+| Gap / acceptance tasks                                                                       | Status                                                               | Responsible role                      | Next item and required record                                                                                                      |
+| -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Signing/notarization and arm64 test readiness / A01                                          | Local signed candidate passed; broader OS/test-account coverage open | Release engineering                   | V1-02: minimum-OS and disposable-account qualification, remote signing if used; V1-07: downloaded retained candidate               |
+| Redesigned workspace and uncoached JSON saving / A04, A05, A10                               | Pending                                                              | Product + QA                          | V1-03: package identity, participant task observations, coaching/failures and retest results                                       |
+| Denied/unavailable native credential store / A03                                             | Blocked historically: Keychain lock control unavailable              | Engineering + QA                      | V1-04: native scenario, exact outcome and persistence checks on macOS arm64; keep blocked if test access is unavailable            |
+| JSON recovery and durable discard / A08                                                      | Development restart/crash checks passed                              | Engineering + QA                      | V1-04: interrupted/invalid JSON, Unicode and precise numeric recovery plus discard on known packages                               |
+| TLS, conflicts, ambiguous writes, stale operations and transaction lifecycle / A02, A06, A07 | Development coverage mapped and exercised                            | Engineering + QA                      | V1-05: requalify the final candidate; retain controlled-failure limits                                                             |
+| Cancellation and large-workload budgets / A09                                                | Recorded local budgets and repeated checks                           | Engineering + QA                      | V1-05: peak process memory, hours-long sessions and lower-spec hardware; retain local budget evidence                              |
+| Result export scope                                                                          | Decision pending                                                     | Product                               | V1-06: blocked user task or explicit deferral; if included, acceptance criteria and delivered results                              |
+| Exact signed preview and retained baseline / A01–A11 as applicable                           | Pending                                                              | Release engineering + QA              | V1-07: durable artifacts, per-target native checks, maintainer acceptance and any bootstrap exception                              |
+| Actual preview use and accessibility / A04, A05, A10                                         | Pending                                                              | Product + Engineering + QA            | V1-08: completed task records, resolved blocker queue and targeted retests                                                         |
+| Final package upgrades and distribution / A01–A12                                            | Pending                                                              | Release engineering + QA + Maintainer | V1-09: exact-candidate qualification, baseline installer replacement, download/docs verification and explicit publication decision |
 
 ## Recording a candidate
 
