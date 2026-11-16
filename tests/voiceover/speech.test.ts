@@ -107,3 +107,51 @@ it("does not turn matching speech into a pass when the action fails", async () =
     }),
   ).rejects.toThrow("Native input failed");
 });
+
+it("rechecks UI focus after matching speech and the action finish", async () => {
+  let phrase = "name Rowberry";
+  let treeFocused = true;
+  let observed: () => void = () => {};
+  const heard = new Promise<void>((resolve) => {
+    observed = resolve;
+  });
+  await expect(
+    captureSpeech({
+      read: async () => {
+        if (phrase === "JSON root") observed();
+        return phrase;
+      },
+      action: async () => {
+        phrase = "JSON root";
+        // The first DOM assertion can pass before native accessibility moves
+        // focus to a different control in the same application window.
+        expect(treeFocused).toBe(true);
+        await heard;
+        treeFocused = false;
+      },
+      focused: async () => true,
+      expected: ["JSON root"],
+      verify: async () => {
+        if (!treeFocused) throw new Error("JSON tree lost focus");
+      },
+    }),
+  ).rejects.toThrow("JSON tree lost focus");
+});
+
+it("rejects app focus loss during post-speech UI verification", async () => {
+  let phrase = "name Rowberry";
+  let appFocused = true;
+  await expect(
+    captureSpeech({
+      read: async () => phrase,
+      action: async () => {
+        phrase = "JSON root";
+      },
+      focused: async () => appFocused,
+      expected: ["JSON root"],
+      verify: async () => {
+        appFocused = false;
+      },
+    }),
+  ).rejects.toThrow("lost foreground");
+});

@@ -20,6 +20,8 @@ export async function captureSpeech(options: {
   read: () => Promise<string>;
   action: () => Promise<void>;
   focused: () => Promise<boolean>;
+  /** Recheck UI state after both the input action and matching speech settle. */
+  verify?: () => Promise<void>;
   expected: string[];
   forbidden?: string[];
   timeoutMs?: number;
@@ -53,6 +55,9 @@ export async function captureSpeech(options: {
   try {
     const [, result] = await Promise.all([action, listening]);
     if (!(await options.focused())) throw new Error("Test app lost foreground focus");
+    await options.verify?.();
+    if (options.verify && !(await options.focused()))
+      throw new Error("Test app lost foreground focus");
     return result;
   } finally {
     stopped = true;

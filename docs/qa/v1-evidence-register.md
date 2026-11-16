@@ -46,6 +46,8 @@ Keep [the baseline register](../upgrade-baselines.md) authoritative for accepted
 
 [16 November signed 0.1.4 native run](2026-11-16-signed-voiceover.md): nine fresh-speech steps passed, including first/last and offscreen navigation in a 100,000-item array. **Native Home failed**, moving focus to Resize JSON panel; the run stopped before preview/cancellation. Small-tree, browser-input and VoiceOver-off controls narrow the reproduction but do not establish its cause. The physical-keyboard attempt was inconclusive. Native Home, a complete candidate speech run and broader human usability remain open.
 
+[Additional input-path controls](2026-11-16-signed-voiceover.md#input-path-controls-with-voiceover-off): native and browser Home passed all six cases with VoiceOver off, including application screen-reader mode. Native input reached Electron's input hook while browser input bypassed it. The harness now retains bounded event/focus traces and checks final UI state after speech; these controls and harness regressions do not close the live VoiceOver failure.
+
 ## Existing evidence and limits
 
 | Evidence                                                                                                                                   | What it establishes                                                                                                                                                                                                                                  | What it does not establish                                                                                                                                                                  |
