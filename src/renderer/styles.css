@@ -630,6 +630,31 @@ textarea:focus-visible {
   overflow: auto;
   font-size: 12px;
 }
+.json-discard-dialog {
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  margin: auto;
+  padding: 24px;
+  overflow: auto;
+  color: var(--foreground);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 16px 60px #0004;
+}
+.json-discard-dialog::backdrop {
+  background: #0008;
+}
+.json-discard-dialog h2 {
+  margin: 0 0 12px;
+  font-size: 20px;
+}
+.json-discard-dialog p {
+  line-height: 1.5;
+}
+.json-discard-dialog .dialog-actions {
+  flex-wrap: wrap;
+}
 
 .save-preview {
   position: fixed;

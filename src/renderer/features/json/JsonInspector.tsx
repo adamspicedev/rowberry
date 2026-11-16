@@ -70,6 +70,15 @@ export function JsonInspector({
   );
   const [expanded, setExpanded] = useState(false);
   const [closing, setClosing] = useState(false);
+  const discardDialog = useRef<HTMLDialogElement>(null);
+  const keepEditing = useRef<HTMLButtonElement>(null);
+  const discardDescriptionId = useId();
+  useEffect(() => {
+    if (closing) {
+      discardDialog.current?.showModal();
+      keepEditing.current?.focus();
+    } else discardDialog.current?.close();
+  }, [closing]);
   useEffect(() => {
     const element = panel.current;
     if (!element) return;
@@ -507,21 +516,39 @@ export function JsonInspector({
           draft={state.text}
         />
       )}
-      {closing && (
-        <div role="alertdialog" aria-label="Discard JSON draft">
-          <p>Discard unsaved JSON changes? Copy the draft first if you need it.</p>
-          <button
+      <dialog
+        ref={discardDialog}
+        className="json-discard-dialog"
+        role="alertdialog"
+        aria-label="Discard JSON draft"
+        aria-modal="true"
+        aria-describedby={discardDescriptionId}
+        onCancel={(event) => {
+          event.preventDefault();
+          setClosing(false);
+        }}
+      >
+        <h2>Discard JSON draft?</h2>
+        <p id={discardDescriptionId}>
+          Discard unsaved JSON changes? Copy the draft first if you need it.
+        </p>
+        <div className="dialog-actions">
+          <Button ref={keepEditing} onClick={() => setClosing(false)}>
+            Keep editing JSON
+          </Button>
+          <Button
+            variant="outline"
             onClick={() => {
+              discardDialog.current?.close();
               recordDraft(`json:${documentId}`, "json", "", null);
               onDirtyChange?.(false);
               onClose();
             }}
           >
             Discard and close JSON
-          </button>
-          <button onClick={() => setClosing(false)}>Keep editing JSON</button>
+          </Button>
         </div>
-      )}
+      </dialog>
     </section>
   );
 }
