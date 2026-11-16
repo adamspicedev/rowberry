@@ -6,11 +6,12 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026. I
   - [x] Define scope, observable acceptance tasks and release blockers in the [release contract](v1-release-contract.md).
   - [x] Create the [evidence register](qa/v1-evidence-register.md), separate historical evidence from candidate qualification, and assign each open gap a next task and responsible role.
   - Completed: 23 October 2026. Planning deliverables complete; runtime qualification and publication approval remain pending.
-- [ ] **V1-02 — Signing credentials and arm64 test readiness** · Release engineering · Signing deferred
-  - [ ] Verify protected macOS signing/notarization configuration without exposing secrets; exercise it on a candidate.
-  - [ ] Prepare the existing Apple silicon Mac for native qualification; record test-account access, tester and OS coverage.
-  - [ ] Record signing or native test-access blockers. Intel qualification is deferred by the 23 October 2026 scope decision.
-  - Signing deferred by the maintainer on 24 October 2026 because Apple Developer Program membership is outside the current budget. Continue unsigned local QA; signing remains required before public distribution.
+- [ ] **V1-02 — Signing credentials and arm64 test readiness** · Release engineering · Local signing complete; broader native qualification pending
+  - [x] Exercise Developer ID signing and Apple notarization using protected local Keychain credentials; verify the app and final DMG. See [signed 0.1.3 qualification](qa/2026-11-16-signed-013-qualification.md).
+  - [x] Record the available arm64 host and successful signed package/upgrade checks. Apple Developer membership is active; the earlier budget blocker was resolved on 16 November 2026.
+  - [ ] Refresh disposable-account installer qualification and verify the minimum supported macOS version. The current host alone does not establish supported OS coverage.
+  - [ ] Configure and exercise the protected GitHub signing environment if remote signing is used; local Keychain setup does not provision CI secrets.
+  - Intel qualification remains deferred by the 23 October 2026 scope decision.
 - [ ] **V1-03 — Observe current JSON save and workspace usability** · Product + QA · In progress
   - [x] Run the [24 October automated workflow baseline](qa/2026-10-24-v1-workflows.md): 20 passed, 1 packaged-vault test skipped.
   - [x] Prepare a [moderated task script and recording template](qa/v1-usability-session.md).
@@ -23,6 +24,7 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026. I
   - [x] Add packaged regressions for verbatim invalid JSON/Unicode/large-number recovery and explicit recovered-copy discard across restart.
   - [x] Verify interrupted JSON recovery, invalid JSON, Unicode, exact large numbers and durable discard in the [unsigned packaged scenarios](qa/2026-10-24-integrity-mapping.md); final-candidate qualification remains required.
   - [x] Fix retry-after-read-failure draft persistence and preserve displaced SQL as detached copies; verify [abrupt process termination after acknowledged persistence](qa/2026-10-26-recovery-retry.md).
+  - [x] Qualify the signed 0.1.3 production package workflows, including available native Keychain and recovery checks; see [the candidate record](qa/2026-11-16-signed-013-qualification.md).
   - [x] Retain completed development outcomes tied to package hashes. Native denied-store access remains explicitly blocked; no simulated result closes that gate.
 - [ ] **V1-05 — Audit integrity and interruption coverage** · Engineering · In progress; before signed preview acceptance
   - [x] Run the [PG18 write-integrity and packaged guarded-save baseline](qa/2026-10-24-integrity-and-package.md); fix the stale Intel packaging target.
@@ -45,6 +47,7 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026. I
   - [x] Fix [notification expiry during overlapping pointer and keyboard interaction](qa/2026-10-27-toast-interaction.md); packaged regression verifies pause, keyboard Undo and resumed dismissal.
   - [x] Fix [inactive-tab close focus and context-menu Tab navigation](qa/2026-10-27-workspace-keyboard-focus.md); verify tab cycling, close cancellation and structure-dialog focus return in the package.
   - [ ] Observe actual task completion, collect reproducible findings and fix release blockers.
+  - [x] Fix Keychain approval timing and announce credential access; [0.1.3 connection regressions](qa/2026-11-16-keychain-wait.md) cover delayed resolution, cancellation and switching.
   - [ ] Re-test affected workflows and record evidence; silence or elapsed time alone is not acceptance.
 - [ ] **V1-09 — Final candidate, upgrades and distribution** · Release engineering + QA · Depends on V1-08
   - [ ] Freeze final source/packages and qualify macOS arm64 against the contract and authoritative release checklist.

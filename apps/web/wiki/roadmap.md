@@ -7,9 +7,11 @@ Rowberry will remain free, open source and local, without a required account. V1
 !!! note "A plan, not a release announcement"
 Rowberry is still in early development. No qualified public release is available yet, and these milestones have no promised dates. See [Get started](getting-started.md) to evaluate the app from source with a disposable database.
 
-## Now: prepare for a signed preview
+## Now: qualify the signed preview
 
-The release scope, acceptance tasks and evidence register are defined. The next work is signing and notarization, alongside testing the current interface with people unfamiliar with Rowberry.
+Local Apple-silicon candidates now have Developer ID signatures and Apple notarization. On 16 November 2026, signed version 0.1.3 passed all 25 production package workflow tests and a saved-credential upgrade/restart check. These are development-candidate results, not a public release.
+
+The next work is qualification of the installation and real-user experience:
 
 - Make connecting, finding data and saving JSON understandable without coaching.
 - Verify native Keychain behaviour, including unavailable credential storage.
@@ -17,11 +19,11 @@ The release scope, acceptance tasks and evidence register are defined. The next 
 - Audit cancellation, connection switching and large-data behaviour.
 - Decide whether result export is essential for the first release based on actual user tasks.
 
-Existing implementation and automated checks are a starting point. These workflows still need acceptance evidence on the packages we intend to distribute.
+Automated checks now cover the signed candidate. Human acceptance, genuinely denied Keychain access, minimum supported macOS testing and final-release qualification remain open.
 
-## Next: qualify a signed preview
+## Next: retain and distribute an accepted preview
 
-A preview must be installable through the normal macOS download and installation process. We will test the exact signed and notarized package, including first launch, credentials, persistence and recovery.
+A preview must be installable through the normal macOS download and installation process. Local signing, Gatekeeper and automated persistence checks have passed; downloaded-package and fresh-account installation acceptance still need to be completed.
 
 We will retain accepted packages and checksums so later versions can be tested against a known baseline. A successful build alone does not qualify a release.
 
