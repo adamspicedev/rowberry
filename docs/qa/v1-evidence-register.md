@@ -18,6 +18,8 @@ Scope decision, 23 October 2026: the maintainer approved Apple silicon-only v1 b
 
 Keep [the baseline register](../upgrade-baselines.md) authoritative for accepted artifacts. Neither local development packages nor green CI automatically become a baseline.
 
+The [0.1.8 private candidate retention record](2026-11-16-retained-018.md) pins an unpublished GitHub draft's release/asset IDs and checksums. All ten retrieved assets matched; the extracted native app passed metadata, signature, ticket, Gatekeeper and launch checks. This closes private retention under V1-07; accepted-baseline and public-release qualification remain pending.
+
 The [0.1.8 candidate](2026-11-16-recovery-toggle.md#candidate-qualification) is the latest with completed local app and installer verification. All 30 signed-package tests passed with no skips; app/DMG signing, notarization, stapling, Gatekeeper and embedded branding checks passed. Historical candidate evidence remains below, and no accepted release baseline is registered.
 
 ## Current development checks

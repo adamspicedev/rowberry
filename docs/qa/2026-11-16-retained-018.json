@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 1,
+  "version": "0.1.8",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "retainedOn": "2026-11-16",
+  "repository": "adamspicedev/rowberry",
+  "releaseId": 446694420,
+  "releaseTag": "candidate-0.1.8-20261116",
+  "releaseUrl": "https://github.com/adamspicedev/rowberry/releases/tag/untagged-0154af9a2e3eeee3946c",
+  "draftAtVerification": true,
+  "acceptedBaseline": false,
+  "publicationApproved": false,
+  "buildSourceCommit": "9c89e69f490cc1fee4832da425c28d300b603bf2",
+  "evidenceCommit": "989c4e84876cd3f4834fde5de5543c01071c4e52",
+  "assets": [
+    {
+      "name": "LICENSE",
+      "id": 753800960,
+      "bytes": 35149,
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986"
+    },
+    {
+      "name": "manifest.json",
+      "id": 753801057,
+      "bytes": 2227,
+      "sha256": "95844c1881073be4350fbea5d6b018bc7d37b522ff1eb196292c9752550f72f9"
+    },
+    {
+      "name": "QUALIFICATION.md",
+      "id": 753800966,
+      "bytes": 5508,
+      "sha256": "6d175c759768ca754cd20d2f932d1b1ad9bf24d633c50d7a52fdda781ed0536e"
+    },
+    {
+      "name": "README.md",
+      "id": 753800963,
+      "bytes": 1958,
+      "sha256": "31a4e0d8aa533fbb3b216853b620e79223209ff33912d6faa612ab4963f1e7f5"
+    },
+    {
+      "name": "RELEASE-NOTES.md",
+      "id": 753800961,
+      "bytes": 932,
+      "sha256": "d35047855538c1797442961e5d640c15c8f67f509a179a3440c9f97835121c99"
+    },
+    {
+      "name": "Rowberry-0.1.8-mac-arm64.app.zip",
+      "id": 753800958,
+      "bytes": 152588608,
+      "sha256": "502cb9b722a5c5e4f72e4070884414cfee9cf20c7b5009f4d6b7ec4447b4c649"
+    },
+    {
+      "name": "Rowberry-0.1.8-mac-arm64.dmg",
+      "id": 753801011,
+      "bytes": 151347631,
+      "sha256": "4f51bb26d9e84196ed846283c65341052894dba6c795d772b1eac4c7cb0ff0fb"
+    },
+    {
+      "name": "Rowberry-0.1.8-source.tar.gz",
+      "id": 753801009,
+      "bytes": 4065841,
+      "sha256": "abe17adeec68de2ad11c5fa01c38c6b028e01c95efdf4cb80743647362f9ac5e"
+    },
+    {
+      "name": "SHA256SUMS",
+      "id": 753801018,
+      "bytes": 778,
+      "sha256": "057c5dd524a91b2575deea098669432a190ee81cedc9663e619433a24bac58f0"
+    },
+    {
+      "name": "THIRD-PARTY-NOTICES.tar.gz",
+      "id": 753801022,
+      "bytes": 2149234,
+      "sha256": "c41da158ac4631b44f2738cd874a3f5b98abff8b9792f092657d139a50be4566"
+    }
+  ]
+}

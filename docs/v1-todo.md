@@ -45,7 +45,7 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026 an
   - [ ] Decide explicit deferral or a bounded feature with format, row scope, size, cancellation, fidelity and spreadsheet handling specified.
   - [ ] If included, implement and qualify it before preview acceptance; do not treat the decision alone as delivered functionality.
 - [ ] **V1-07 — Signed preview and first accepted baseline** · Release engineering + QA · Depends on V1-02–V1-06 for each distributed target
-  - [ ] Retain exact signed/notarized packages and source with digests in durable storage.
+  - [x] Retain the [exact signed/notarized 0.1.8 candidate](qa/2026-11-16-retained-018.md), native app archive, pinned source, notes and notices in access-controlled GitHub draft assets. All ten downloads match their digests; the extracted app preserves its contents/permissions/links and passes signature, ticket, Gatekeeper and launch smoke checks. Drafts remain mutable; no baseline acceptance or publication is implied.
   - [ ] Complete downloaded-package, native installation, credential and recovery checks for each distributed architecture.
   - [ ] Record maintainer acceptance and, if applicable, the explicit first-release bootstrap exception; update the baseline register.
 - [ ] **V1-08 — Preview feedback and targeted polish** · Product + Engineering · Depends on V1-07

@@ -8,6 +8,8 @@ Current v1 scope is macOS arm64 only. Intel Macs, Windows and Linux are deferred
 
 No release baseline has been accepted yet. The packages used in the October 2026 QA reports are development evidence, not accepted release baselines.
 
+The [private 0.1.8 candidate](qa/2026-11-16-retained-018.md) is retained with exact object IDs, checksums and successful retrieval verification. It is available to maintainers for future checks, but is not an accepted baseline and does not change the Pending entries below.
+
 | Target      | Accepted baseline | Retained package and checksums | Acceptance evidence  |
 | ----------- | ----------------- | ------------------------------ | -------------------- |
 | macOS arm64 | Pending           | Pending                        | Pending              |
@@ -22,6 +24,8 @@ For each accepted target, replace its Pending entries with a link to a versioned
 Before promoting a baseline, retain the exact distributed installer, SHA256SUMS, source revision, and a platform-native archive of its unpacked application. Preserve executable permissions, symlinks and signing metadata; do not reconstruct the baseline from source later. Verify the installer and app archive digests after retrieving or unpacking them. Never store credentials or test-user profiles alongside packages.
 
 Use versioned GitHub Release assets after publication is approved, or access-controlled durable storage for private candidates. Record the exact asset/object identifier and checksum, not a moving `latest` link. Do not replace an accepted object in place. CI artifacts and local `/tmp` files are staging locations, not the retained baseline. Keep accepted baselines for as long as users may upgrade from them; do not delete the previous baseline when promoting the next one.
+
+An unpublished GitHub draft may hold a private candidate after access and retrieval are verified. Record the release ID and each asset ID/hash, and confirm it remains a draft. Drafts are mutable by repository writers; never describe them as immutable or replace their retained assets in place. Missing objects or hash mismatches block qualification. Publishing the draft or promoting its contents to an accepted baseline still requires the separate maintainer decision below.
 
 ## Required gate for each candidate
 
