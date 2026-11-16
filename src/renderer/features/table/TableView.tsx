@@ -1,5 +1,6 @@
 import { rowJson } from "../../../json/viewer";
 import { recordDraft } from "../../app/workspace";
+import { useRecoveryEnabled } from "../../app/useRecoveryEnabled";
 /* oxlint-disable jsx-a11y/prefer-tag-over-role -- Virtual rows and columns use ARIA grid semantics with absolute positions. */
 import { JsonInspector, type ValidatedJsonDraft, type JsonSaveTarget } from "../json/JsonInspector";
 import { useState, useRef, useEffect, useId } from "react";
@@ -45,6 +46,7 @@ export function TableView({
     text: string;
     sqlNull: boolean;
   } | null>(null);
+  const recoveryEnabled = useRecoveryEnabled();
   useEffect(() => {
     const copies = drafts.map((draft) => ({ values: draft.values }));
     recordDraft(
@@ -59,7 +61,7 @@ export function TableView({
       `${initialTable.name} cell ${editor?.column ?? ""} (copy only)`,
       editor ? editor.text : null,
     );
-  }, [drafts, editor, sessionId, initialTable.id, initialTable.name]);
+  }, [drafts, editor, sessionId, initialTable.id, initialTable.name, recoveryEnabled]);
   const [preview, setPreview] = useState<SaveInput["changes"] | null>(null);
   const previewDialog = useRef<HTMLDialogElement>(null);
   const cancelPreview = useRef<HTMLButtonElement>(null);

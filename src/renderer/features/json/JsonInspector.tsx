@@ -2,6 +2,7 @@ import { copyText } from "../../app/clipboard";
 import { Button } from "../../components/ui/button";
 import { filterPaths } from "../../../json/viewer";
 import { recordDraft } from "../../app/workspace";
+import { useRecoveryEnabled } from "../../app/useRecoveryEnabled";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { JsonValue, Range } from "../../../json/document";
 import { escapePointer } from "../../../json/paths";
@@ -115,6 +116,7 @@ export function JsonInspector({
   const [value, setValue] = useState("");
   const [status, setStatus] = useState("");
   const dirty = originalSqlNull || state.text !== sourceText;
+  const recoveryEnabled = useRecoveryEnabled();
   useEffect(() => {
     recordDraft(
       `json:${documentId}`,
@@ -122,7 +124,7 @@ export function JsonInspector({
       "JSON value (copy only; reopen and compare the current database value)",
       dirty ? state.text : null,
     );
-  }, [documentId, dirty, state.text]);
+  }, [documentId, dirty, state.text, recoveryEnabled]);
   useEffect(() => {
     const discard = () => recordDraft(`json:${documentId}`, "json", "", null);
     window.addEventListener("rowberry:discard-json", discard);

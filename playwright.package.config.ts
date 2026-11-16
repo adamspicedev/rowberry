@@ -6,6 +6,7 @@ export default defineConfig({
     "**/connection-test.spec.ts",
     "**/connections.spec.ts",
     "**/recovery.spec.ts",
+    "**/recovery-toggle.spec.ts",
     "**/security.spec.ts",
     "**/query.spec.ts",
     "**/save.spec.ts",

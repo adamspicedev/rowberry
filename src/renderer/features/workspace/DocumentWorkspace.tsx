@@ -11,6 +11,7 @@ import {
 import { TableView } from "../table/TableView";
 import { QueryTab } from "../query/QueryTab";
 import { loadDrafts, saveDrafts } from "../query/query-state";
+import { useRecoveryEnabled } from "../../app/useRecoveryEnabled";
 import {
   RequestIdSchema,
   TabIdSchema,
@@ -82,12 +83,13 @@ export function DocumentWorkspace({
   const [offset, setOffset] = useState(0);
   const [next, setNext] = useState<number | null>(null);
   const [storageError, setStorageError] = useState("");
+  const recoveryEnabled = useRecoveryEnabled();
   useEffect(() => {
     if (!saveDrafts(tabs.filter((tab) => !tab.table).map((tab) => tab.sql)))
       queueMicrotask(() =>
         setStorageError("Local draft storage is full. Save important SQL as a saved query."),
       );
-  }, [tabs]);
+  }, [tabs, recoveryEnabled]);
   useEffect(() => {
     let live = true;
     void window.dbapp

@@ -12,5 +12,6 @@ export default defineConfig({
     "**/json.spec.ts",
     "**/json-viewer.spec.ts",
     "**/save.spec.ts",
+    "**/recovery-toggle.spec.ts",
   ],
 });
