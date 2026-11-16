@@ -2,7 +2,7 @@
 
 Rowberry is an early **0.1.x** project, licensed under **GPL-3.0-only**. Public distribution is not yet qualified. The current supported way to evaluate it is to [run from source](getting-started.md). See the [0.1.7 candidate notes](https://github.com/adamspicedev/rowberry/blob/main/docs/release-notes-0.1.7.md) for the latest connection-deletion repair.
 
-The [0.1.7 connection-deletion checks](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/2026-11-16-connection-delete-keyboard.md) cover focus return, cancellation, pending requests and failure recovery. Deletion stays modal until its request settles, preventing a late reply from closing another connection's unsaved editor. The app signature is valid and all 28 packaged tests passed with no skips. Installer verification is pending; 0.1.6 remains the latest candidate with completed app and installer checks.
+The [0.1.7 connection-deletion checks](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/2026-11-16-connection-delete-keyboard.md#candidate-qualification) cover focus return, cancellation, pending requests and failure recovery. Deletion stays modal until its request settles, preventing a late reply from closing another connection's unsaved editor. The recorded package run passed all 28 tests with no skips. App and installer signing, notarization, stapling, Gatekeeper and embedded branding checks are complete on the unchanged application; 0.1.7 is the latest verified local candidate.
 
 ## Current scope
 

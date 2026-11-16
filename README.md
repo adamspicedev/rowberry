@@ -23,9 +23,9 @@ Rowberry brings your PostgreSQL connections, queries, tables, and JSON into one 
 **Early development · PostgreSQL · GPL-3.0-only**
 
 > [!IMPORTANT]
-> Rowberry is an early 0.1.x project targeting Apple silicon Macs. The local [signed 0.1.6 candidate](docs/qa/2026-11-16-query-confirmation-keyboard.md#signed-016-candidate) passed notarization, Gatekeeper and all 27 packaged workflow checks with no skips. Public distribution is not yet qualified: downloaded/fresh-account installation, minimum supported macOS, remaining native accessibility and credential scenarios, and release acceptance are still open. The current public way to try it is to run from source with a disposable database.
+> Rowberry is an early 0.1.x project targeting Apple silicon Macs. The local [signed 0.1.7 candidate](docs/qa/2026-11-16-connection-delete-keyboard.md#candidate-qualification) passed app and installer notarization, Gatekeeper and all 28 packaged workflow checks with no skips. Public distribution is not yet qualified: downloaded/fresh-account installation, minimum supported macOS, remaining native accessibility and credential scenarios, and release acceptance are still open. The current public way to try it is to run from source with a disposable database.
 
-Version 0.1.7 fixes [connection-deletion focus and a pending-request race](docs/qa/2026-11-16-connection-delete-keyboard.md) that could discard another connection's unsaved editor. The signed app passed all 28 packaged tests with no skips; installer verification remains pending. Version 0.1.6 remains the latest candidate with completed app and installer verification.
+Version 0.1.7 fixes [connection-deletion focus and a pending-request race](docs/qa/2026-11-16-connection-delete-keyboard.md) that could discard another connection's unsaved editor. It is the latest candidate with completed app and installer verification, including the branded installer and its unchanged tested application.
 
 ## What you can do
 
