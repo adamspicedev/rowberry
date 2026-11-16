@@ -40,7 +40,11 @@ Keep [the baseline register](../upgrade-baselines.md) authoritative for accepted
 
 [26–27 October sustained and process-memory checks](json-performance-and-accessibility.md#sustained-cleanup-qualification): the one-hour forced-collection cleanup scenario passed 6,365 cycles. Separately, six short scenarios without forced collection passed 180 cycles with a maximum sampled combined working set of 1,193.84 MiB against the calibrated 1.5 GiB ceiling. Initial calibration failures are retained. These results do not establish exact transient peaks, hours of typical use or lower-spec performance.
 
-[Native VoiceOver qualification](native-voiceover-harness.md#automatic-announcement-fix-26-october-2026): six automatic-speech checks passed on the recorded candidate after fixing expansion/collapse announcements. It also verifies scalar naming, modal focus and passed-through Escape. Large-array position announcements and broader human usability remain open. Later recovery packages have not repeated this native speech run.
+[16 November signed 0.1.4 performance refresh](json-performance-and-accessibility.md#signed-014-refresh-16-november-2026): all six bounded scenarios passed with 180 cleanup cycles, 366 process snapshots and 60 large-scalar selections. Maximum sampled working set was 1,175.72 MiB; expansion and selection stayed below 100 ms. All measurements are retained. Exact peaks, longer typical use and lower-spec hardware remain unqualified.
+
+[Native VoiceOver qualification](native-voiceover-harness.md#automatic-announcement-fix-26-october-2026): six automatic-speech checks passed on the recorded October candidate after fixing expansion/collapse announcements. It also verifies scalar naming, modal focus and passed-through Escape; this historical run does not qualify later packages.
+
+[16 November signed 0.1.4 native run](2026-11-16-signed-voiceover.md): nine fresh-speech steps passed, including first/last and offscreen navigation in a 100,000-item array. **Native Home failed**, moving focus to Resize JSON panel; the run stopped before preview/cancellation. Small-tree, browser-input and VoiceOver-off controls narrow the reproduction but do not establish its cause. The physical-keyboard attempt was inconclusive. Native Home, a complete candidate speech run and broader human usability remain open.
 
 ## Existing evidence and limits
 

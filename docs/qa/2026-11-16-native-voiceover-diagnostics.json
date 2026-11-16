@@ -1,0 +1,486 @@
+{
+  "candidateVersion": "0.1.4",
+  "overallStatus": "not-qualified-native-home-failed",
+  "runs": [
+    {
+      "experiment": "initial-signed-run",
+      "interpretation": "Original native Home: correct selected root, missing speech.",
+      "report": {
+        "appAsarSha256": "3fe78a8edbb9b45163635b74797de1b3367d3faab36195486a40e416a296661e",
+        "speechMode": "automatic-announcements",
+        "largeArrayItems": 100000,
+        "status": "failed",
+        "steps": [
+          {
+            "name": "select-items",
+            "status": "passed",
+            "phrase": "items: array, 2 items selected collapsed outline row (2 of 2) JSON inspector region",
+            "observations": [
+              "items: array, 2 items selected collapsed outline row (2 of 2) JSON inspector region"
+            ]
+          },
+          {
+            "name": "expand-items",
+            "status": "passed",
+            "phrase": "items expanded",
+            "observations": ["items expanded"]
+          },
+          {
+            "name": "collapse-items",
+            "status": "passed",
+            "phrase": "items collapsed",
+            "observations": ["items collapsed"]
+          },
+          {
+            "name": "select-name",
+            "status": "passed",
+            "phrase": "name: Rowberry selected outline row (1 of 2)",
+            "observations": ["name: Rowberry selected outline row (1 of 2)"]
+          },
+          {
+            "name": "large-select-items",
+            "status": "passed",
+            "phrase": "items: array, 100000 items selected collapsed outline row (1 of 1) JSON inspector region",
+            "observations": [
+              "items: array, 100000 items selected collapsed outline row (1 of 1) JSON inspector region"
+            ]
+          },
+          {
+            "name": "large-expand-items",
+            "status": "passed",
+            "phrase": "items expanded",
+            "observations": ["items expanded"]
+          },
+          {
+            "name": "large-first-position",
+            "status": "passed",
+            "phrase": "0: 0 selected outline row (1 of 100,000)",
+            "observations": ["0: 0 selected outline row (1 of 100,000)"]
+          },
+          {
+            "name": "large-last-position",
+            "status": "passed",
+            "phrase": "99999: 99999 selected outline row (100,000 of 100,000)",
+            "observations": ["99999: 99999 selected outline row (100,000 of 100,000)"]
+          },
+          {
+            "name": "large-offscreen-navigation",
+            "status": "passed",
+            "phrase": "99998: 99998 selected outline row (99,999 of 100,000)",
+            "observations": ["99998: 99998 selected outline row (99,999 of 100,000)"]
+          },
+          {
+            "name": "large-home",
+            "status": "failed",
+            "error": "Error: No fresh VoiceOver phrase matching [\"json root\"]; observed [\"Resize JSON panel button\",\"You are currently in a table. To navigate the cells within a table, press @VOModifier() and then Up Arrow, Down Arrow, Left Arrow or Right Arrow.To exit this table, press Control-Option-Shift-Up Arrow.\"]"
+          }
+        ],
+        "error": "Error: No fresh VoiceOver phrase matching [\"json root\"]; observed [\"Resize JSON panel button\",\"You are currently in a table. To navigate the cells within a table, press @VOModifier() and then Up Arrow, Down Arrow, Left Arrow or Right Arrow.To exit this table, press Control-Option-Shift-Up Arrow.\"]"
+      }
+    },
+    {
+      "experiment": "home-passed-through",
+      "interpretation": "VO-Tab then Home: tree lost DOM focus.",
+      "report": {
+        "appAsarSha256": "3fe78a8edbb9b45163635b74797de1b3367d3faab36195486a40e416a296661e",
+        "speechMode": "automatic-announcements",
+        "largeArrayItems": 100000,
+        "status": "failed",
+        "steps": [
+          {
+            "name": "select-items",
+            "status": "passed",
+            "phrase": "items: array, 2 items selected collapsed outline row (2 of 2) JSON inspector region",
+            "observations": [
+              "items: array, 2 items selected collapsed outline row (2 of 2) JSON inspector region"
+            ]
+          },
+          {
+            "name": "expand-items",
+            "status": "passed",
+            "phrase": "items expanded",
+            "observations": ["items expanded"]
+          },
+          {
+            "name": "collapse-items",
+            "status": "passed",
+            "phrase": "items collapsed",
+            "observations": ["items collapsed"]
+          },
+          {
+            "name": "select-name",
+            "status": "passed",
+            "phrase": "name: Rowberry selected outline row (1 of 2)",
+            "observations": ["name: Rowberry selected outline row (1 of 2)"]
+          },
+          {
+            "name": "large-select-items",
+            "status": "passed",
+            "phrase": "items: array, 100000 items selected collapsed outline row (1 of 1) JSON inspector region",
+            "observations": [
+              "items: array, 100000 items selected collapsed outline row (1 of 1) JSON inspector region"
+            ]
+          },
+          {
+            "name": "large-expand-items",
+            "status": "passed",
+            "phrase": "items expanded",
+            "observations": ["items expanded"]
+          },
+          {
+            "name": "large-first-position",
+            "status": "passed",
+            "phrase": "0: 0 selected outline row (1 of 100,000)",
+            "observations": ["0: 0 selected outline row (1 of 100,000)"]
+          },
+          {
+            "name": "large-last-position",
+            "status": "passed",
+            "phrase": "99999: 99999 selected outline row (100,000 of 100,000)",
+            "observations": ["99999: 99999 selected outline row (100,000 of 100,000)"]
+          },
+          {
+            "name": "large-offscreen-navigation",
+            "status": "passed",
+            "phrase": "99998: 99998 selected outline row (99,999 of 100,000)",
+            "observations": ["99998: 99998 selected outline row (99,999 of 100,000)"]
+          },
+          {
+            "name": "large-home-passed-through",
+            "status": "failed",
+            "error": "Error: expect(locator).toBeFocused() failed\n\nLocator:  getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('tree', { name: 'JSON tree', exact: true })\nExpected: focused\nReceived: inactive\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toBeFocused\" getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('tree', { name: 'JSON tree', exact: true }) with timeout 5000ms\n  - waiting for getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('tree', { name: 'JSON tree', exact: true })\n    14 \u00d7 locator resolved to <div role=\"tree\" tabindex=\"0\" class=\"json-tree\" aria-label=\"JSON tree\" aria-activedescendant=\"_r_4_-0\">\u2026</div>\n       - unexpected value \"inactive\"\n"
+          }
+        ],
+        "error": "Error: expect(locator).toBeFocused() failed\n\nLocator:  getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('tree', { name: 'JSON tree', exact: true })\nExpected: focused\nReceived: inactive\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toBeFocused\" getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('tree', { name: 'JSON tree', exact: true }) with timeout 5000ms\n  - waiting for getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('tree', { name: 'JSON tree', exact: true })\n    14 \u00d7 locator resolved to <div role=\"tree\" tabindex=\"0\" class=\"json-tree\" aria-label=\"JSON tree\" aria-activedescendant=\"_r_4_-0\">\u2026</div>\n       - unexpected value \"inactive\"\n"
+      }
+    },
+    {
+      "experiment": "small-native-home",
+      "interpretation": "Same failure in a small tree; virtualization is not required.",
+      "report": {
+        "appAsarSha256": "3fe78a8edbb9b45163635b74797de1b3367d3faab36195486a40e416a296661e",
+        "speechMode": "automatic-announcements",
+        "largeArrayItems": 100000,
+        "status": "failed",
+        "steps": [
+          {
+            "name": "select-items",
+            "status": "passed",
+            "phrase": "items: array, 2 items selected collapsed outline row (2 of 2) JSON inspector region",
+            "observations": [
+              "items: array, 2 items selected collapsed outline row (2 of 2) JSON inspector region"
+            ]
+          },
+          {
+            "name": "expand-items",
+            "status": "passed",
+            "phrase": "items expanded",
+            "observations": ["items expanded"]
+          },
+          {
+            "name": "collapse-items",
+            "status": "passed",
+            "phrase": "items collapsed",
+            "observations": ["items collapsed"]
+          },
+          {
+            "name": "select-name",
+            "status": "passed",
+            "phrase": "name: Rowberry selected outline row (1 of 2)",
+            "observations": ["name: Rowberry selected outline row (1 of 2)"]
+          },
+          {
+            "name": "small-home",
+            "status": "failed",
+            "error": "Error: expect(locator).toHaveAccessibleName(expected) failed\n\nLocator:  getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('treeitem', { selected: true })\nExpected: \"JSON root: object, 2 keys\"\nReceived: \"name: Rowberry\"\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toHaveAccessibleName\" getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('treeitem', { selected: true }) with timeout 5000ms\n  - waiting for getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('treeitem', { selected: true })\n    14 \u00d7 locator resolved to <div id=\"_r_2_-8\" tabindex=\"-1\" aria-level=\"2\" role=\"treeitem\" aria-setsize=\"2\" aria-posinset=\"1\" aria-selected=\"true\" class=\"json-tree-row\" aria-label=\"name: Rowberry\">\u2026</div>\n       - unexpected value \"name: Rowberry\"\n"
+          }
+        ],
+        "error": "Error: expect(locator).toHaveAccessibleName(expected) failed\n\nLocator:  getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('treeitem', { selected: true })\nExpected: \"JSON root: object, 2 keys\"\nReceived: \"name: Rowberry\"\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toHaveAccessibleName\" getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('treeitem', { selected: true }) with timeout 5000ms\n  - waiting for getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('treeitem', { selected: true })\n    14 \u00d7 locator resolved to <div id=\"_r_2_-8\" tabindex=\"-1\" aria-level=\"2\" role=\"treeitem\" aria-setsize=\"2\" aria-posinset=\"1\" aria-selected=\"true\" class=\"json-tree-row\" aria-label=\"name: Rowberry\">\u2026</div>\n       - unexpected value \"name: Rowberry\"\n"
+      }
+    },
+    {
+      "experiment": "small-native-arrow-up",
+      "interpretation": "Native Up to the root passed; later large native Home failed.",
+      "report": {
+        "appAsarSha256": "3fe78a8edbb9b45163635b74797de1b3367d3faab36195486a40e416a296661e",
+        "speechMode": "automatic-announcements",
+        "largeArrayItems": 100000,
+        "status": "failed",
+        "steps": [
+          {
+            "name": "select-items",
+            "status": "passed",
+            "phrase": "items: array, 2 items selected collapsed outline row (2 of 2) JSON inspector region",
+            "observations": [
+              "items: array, 2 items selected collapsed outline row (2 of 2) JSON inspector region"
+            ]
+          },
+          {
+            "name": "expand-items",
+            "status": "passed",
+            "phrase": "items expanded",
+            "observations": ["items expanded"]
+          },
+          {
+            "name": "collapse-items",
+            "status": "passed",
+            "phrase": "items collapsed",
+            "observations": ["items collapsed"]
+          },
+          {
+            "name": "select-name",
+            "status": "passed",
+            "phrase": "name: Rowberry selected outline row (1 of 2)",
+            "observations": ["name: Rowberry selected outline row (1 of 2)"]
+          },
+          {
+            "name": "small-up-to-root",
+            "status": "passed",
+            "phrase": "JSON root: object, 2 keys selected expanded outline row (1 of 1)",
+            "observations": ["JSON root: object, 2 keys selected expanded outline row (1 of 1)"]
+          },
+          {
+            "name": "large-select-items",
+            "status": "passed",
+            "phrase": "items: array, 100000 items selected collapsed outline row (1 of 1) JSON inspector region",
+            "observations": [
+              "items: array, 100000 items selected collapsed outline row (1 of 1) JSON inspector region"
+            ]
+          },
+          {
+            "name": "large-expand-items",
+            "status": "passed",
+            "phrase": "items expanded",
+            "observations": ["items expanded"]
+          },
+          {
+            "name": "large-first-position",
+            "status": "passed",
+            "phrase": "0: 0 selected outline row (1 of 100,000)",
+            "observations": ["0: 0 selected outline row (1 of 100,000)"]
+          },
+          {
+            "name": "large-last-position",
+            "status": "passed",
+            "phrase": "99999: 99999 selected outline row (100,000 of 100,000)",
+            "observations": ["99999: 99999 selected outline row (100,000 of 100,000)"]
+          },
+          {
+            "name": "large-offscreen-navigation",
+            "status": "passed",
+            "phrase": "99998: 99998 selected outline row (99,999 of 100,000)",
+            "observations": ["99998: 99998 selected outline row (99,999 of 100,000)"]
+          },
+          {
+            "name": "large-home",
+            "status": "failed",
+            "error": "Error: expect(locator).toBeFocused() failed\n\nLocator:  getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('tree', { name: 'JSON tree', exact: true })\nExpected: focused\nReceived: inactive\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toBeFocused\" getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('tree', { name: 'JSON tree', exact: true }) with timeout 5000ms\n  - waiting for getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('tree', { name: 'JSON tree', exact: true })\n    14 \u00d7 locator resolved to <div role=\"tree\" tabindex=\"0\" class=\"json-tree\" aria-label=\"JSON tree\" aria-activedescendant=\"_r_4_-0\">\u2026</div>\n       - unexpected value \"inactive\"\n"
+          }
+        ],
+        "error": "Error: expect(locator).toBeFocused() failed\n\nLocator:  getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('tree', { name: 'JSON tree', exact: true })\nExpected: focused\nReceived: inactive\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toBeFocused\" getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('tree', { name: 'JSON tree', exact: true }) with timeout 5000ms\n  - waiting for getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('tree', { name: 'JSON tree', exact: true })\n    14 \u00d7 locator resolved to <div role=\"tree\" tabindex=\"0\" class=\"json-tree\" aria-label=\"JSON tree\" aria-activedescendant=\"_r_4_-0\">\u2026</div>\n       - unexpected value \"inactive\"\n"
+      }
+    },
+    {
+      "experiment": "native-home-focus-events",
+      "interpretation": "Native focus-event diagnostic; Home reached the tree before focus moved to Resize JSON panel.",
+      "report": {
+        "appAsarSha256": "3fe78a8edbb9b45163635b74797de1b3367d3faab36195486a40e416a296661e",
+        "speechMode": "automatic-announcements",
+        "largeArrayItems": 100000,
+        "status": "failed",
+        "steps": [
+          {
+            "name": "select-items",
+            "status": "passed",
+            "phrase": "items: array, 2 items selected collapsed outline row (2 of 2) JSON inspector region",
+            "observations": [
+              "items: array, 2 items selected collapsed outline row (2 of 2) JSON inspector region"
+            ]
+          },
+          {
+            "name": "expand-items",
+            "status": "passed",
+            "phrase": "items expanded",
+            "observations": ["items expanded"]
+          },
+          {
+            "name": "collapse-items",
+            "status": "passed",
+            "phrase": "items collapsed",
+            "observations": ["items collapsed"]
+          },
+          {
+            "name": "select-name",
+            "status": "passed",
+            "phrase": "name: Rowberry selected outline row (1 of 2)",
+            "observations": ["name: Rowberry selected outline row (1 of 2)"]
+          },
+          {
+            "name": "large-select-items",
+            "status": "passed",
+            "phrase": "items: array, 100000 items selected collapsed outline row (1 of 1) JSON inspector region",
+            "observations": [
+              "items: array, 100000 items selected collapsed outline row (1 of 1) JSON inspector region"
+            ]
+          },
+          {
+            "name": "large-expand-items",
+            "status": "passed",
+            "phrase": "items expanded",
+            "observations": ["items expanded"]
+          },
+          {
+            "name": "large-first-position",
+            "status": "passed",
+            "phrase": "0: 0 selected outline row (1 of 100,000)",
+            "observations": ["0: 0 selected outline row (1 of 100,000)"]
+          },
+          {
+            "name": "large-last-position",
+            "status": "passed",
+            "phrase": "99999: 99999 selected outline row (100,000 of 100,000)",
+            "observations": ["99999: 99999 selected outline row (100,000 of 100,000)"]
+          },
+          {
+            "name": "large-offscreen-navigation",
+            "status": "passed",
+            "phrase": "99998: 99998 selected outline row (99,999 of 100,000)",
+            "observations": ["99998: 99998 selected outline row (99,999 of 100,000)"]
+          },
+          {
+            "name": "large-home",
+            "status": "failed",
+            "error": "Error: expect(locator).toBeFocused() failed\n\nLocator:  getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('tree', { name: 'JSON tree', exact: true })\nExpected: focused\nReceived: inactive\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toBeFocused\" getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('tree', { name: 'JSON tree', exact: true }) with timeout 5000ms\n  - waiting for getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('tree', { name: 'JSON tree', exact: true })\n    14 \u00d7 locator resolved to <div role=\"tree\" tabindex=\"0\" class=\"json-tree\" aria-label=\"JSON tree\" aria-activedescendant=\"_r_4_-0\">\u2026</div>\n       - unexpected value \"inactive\"\n"
+          }
+        ],
+        "error": "Error: expect(locator).toBeFocused() failed\n\nLocator:  getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('tree', { name: 'JSON tree', exact: true })\nExpected: focused\nReceived: inactive\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toBeFocused\" getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('tree', { name: 'JSON tree', exact: true }) with timeout 5000ms\n  - waiting for getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('tree', { name: 'JSON tree', exact: true })\n    14 \u00d7 locator resolved to <div role=\"tree\" tabindex=\"0\" class=\"json-tree\" aria-label=\"JSON tree\" aria-activedescendant=\"_r_4_-0\">\u2026</div>\n       - unexpected value \"inactive\"\n"
+      }
+    },
+    {
+      "experiment": "manual-keyboard-attempt",
+      "interpretation": "Operator reported shortcut did nothing. No Home event was received; waiting test app was closed deliberately. This is inconclusive, not a pass.",
+      "report": {
+        "appAsarSha256": "3fe78a8edbb9b45163635b74797de1b3367d3faab36195486a40e416a296661e",
+        "speechMode": "automatic-announcements",
+        "largeArrayItems": 0,
+        "status": "failed",
+        "steps": [
+          {
+            "name": "select-items",
+            "status": "passed",
+            "phrase": "items: array, 2 items selected collapsed outline row (2 of 2) JSON inspector region",
+            "observations": [
+              "items: array, 2 items selected collapsed outline row (2 of 2) JSON inspector region"
+            ]
+          },
+          {
+            "name": "expand-items",
+            "status": "passed",
+            "phrase": "items expanded",
+            "observations": ["items expanded"]
+          },
+          {
+            "name": "collapse-items",
+            "status": "passed",
+            "phrase": "items collapsed",
+            "observations": ["items collapsed"]
+          },
+          {
+            "name": "select-name",
+            "status": "passed",
+            "phrase": "name: Rowberry selected outline row (1 of 2)",
+            "observations": ["name: Rowberry selected outline row (1 of 2)"]
+          }
+        ],
+        "error": "Error: evaluate: Target page, context or browser has been closed"
+      }
+    },
+    {
+      "experiment": "browser-home-control",
+      "interpretation": "Browser-dispatched Home in the small signed tree produced fresh root speech; subsequent native large Home still failed. Browser-dispatched input is not native keyboard qualification.",
+      "report": {
+        "appAsarSha256": "3fe78a8edbb9b45163635b74797de1b3367d3faab36195486a40e416a296661e",
+        "speechMode": "automatic-announcements",
+        "largeArrayItems": 100000,
+        "status": "failed",
+        "steps": [
+          {
+            "name": "select-items",
+            "status": "passed",
+            "phrase": "items: array, 2 items selected collapsed outline row (2 of 2) JSON inspector region",
+            "observations": [
+              "items: array, 2 items selected collapsed outline row (2 of 2) JSON inspector region"
+            ]
+          },
+          {
+            "name": "expand-items",
+            "status": "passed",
+            "phrase": "items expanded",
+            "observations": ["items expanded"]
+          },
+          {
+            "name": "collapse-items",
+            "status": "passed",
+            "phrase": "items collapsed",
+            "observations": ["items collapsed"]
+          },
+          {
+            "name": "select-name",
+            "status": "passed",
+            "phrase": "name: Rowberry selected outline row (1 of 2)",
+            "observations": ["name: Rowberry selected outline row (1 of 2)"]
+          },
+          {
+            "name": "small-home",
+            "status": "passed",
+            "phrase": "JSON root: object, 2 keys selected expanded outline row (1 of 1)",
+            "observations": ["JSON root: object, 2 keys selected expanded outline row (1 of 1)"]
+          },
+          {
+            "name": "large-select-items",
+            "status": "passed",
+            "phrase": "items: array, 100000 items selected collapsed outline row (1 of 1) JSON inspector region",
+            "observations": [
+              "items: array, 100000 items selected collapsed outline row (1 of 1) JSON inspector region"
+            ]
+          },
+          {
+            "name": "large-expand-items",
+            "status": "passed",
+            "phrase": "items expanded",
+            "observations": ["items expanded"]
+          },
+          {
+            "name": "large-first-position",
+            "status": "passed",
+            "phrase": "0: 0 selected outline row (1 of 100,000)",
+            "observations": ["0: 0 selected outline row (1 of 100,000)"]
+          },
+          {
+            "name": "large-last-position",
+            "status": "passed",
+            "phrase": "99999: 99999 selected outline row (100,000 of 100,000)",
+            "observations": ["99999: 99999 selected outline row (100,000 of 100,000)"]
+          },
+          {
+            "name": "large-offscreen-navigation",
+            "status": "passed",
+            "phrase": "99998: 99998 selected outline row (99,999 of 100,000)",
+            "observations": ["99998: 99998 selected outline row (99,999 of 100,000)"]
+          },
+          {
+            "name": "large-home",
+            "status": "failed",
+            "error": "Error: expect(locator).toHaveAccessibleName(expected) failed\n\nLocator:  getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('treeitem', { selected: true })\nExpected: \"JSON root: object, 1 keys\"\nReceived: \"99998: 99998\"\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toHaveAccessibleName\" getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('treeitem', { selected: true }) with timeout 5000ms\n  - waiting for getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('treeitem', { selected: true })\n    14 \u00d7 locator resolved to <div tabindex=\"-1\" aria-level=\"3\" role=\"treeitem\" id=\"_r_4_-688888\" aria-selected=\"true\" aria-posinset=\"99999\" aria-setsize=\"100000\" class=\"json-tree-row\" aria-label=\"99998: 99998\">\u2026</div>\n       - unexpected value \"99998: 99998\"\n"
+          }
+        ],
+        "error": "Error: expect(locator).toHaveAccessibleName(expected) failed\n\nLocator:  getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('treeitem', { selected: true })\nExpected: \"JSON root: object, 1 keys\"\nReceived: \"99998: 99998\"\nTimeout:  5000ms\n\nCall log:\n  - Expect \"toHaveAccessibleName\" getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('treeitem', { selected: true }) with timeout 5000ms\n  - waiting for getByRole('region', { name: 'JSON inspector', exact: true }).getByRole('treeitem', { selected: true })\n    14 \u00d7 locator resolved to <div tabindex=\"-1\" aria-level=\"3\" role=\"treeitem\" id=\"_r_4_-688888\" aria-selected=\"true\" aria-posinset=\"99999\" aria-setsize=\"100000\" class=\"json-tree-row\" aria-label=\"99998: 99998\">\u2026</div>\n       - unexpected value \"99998: 99998\"\n"
+      }
+    },
+    {
+      "experiment": "voiceover-off-control",
+      "interpretation": "Native Home kept DOM focus in the small tree with VoiceOver off. No screen-reader speech was tested.",
+      "observedStatus": "passed"
+    }
+  ]
+}

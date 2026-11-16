@@ -1,6 +1,18 @@
 export function matchesSpeech(phrase: string, expected: readonly string[]): boolean {
-  const normalized = phrase.toLowerCase().replace(/\s+/g, " ");
-  return expected.every((part) => normalized.includes(part.toLowerCase()));
+  const normalize = (text: string) =>
+    text
+      .toLowerCase()
+      .replace(/(\d),(?=\d{3}(?:\D|$))/g, "$1")
+      .replace(/\s+/g, " ");
+  const normalized = normalize(phrase);
+  return expected.every((part) => {
+    const needle = normalize(part);
+    const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    // A position such as 100000 must not match part of 1000000.
+    const before = /^\d/.test(needle) ? "(?<!\\d)" : "";
+    const after = /\d$/.test(needle) ? "(?!\\d)" : "";
+    return new RegExp(before + escaped + after).test(normalized);
+  });
 }
 
 /** Require a changed phrase after the action; a pre-existing match is not evidence. */

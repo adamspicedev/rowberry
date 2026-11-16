@@ -257,8 +257,10 @@ for (const version of [14, 18])
       await tree.focus();
       await page.keyboard.press("Home");
       await expect(panel.getByRole("treeitem", { selected: true })).toContainText("$");
+      await expect(tree).toBeFocused();
       await page.keyboard.press("ArrowRight");
       await expect(panel.getByRole("treeitem", { selected: true })).toContainText("items");
+      await expect(tree).toBeFocused();
       await page.keyboard.press("End");
       await expect(panel.getByRole("treeitem", { selected: true })).toContainText("99999");
       await page.keyboard.press("ArrowLeft");

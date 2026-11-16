@@ -121,3 +121,23 @@ Reference hardware: Apple M4, 32 GiB RAM, macOS 27.2 (26B118), arm64. Applicatio
 The initial 1 GiB calibration produced five budget failures shortly after the loop began and one timeout waiting for the initial JSON inspection button, before memory measurement. The timeout's cause was not established; it is not counted as passing. A subsequent measurement-only 30-cycle diagnostic showed regular natural-collection drops, with closed totals between about 890 and 1,065 MiB and a 1,080 MiB overall sampled maximum. This informed the 1.5 GiB reference ceiling before the fresh six-scenario qualification. The diagnostic was not budget acceptance, and the original failures remain recorded. No application memory fix is claimed.
 
 This closes the bounded sampled-process measurement task. Exact transient peaks, hours-long typical use and lower-spec hardware remain open.
+
+## Signed 0.1.4 refresh — 16 November 2026
+
+The exact signed 0.1.4 candidate passed **six scenarios**, three consecutive repetitions each on PostgreSQL 14 and 18, with process-memory, interaction and large-scalar budgets enabled. There were no failures, retries or skips; elapsed time was 81.8 seconds. [All six measurement sets](2026-11-16-signed-json-performance.json) are retained.
+
+- **180 cleanup cycles / 366 process snapshots** without forced garbage collection. Maximum sampled combined working set: **1,175.72 MiB**, below the existing 1.5 GiB reference ceiling. Each cycle verified JSON worker release.
+- Large-tree expansion: **19.3–20.8 ms**; row selection: **5.4–11.3 ms**.
+- **60 selections** of a 10,000,000-byte scalar: **2.1–12.2 ms**, below the 100 ms interaction limit.
+- Reference host: Apple M4, 32 GiB RAM, macOS 27.3 (`26C5035r`), arm64.
+- App source: `eecd6736d369476b01a765af32afa576ae48d982`. Signed candidate archive SHA-256: `3fe78a8edbb9b45163635b74797de1b3367d3faab36195486a40e416a296661e`.
+
+```sh
+DBAPP_PROCESS_MEMORY_QUALIFICATION=1 DBAPP_PERFORMANCE_BUDGETS=1 DBAPP_SCALAR_QUALIFICATION=1 \
+DBAPP_PACKAGE_EXECUTABLE="$PWD/release-signed/0.1.4/mac-arm64/Rowberry.app/Contents/MacOS/Rowberry" \
+PLAYWRIGHT_JSON_OUTPUT_NAME=/tmp/rowberry-014-process-qualification.json \
+bunx playwright test --config playwright.postgres.config.ts tests/e2e/json.spec.ts \
+  --grep PG --repeat-each=3 --reporter=json
+```
+
+This refreshes the bounded signed-candidate measurements on the current host. It does not establish exact transient peaks, hours-long typical use, lower-spec performance or native screen-reader speech. The measurement and shared-page limits above still apply.

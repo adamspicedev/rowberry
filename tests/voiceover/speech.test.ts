@@ -1,5 +1,22 @@
 import { expect, it } from "vitest";
-import { captureSpeech } from "./speech";
+import { captureSpeech, matchesSpeech } from "./speech";
+
+it("matches grouped native position numbers without accepting a different position or size", () => {
+  expect(
+    matchesSpeech("99,999: 99,999 selected. Outline row 100,000 of 100,000", [
+      "99999",
+      "100000 of 100000",
+    ]),
+  ).toBe(true);
+  expect(matchesSpeech("Outline row 99,999 of 100,000", ["100000 of 100000"])).toBe(false);
+  expect(matchesSpeech("Outline row 100,000 of 1,000,000", ["100000 of 100000"])).toBe(false);
+  expect(matchesSpeech("Outline row 1,100,000 of 100,000", ["100000 of 100000"])).toBe(false);
+});
+
+it("treats punctuation in expected speech as literal text", () => {
+  expect(matchesSpeech("A key [x.y]", ["[x.y]"])).toBe(true);
+  expect(matchesSpeech("A key [xay]", ["[x.y]"])).toBe(false);
+});
 
 it("does not accept a stale phrase that already matches", async () => {
   await expect(
