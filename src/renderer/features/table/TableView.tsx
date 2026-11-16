@@ -73,6 +73,7 @@ export function TableView({
   const [saveStatus, setSaveStatus] = useState("");
   const [blocked, setBlocked] = useState(false);
   const [compare, setCompare] = useState<RowPage | null>(null);
+  const comparisonVersion = useRef(0);
   const [jsonSaveDraft, setJsonSaveDraft] = useState<ValidatedJsonDraft | null>(null);
   const alive = useRef(true);
   useEffect(
@@ -88,6 +89,8 @@ export function TableView({
       !window.confirm("Discard unsaved table and JSON drafts?")
     )
       return false;
+    // Pending comparisons belong to the discarded draft and page.
+    comparisonVersion.current++;
     setDrafts([]);
     setEditor(null);
     setPreview(null);
@@ -145,6 +148,7 @@ export function TableView({
   async function save() {
     if (!preview || saving || blocked || !page) return;
     const changes = preview;
+    comparisonVersion.current++;
     setSaving(true);
     setSaveStatus("Saving…");
     const reply = await window.dbapp.request({
@@ -231,6 +235,7 @@ export function TableView({
   }
   async function compareCurrent() {
     if (saving) return;
+    const version = ++comparisonVersion.current;
     const reply = await window.dbapp.request({
       kind: "rows.fetch",
       sessionId,
@@ -238,7 +243,7 @@ export function TableView({
       requestId: RequestIdSchema.parse(crypto.randomUUID()),
       ...FetchSchema.parse(input),
     });
-    if (!alive.current) return;
+    if (!alive.current || version !== comparisonVersion.current) return;
     if (reply.ok && reply.kind === "rows.fetch") {
       setCompare(reply.data);
       setBlocked(true);
