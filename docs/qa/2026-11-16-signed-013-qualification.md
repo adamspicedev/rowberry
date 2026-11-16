@@ -32,7 +32,7 @@ No code change or rebuild was needed for this qualification run.
 
 ## Remaining gates
 
-- Actual denied/unavailable native credential storage and its recovery path.
+- Denied writes/deletion and locked/unavailable native credential storage. A subsequent [real denied-read/retry run](2026-11-16-native-keychain-denial.md) passed on this candidate.
 - Uncoached task observations by unfamiliar users and the resulting export-scope decision.
 - Minimum supported OS, fresh-account signed installation, downloaded-artifact checks and broader performance qualification.
 - Durable candidate storage, explicit baseline/bootstrap acceptance and publication approval.

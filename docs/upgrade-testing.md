@@ -21,6 +21,23 @@ No existing user profile is accepted or modified. Successful runs remove the tem
 
 This is a packaged **profile compatibility** test. It does not install/replace an application, test a fresh OS account, establish signing/notarization, or qualify an actual locked credential store. Profile-only mode does not test database connectivity. Both packages must run natively on the test host. Run the installer and native-platform procedures in [the release checklist](release-checklist.md) separately.
 
+## Interactive macOS Keychain denial and retry
+
+With the PostgreSQL 18 fixture running, use an interactive terminal:
+
+```sh
+DBAPP_POSTGRES_FIXTURES=/tmp/rowberry-upgrade-fixtures.json bun run verify:upgrade /path/to/baseline/Rowberry.app /path/to/candidate/Rowberry.app --native-vault --deny-first
+```
+
+This mode needs real macOS prompts and an operator. Use a baseline and candidate with different Keychain trust identities, such as the retained unsigned baseline and signed candidate used in [the 16 November run](qa/2026-11-16-native-keychain-denial.md). Packages trusted as the same application may receive access automatically; that does not test denial. Do not change access controls on existing user credentials to force a prompt.
+
+1. The baseline creates a unique disposable credential and authenticates to verify fixture health. The candidate prints that item's identifier and waits for Enter before attempting to connect.
+2. Press Enter, then choose **Deny** on the prompt for that identifier. The harness checks a failed connection, disconnected state, retained metadata/query/drafts, and absence of the fixture password in the isolated profile database files.
+3. At the second terminal pause, press Enter, then choose **Always Allow** on the prompt for the same identifier, using your Mac login password if requested. The candidate must reconnect with the retained credential, without submitting the database password again. Two subsequent launches repeat authentication and recovery assertions.
+4. Normal cleanup verifies removal of the unique credential and deletes the successful temporary profile. Keep any reported failed profile for diagnosis and run fixture cleanup as described above.
+
+Record the operator's actual Deny/Allow observations alongside the automated results. The generic connection-failure assertion alone cannot distinguish denial from another connection error. If no prompt appears, do not record a denial pass; automatic successful access fails the expected-error assertion. This is a denied **read** and recovery test, not qualification of a locked/unavailable store or denial while saving/deleting credentials. It is intentionally not an unattended CI job. `--deny-first` rejects invocation without `--native-vault`, macOS or an interactive terminal before launching packages.
+
 ## Recorded local run — 21 October 2026
 
 Passed on macOS arm64 with native Keychain checks enabled:
