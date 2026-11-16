@@ -115,7 +115,10 @@ export function App() {
               leaveManager();
             }}
             resetKey={connectionReset}
-            connecting={session?.state === "connecting"}
+            connecting={
+              session?.state === "connecting" || session?.state === "awaiting-credentials"
+            }
+            awaitingCredentials={session?.state === "awaiting-credentials"}
             activeId={session && session.state !== "disconnected" ? session.profileId : undefined}
           />
           {session?.state === "connected" && (
@@ -190,9 +193,12 @@ export function App() {
           <RecoveryControls />
         </div>
         <div className="statusbar">
-          <span className="connection-state" data-state={session?.state}>
-            <i /> {session?.state ?? "No connection"}
-          </span>
+          <output className="connection-state" data-state={session?.state}>
+            <i />{" "}
+            {session?.state === "awaiting-credentials"
+              ? "Waiting for Keychain access…"
+              : (session?.state ?? "No connection")}
+          </output>
           {session && session.state !== "disconnected" && (
             <Button
               variant="ghost"

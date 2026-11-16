@@ -38,7 +38,10 @@ export class DatabaseProcess {
     private readonly emit: (event: AppEvent) => void,
     private readonly workerPath = path.join(__dirname, "../database/index.cjs"),
   ) {}
-  private state(active: ActiveSession, state: "connecting" | "connected" | "disconnected") {
+  private state(
+    active: ActiveSession,
+    state: Extract<AppEvent, { kind: "sessions.state" }>["state"],
+  ) {
     this.emit({
       kind: "sessions.state",
       sessionId: active.sessionId,
@@ -65,13 +68,16 @@ export class DatabaseProcess {
         timer: null,
       };
       this.active = active;
-      this.state(active, "connecting");
-      active.timer = setTimeout(() => {
-        if (this.active === active) this.stop();
-      }, 15000);
+      this.state(active, "awaiting-credentials");
       void resolve()
         .then((resolved) => {
           if (this.active !== active) return;
+          // OS approval may take arbitrarily long. Only worker startup and the
+          // database handshake consume the network budget; stop still cancels both phases.
+          this.state(active, "connecting");
+          active.timer = setTimeout(() => {
+            if (this.active === active) this.stop();
+          }, 15000);
           const worker = utilityProcess.fork(this.workerPath, [], {
             serviceName: "Database session",
             stdio: "ignore",

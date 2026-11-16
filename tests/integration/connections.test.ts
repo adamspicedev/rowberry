@@ -311,6 +311,21 @@ describe("real Electron utility-process transport", () => {
       globalThis.sessionHarness.stop();
     }, input);
   });
+  test("Keychain approval can outlast the network budget before connecting", async () => {
+    const result = await application.evaluate(async (_, input) => {
+      const start = globalThis.sessionHarness.events.length;
+      try {
+        const connected = await globalThis.sessionHarness.open(input, 16000);
+        return { connected, states: globalThis.sessionHarness.events.slice(start) };
+      } finally {
+        globalThis.sessionHarness.stop();
+      }
+    }, config(18));
+    expect(result.connected.serverVersion).toMatch(/^18\./);
+    expect(
+      result.states.map((event) => (event.kind === "sessions.state" ? event.state : null)),
+    ).toEqual(["awaiting-credentials", "connecting", "connected"]);
+  }, 30000);
   test("switching invalidates slow credential resolution and renderer ignores an old generation", async () => {
     const result = await application.evaluate(async (_, input) => {
       const old = globalThis.sessionHarness.open(input, 500).then(

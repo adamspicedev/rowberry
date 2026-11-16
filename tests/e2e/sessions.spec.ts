@@ -58,6 +58,24 @@ test("saved metadata and private transient password open a real TLS session from
     await page.getByRole("button", { name: "Connect Live fixture", exact: true }).click();
     await expect(page.locator(".connection-state")).toHaveText("connected");
     await expect(page.getByRole("region", { name: "Database schemas", exact: true })).toBeVisible();
+    // Exercise the renderer's credential-phase event contract independently of OS prompts.
+    const active = await page.evaluate(() => {
+      const events = Reflect.get(window, "sessionEvents");
+      if (!Array.isArray(events)) throw new Error("Missing session events");
+      return events.at(-1);
+    });
+    await application.evaluate(({ BrowserWindow }, active) => {
+      BrowserWindow.getAllWindows()[0]?.webContents.send("dbapp:event", {
+        ...active,
+        state: "awaiting-credentials",
+      });
+    }, active);
+    await expect(page.locator(".connection-state")).toHaveText("Waiting for Keychain access…");
+    await expect(page.locator(".connection-state")).toHaveRole("status");
+    await expect(
+      page.getByRole("button", { name: "Connect Live fixture", exact: true }),
+    ).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Disconnect", exact: true })).toBeEnabled();
     await page.getByRole("button", { name: "Disconnect", exact: true }).click();
     await expect(page.locator(".connection-state")).toHaveText("disconnected");
     expect(
