@@ -33,3 +33,7 @@ Closing a SQL tab disconnects its connection and rolls back an open transaction.
 **Cancel query** requests cancellation of active work. Cancellation does not prove that a write was rolled back. If the outcome is unknown, inspect the database before retrying. Rowberry does not automatically retry SQL.
 
 **End unfinished result** asks for confirmation because closing a result portal can commit an implicit mutation. Read the prompt rather than treating it as a harmless way to clear the results pane.
+
+From version 0.1.6, the confirmation starts with **Keep result** focused. Before confirming, choose **Keep result** or press Escape to retain the current result page and SQL draft and return to the opening control. Tab and Shift–Tab stay within the prompt.
+
+Choosing **End result and allow possible commit** starts the close operation. Wait for it to finish; any error appears in the prompt. Ending the old result does not run your pending SQL. After success, **Run SQL / selection** receives focus and requires a separate activation to execute it. If the connection has been lost, focus moves to **Reopen session** instead; reopening also leaves your SQL unexecuted.
