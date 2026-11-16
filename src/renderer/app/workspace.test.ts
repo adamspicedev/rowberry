@@ -76,6 +76,68 @@ test("disabled recovery removes legacy storage and never persists live SQL or JS
 });
 
 test.each([false, true])(
+  "read retry does not revive copies discarded while recovery was off (new live copies: %s)",
+  async (newLiveCopies) => {
+    vi.useFakeTimers();
+    let reads = 0;
+    let stored = emptyWorkspace();
+    const writes: ReturnType<typeof emptyWorkspace>[] = [];
+    vi.stubGlobal("localStorage", { getItem: () => null, removeItem: vi.fn() });
+    vi.stubGlobal("window", {
+      dbapp: {
+        request: async (command: Command): Promise<Reply> => {
+          if (command.kind === "workspace.save") {
+            stored = structuredClone(command.state);
+            writes.push(stored);
+            return { ok: true, kind: command.kind, requestId: command.requestId, data: {} };
+          }
+          if (command.kind !== "workspace.load" || ++reads === 1)
+            return failure("INTERNAL_ERROR", command.requestId);
+          return {
+            ok: true,
+            kind: command.kind,
+            requestId: command.requestId,
+            data: structuredClone(stored),
+          };
+        },
+      },
+    });
+    const workspace = await import("./workspace");
+    const editor = await import("../features/query/query-state");
+    await workspace.loadWorkspace();
+    expect(workspace.canReadWorkspace()).toBe(true);
+    editor.saveDrafts(["SELECT before_disabling"]);
+    workspace.recordDraft("discarded", "json", "closed editor", '{"discarded":');
+    workspace.updateWorkspace({ recoveryEnabled: false });
+    // Closing the editors must also clear copies awaiting the first successful read.
+    editor.saveDrafts([]);
+    workspace.recordDraft("discarded", "json", "", null);
+    workspace.updateWorkspace({ recoveryEnabled: true });
+    expect(workspace.workspaceState().sql).toEqual([]);
+    expect(workspace.workspaceState().drafts).toEqual([]);
+    if (newLiveCopies) {
+      editor.saveDrafts(["SELECT new_live_editor"]);
+      workspace.recordDraft("live", "json", "open editor", '{"new_live":');
+    }
+    expect(writes).toEqual([]);
+    await workspace.loadWorkspace();
+    const expected = {
+      ...emptyWorkspace(),
+      sql: newLiveCopies ? ["SELECT new_live_editor"] : [],
+      drafts: newLiveCopies
+        ? [{ id: "live", kind: "json", label: "open editor", text: '{"new_live":' }]
+        : [],
+    };
+    expect(writes).toEqual([expected]);
+    expect(workspace.workspaceState()).toEqual(expected);
+    vi.resetModules();
+    const restarted = await import("./workspace");
+    await restarted.loadWorkspace();
+    expect(restarted.workspaceState()).toEqual(expected);
+  },
+);
+
+test.each([false, true])(
   "retrying an initial read persists merged copies (save failure: %s)",
   async (initialSaveFailure) => {
     vi.useFakeTimers();
