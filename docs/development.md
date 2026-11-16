@@ -9,11 +9,15 @@ bun run package
 bun run verify:package release/mac-arm64/Rowberry.app arm64
 ```
 
-The configuration produces unsigned development DMGs for macOS arm64/x64, Windows x64 NSIS installers, and Linux x64 AppImage/deb packages on the appropriate hosts. Use `bun run package --mac`, `--win`, or `--linux` to select a platform. Outputs are in `release/`. Verification accepts an unpacked application directory or a macOS `.app`, checks the actual executable header and bundled assets, then launches shell and production behavioural checks on the host's architecture. The complete check requires the disposable PostgreSQL fixtures below. A different architecture receives inspection only and is explicitly reported as not launched. Windows uses `release/win-unpacked x64`; Linux uses `release/linux-unpacked x64`. Linux checks need a graphical session; CI uses Xvfb.
+The active package target is an unsigned development DMG for macOS Apple silicon (arm64). Use `bun run package --mac` on the arm64 Mac; outputs are in `release/`. The ordinary package command disables signing. Follow [local macOS signing](local-signing.md) to create a signed candidate instead.
 
-GitHub Actions configures native build/package/smoke jobs for both macOS architectures, Windows x64, and Linux x64. These are configured checks, not evidence that CI has run. Local evidence applies only to the host tested. Windows signing, macOS signing/notarization, Linux desktop coverage, installer fresh-install checks, and public release qualification remain outstanding.
+Verification accepts an unpacked application directory or a macOS `.app`, checks the actual executable header and bundled assets, then launches shell and production behavioural checks on the host's architecture. The complete check requires the disposable PostgreSQL fixtures below. A different architecture receives inspection only and is explicitly reported as not launched. Intel, Windows and Linux desktop packages and their build checks are deferred; [future host notes](desktop-qa-hosts.md) are not current v1 requirements.
 
-See [platform requirements](supported-platforms.md), [release checklist](release-checklist.md), [security](security.md), and [candidate release notes](release-notes-0.1.0.md). Rowberry is licensed under [GPL-3.0-only](../LICENSE); Baloo 2 retains its OFL license.
+GitHub Actions scopes website and desktop changes separately. The desktop scope includes macOS source/Electron checks, arm64 package asset and negative checks, PG14/18 integration/workflow checks on Ubuntu with Xvfb, and PG15–17 connection/TLS compatibility checks. Website builds and tests have their own scoped job; formatting and the aggregate CI gate remain shared. These configured jobs are distinct from a recorded run, and Ubuntu test execution does not qualify Linux desktop distribution.
+
+The local [signed 0.1.5 candidate](qa/2026-11-16-json-discard-keyboard.md#signed-015-candidate) passed app/DMG signing, notarization, Gatekeeper, packaged branding verification and all 27 production package checks. Downloaded/fresh-account installation, minimum supported macOS, remaining native credential/accessibility scenarios and final-release acceptance remain open; there is no qualified public release.
+
+See [platform requirements](supported-platforms.md), [release checklist](release-checklist.md), [security](security.md), and [candidate release notes](release-notes-0.1.5.md). Rowberry is licensed under [GPL-3.0-only](../LICENSE); Baloo 2 retains its OFL license.
 
 ## Security boundary
 
@@ -41,7 +45,7 @@ bun run test:postgres:cleanup
 
 The setup generates a local CA, server certificate and client certificate in a temporary directory, then starts isolated PostgreSQL 14 and 18 containers with memory-backed storage and localhost-only ports 55414/55418. The manifest is `/tmp/dbapp-task3-fixtures.json` (override with `DBAPP_POSTGRES_FIXTURES`). Credentials are fixture-only and never use the default application profile. Cleanup removes only containers bearing the task's disposable fixture label and generated keys. `compose.yaml` also supplies simple password-authenticated disposable servers; TLS/client-certificate tests use the setup above.
 
-The live suite checks text preservation, authentication failures, verified TLS, rejected trust failures, client certificates, connection timeouts, utility worker cancellation/crashes, server-side socket cleanup, and stale session generations. The Electron UI check saves metadata in a temporary profile, submits a session-only password privately, and connects/disconnects through the actual bridge. A separate Linux CI job provisions the same fixtures and runs both live suites, including TLS and client-certificate checks. That job has not been run locally; macOS results do not establish Windows or Linux transport results.
+The live suite checks text preservation, authentication failures, verified TLS, rejected trust failures, client certificates, connection timeouts, utility worker cancellation/crashes, server-side socket cleanup, and stale session generations. The Electron UI check saves metadata in a temporary profile, submits a session-only password privately, and connects/disconnects through the actual bridge. The scoped Ubuntu PostgreSQL job provisions the same fixtures and runs both live suites, including TLS and client-certificate checks. Record actual run URLs and results when citing CI evidence; these checks do not establish a qualified Windows or Linux desktop package.
 
 ## Branding
 
@@ -49,7 +53,7 @@ The Rowberry berry mark, palette, and packaging icons are in `assets/branding`. 
 
 ## SQL workspace
 
-Open **SQL workspace** after connecting. Each of at most 16 SQL tabs uses its own PostgreSQL connection. Run executes selected text when present, otherwise the editor contents; PostgreSQL rejects multi-statement batches before executing any statement. Use Control+Space for catalog table/column completion. Results preserve raw text, OIDs and SQL NULL and remain read only. Next result page replaces the current 200 rows; it does not accumulate previous pages. The bridge accepts up to 1,000 rows per fetch and 32 outstanding operations, reserving capacity for cancellation.
+Open a new SQL tab after connecting. Each of at most 16 SQL tabs uses its own PostgreSQL connection. Run executes selected text when present, otherwise the editor contents; PostgreSQL rejects multi-statement batches before executing any statement. Use Control+Space for catalog table/column completion. Results preserve raw text, OIDs and SQL NULL and remain read only. Next result page replaces the current 200 rows; it does not accumulate previous pages. The bridge accepts up to 1,000 rows per fetch and 32 outstanding operations, reserving capacity for cancellation.
 
 BEGIN, COMMIT and ROLLBACK run explicitly on the tab connection; transaction state includes aborted and unknown. Cancel targets active work. **End unfinished result** requires confirmation because closing a portal can commit an implicit mutation. **Close SQL tab** disconnects its connection and rolls back any open transaction. Unknown cancellation/connection outcomes require explicit session reopening; no SQL is retried automatically. COPY streaming is unsupported.
 

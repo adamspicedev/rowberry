@@ -23,7 +23,7 @@ Rowberry brings your PostgreSQL connections, queries, tables, and JSON into one 
 **Early development · PostgreSQL · GPL-3.0-only**
 
 > [!IMPORTANT]
-> Rowberry is an early 0.1.0 project. Public distribution is not yet qualified: platform testing, signing, and installation checks remain outstanding. The current way to try it is to run from source. Start with a disposable database while evaluating it.
+> Rowberry is an early 0.1.x project targeting Apple silicon Macs. The local [signed 0.1.5 candidate](docs/qa/2026-11-16-json-discard-keyboard.md#signed-015-candidate) passed notarization, Gatekeeper and 27 packaged workflow checks. Public distribution is not yet qualified: downloaded/fresh-account installation, minimum supported macOS, remaining native accessibility and credential scenarios, and release acceptance are still open. The current public way to try it is to run from source with a disposable database.
 
 ## What you can do
 
@@ -40,7 +40,7 @@ SQL results are read only; editing happens through eligible table rows and their
 
 ## Get started
 
-You need **Bun 1.4.2**, **Node.js 22.12+**, and a graphical desktop. From a local checkout:
+You need **Bun 1.4.2**, **Node.js 22.12+**, and an Apple silicon Mac with a graphical desktop. From a local checkout:
 
 ```sh
 bun install --frozen-lockfile
@@ -49,17 +49,18 @@ bun run dev
 
 This builds Rowberry and opens Electron. After changing source, close the app and run the command again; this is not a hot-reload development server.
 
-Add a connection to your PostgreSQL server, browse a schema, or open **SQL workspace** to run a query. Docker is only needed for the project's disposable database test fixtures, not to connect to an existing server.
+Add a connection to your PostgreSQL server, browse a schema, or open a new SQL tab to run a query. Docker is only needed for the project's disposable database test fixtures, not to connect to an existing server.
 
 ### Platform targets
 
-| Platform | Package target              | Status                    |
-| -------- | --------------------------- | ------------------------- |
-| macOS    | Apple silicon and Intel DMG | Qualification in progress |
-| Windows  | x64 NSIS installer          | Qualification in progress |
-| Linux    | x64 AppImage and deb        | Qualification in progress |
+| Platform               | Package target       | Status                                                 |
+| ---------------------- | -------------------- | ------------------------------------------------------ |
+| macOS on Apple silicon | arm64 DMG            | Only v1 target; local signed candidate checks recorded |
+| macOS on Intel         | x64 DMG              | Deferred; desktop build checks paused                  |
+| Windows                | x64 NSIS installer   | Deferred; desktop build checks paused                  |
+| Linux                  | x64 AppImage and deb | Deferred; desktop build checks paused                  |
 
-These are build targets, not a claim that every platform has passed release testing. See [platform requirements](docs/supported-platforms.md) for OS requirements and the [release checklist](docs/release-checklist.md) for remaining work.
+macOS 13 or later is the target; minimum-version qualification remains open. Intel, Windows and Linux are outside v1. CI scopes website and desktop work separately, with desktop package checks targeting arm64 only; Ubuntu database/website jobs do not qualify a Linux desktop release. See [platform requirements](docs/supported-platforms.md) and the [release checklist](docs/release-checklist.md) for remaining acceptance work.
 
 ## Your data stays yours
 
@@ -83,7 +84,7 @@ The [Rowberry website](https://rowberry.spicey.dev/) and [user documentation](ht
 | [Security](docs/security.md)                           | Understand credentials, TLS, and process boundaries.                               |
 | [Platform requirements](docs/supported-platforms.md)   | Check platform targets and qualification requirements.                             |
 | [Release checklist](docs/release-checklist.md)         | See what must be verified before distribution.                                     |
-| [Candidate release notes](docs/release-notes-0.1.0.md) | Review the scope of 0.1.0.                                                         |
+| [Candidate release notes](docs/release-notes-0.1.5.md) | Review the 0.1.5 keyboard-navigation repair and remaining limits.                  |
 
 ## Help shape Rowberry
 

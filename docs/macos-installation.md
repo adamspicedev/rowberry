@@ -1,6 +1,8 @@
 # macOS installation, replacement and removal
 
-Use the DMG for your Mac's architecture: arm64 for Apple Silicon, x64 for Intel. Only packages explicitly accepted for release are qualified; local unsigned candidates do not establish signing or Gatekeeper acceptance.
+Rowberry currently targets Apple silicon Macs (arm64) only. Intel Mac, Windows and Linux packages are deferred. There is no qualified public download yet; the procedure below applies to explicitly identified development or preview candidates.
+
+Local signed/notarized candidates have been verified, but a signature alone does not establish downloaded-package, fresh-account or release acceptance. Record the exact package identity and completed checks in the [evidence register](qa/v1-evidence-register.md); only packages explicitly accepted for release are qualified.
 
 ## Install
 

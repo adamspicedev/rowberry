@@ -1,6 +1,6 @@
 # Rowberry roadmap to v1
 
-Product and release roadmap · 23 October 2026
+Product and release roadmap · Started 23 October 2026 · Updated 16 November 2026
 
 **Recommendation:** ship a dependable, free macOS PostgreSQL workspace with excellent JSON workflows. Reach v1 through a signed preview, observed everyday use, and qualification of the exact release artifacts. Do not turn v1 into feature parity with a mature database administration tool.
 
@@ -33,34 +33,36 @@ ECC Council was used to choose release scope and tradeoffs. The roadmap translat
 
 **Change prompted by the council:** introduce an early result-export decision gate instead of assuming export belongs after v1. Export is a candidate scope addition, not an approved implementation task.
 
-## Starting point
+## Current progress
 
-Repository and evidence review, not a new packaged acceptance run:
+V1-01's release contract and evidence register are complete. Local signing is working, and focused reliability and keyboard fixes continue while unfamiliar preview participants are unavailable. This summary links recorded results; it is not a new packaged acceptance run.
 
 | Area         | Present                                                                                                           | Still to establish                                                                                              |
 | ------------ | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Connections  | Saved profiles, TLS verification, native credential-store integration and session-only fallback                   | Real denied/locked-store behaviour and native acceptance on every advertised architecture                       |
-| Workspace    | Table/query tabs, schema tree, table filtering/sorting, context menus, query completion and saved queries         | Uncoached task completion after the recent redesign; keyboard and accessibility review of the desktop workflows |
-| Editing      | JSON tree/search/text, exact numeric/text handling, stable-identity saves and optimistic conflict checks          | Final candidate regression evidence, interruption/recovery scenarios and clear save-state communication         |
-| Distribution | Package builds, verification scripts and partial unsigned arm64 lifecycle evidence                                | Signed/notarized downloads, exact-artifact native acceptance, retained baselines and release sign-off           |
+| Connections  | Saved profiles, verified TLS, native Keychain reconnects, real denied-read retry and denied-save session fallback | Locked/unavailable storage, native denied deletion and final-candidate qualification                            |
+| Workspace    | Table/query tabs, schema navigation, context menus and recorded keyboard-focus repairs                            | Uncoached task completion; native Home with VoiceOver; complete candidate accessibility qualification           |
+| Editing      | Guarded JSON saves, exact draft recovery and the 0.1.5 keyboard discard-confirmation repair                       | Final-candidate regression evidence and observed save-state understanding without coaching                      |
+| Distribution | Local signed/notarized arm64 candidates and recorded package/upgrade checks                                       | Downloaded/fresh-account installation, minimum supported macOS, durable accepted baseline and release sign-off  |
 | Website/docs | Live marketing site and MkDocs guides                                                                             | Release-specific downloads, supported-version statements and update/support instructions at publication         |
-| CI           | Scoped website/desktop checks and a required aggregate gate in PR #7; the gate is configured in branch protection | Merge the workflow change and verify a subsequent website-only PR skips desktop jobs                            |
+| CI           | Scoped website/desktop workflows and an aggregate CI result gate                                                  | Applicable checks on each change and the final source revision; CI does not establish native release acceptance |
+
+The [evidence register](qa/v1-evidence-register.md) links signed 0.1.3 package checks, real denied Keychain reads and saves, signed 0.1.4 performance results and the [0.1.5 discard repair](qa/2026-11-16-json-discard-keyboard.md). The [signed VoiceOver run](qa/2026-11-16-signed-voiceover.md) passed nine speech steps before native Home failed; a complete candidate speech pass remains open. Green CI for a repair is separate from signing and exact-package qualification.
 
 The [23 October installation report](qa/2026-10-23-macos-installation.md) records successful operator-reported core workflows in a fresh account, but also a JSON save discoverability problem. That report predates later interface changes: repeat the task on the new candidate rather than treating the old failure as a confirmed current bug or the redesign as a verified fix. Locked-Keychain testing was blocked on that host; it did not pass.
 
-There is no accepted release baseline. See [baseline policy](upgrade-baselines.md). The GitHub issue list was empty at this review; the work items below are proposed backlog entries, not existing issues.
+There is no accepted release baseline or qualified public download. See [baseline policy](upgrade-baselines.md). The work-item IDs below are repository planning labels, not GitHub issue numbers.
 
 ## Milestones and exit gates
 
 ### M0 — Agree the release contract and unblock qualification
 
-**Owner roles:** maintainer/product, release engineering. **Dependencies:** none. Start immediately; signing and arm64 qualification can progress alongside M1.
+**Owner roles:** maintainer/product, release engineering. **Dependencies:** none. The release contract and evidence register are complete; remaining qualification resources are tracked below.
 
-- Merge the website/scoped-CI work after review, then verify website-only and desktop-only job selection in ordinary PRs.
+- Maintain scoped website/desktop job selection and record applicable CI results for each change.
 - Record the v1 workflow checklist, advertised architectures, supported macOS versions and precise PostgreSQL test coverage. Do not equate connection compatibility on 15–17 with full feature coverage on those versions.
-- Confirm access to Apple signing/notarization credentials through the protected release environment and the available Apple silicon desktop test host. Never put credentials in issues, docs or repository files.
-- Identify preview participants and a disposable PostgreSQL dataset with nested JSON, large numbers, nulls and a second client for conflict tests.
-- Create a release evidence register linking version, commit, final artifact digests, test environment and outstanding failures.
+- Preserve the working local Keychain signing/notarization path and arm64 host; configure the protected GitHub environment only if remote signing is used. Minimum-OS and disposable-account qualification remain open. Never put credentials in issues, docs or repository files.
+- Recruit unfamiliar preview participants when available. The moderated task script and disposable PostgreSQL fixtures are prepared; participant observations are still missing.
+- Keep the release evidence register current with version, commit, final artifact digests, test environment and outstanding failures.
 
 **Exit:** scope and owners are recorded, qualification resources are available or explicitly blocked, and the acceptance tasks are reproducible. A missing signing identity or native test access is visible here, not discovered at launch.
 
@@ -115,7 +117,7 @@ Perform a focused security/dependency review covering Electron support/advisorie
 - Retain immutable installers, checksums, source identity and acceptance evidence in durable storage. Local `/tmp` files and expiring CI artifacts are not release baselines.
 - Provide preview status, known limits, manual install/update/removal instructions and a clear issue-reporting route with redaction guidance.
 
-**Exit:** a tester can obtain and use the exact signed preview package without developer tooling or undocumented security bypasses. Missing qualification excludes that architecture from the preview explicitly. The two-architecture v1 promise remains unchanged unless the maintainer approves a narrower scope.
+**Exit:** a tester can obtain and use the exact signed Apple-silicon preview package without developer tooling or undocumented security bypasses. Intel, Windows and Linux remain outside v1; local signing alone does not satisfy downloaded-package or fresh-account acceptance.
 
 ### M4 — Validate real use and stabilise
 
@@ -143,7 +145,7 @@ Perform a focused security/dependency review covering Electron support/advisorie
 
 **Exit:** an external user can discover, download, verify, install, use and later update the supported product through the documented path. Required evidence and maintainer sign-off are linked from the versioned release record.
 
-## Backlog to execute first
+## Execution backlog
 
 These IDs are planning labels. They do not refer to created GitHub issues.
 
@@ -159,7 +161,7 @@ These IDs are planning labels. They do not refer to created GitHub issues.
 | V1-08 | P1       | Preview feedback and targeted polish                  | Product + engineering    | M4 task evidence passes and blocker queue is empty                            |
 | V1-09 | P0       | Final candidate, upgrades and distribution            | Release engineering + QA | M5 exact-artifact gates and sign-off pass                                     |
 
-Priority denotes release impact, not permission to ignore dependencies. V1-02 should start while V1-03 runs; it must not wait until all UI polish is complete.
+Priority denotes release impact, not permission to ignore dependencies. See the [to-do list](v1-todo.md) for completion status. Remaining native qualification and focused reliability work can progress while V1-03 awaits participants.
 
 ## Explicitly outside v1 unless evidence changes the decision
 
@@ -174,9 +176,11 @@ These are deferred, not rejected permanently. SQL results remain read only and s
 
 ## Working agreement and immediate next action
 
-Start with **V1-01, V1-02 and V1-03**: define the acceptance tasks, arrange signing and arm64 qualification, and observe the redesigned core workflow. Use their findings to select the next implementation change. Do not begin another major feature before that evidence exists.
+Continue focused reliability and keyboard/accessibility work under **V1-04, V1-05 and V1-08**, with a reproducible failure or an identified evidence gap for each change. Keep native Home unresolved until a live VoiceOver reproduction demonstrates a fix and the complete speech run passes. Complete the remaining **V1-02** installation/OS checks when the required test conditions are available.
 
-At each milestone, record what shipped, what was actually tested, what remains blocked and whether the scope decision changed. Re-estimate dates after M1 and after the signed preview; this roadmap makes no calendar commitment without known capacity and release access.
+**V1-03** awaits unfamiliar participants; automated checks do not replace their observations. Keep **V1-06** export scope undecided until task evidence supports inclusion or explicit deferral. Do not start another major feature merely because participant testing is unavailable.
+
+After each completed change, update the to-do list, evidence register and affected user guidance; update this roadmap and its public summary when progress or priorities change. Record what changed, what was actually tested, what remains blocked and whether scope changed. Re-estimate dates after M1 and after the signed preview; this roadmap makes no calendar commitment without known capacity and release access.
 
 Planning does not authorize publication, create external issues or configure signing credentials. Publication retains the explicit approval gate in the existing release policy.
 

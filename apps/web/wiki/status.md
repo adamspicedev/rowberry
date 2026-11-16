@@ -1,6 +1,6 @@
 # Project status
 
-Rowberry is an early **0.1.0** project, licensed under **GPL-3.0-only**. Public distribution is not yet qualified. The current supported way to evaluate it is to [run from source](getting-started.md).
+Rowberry is an early **0.1.x** project, licensed under **GPL-3.0-only**. Public distribution is not yet qualified. The current supported way to evaluate it is to [run from source](getting-started.md). See the [0.1.5 candidate notes](https://github.com/adamspicedev/rowberry/blob/main/docs/release-notes-0.1.5.md) for the latest keyboard-navigation repair.
 
 ## Current scope
 
@@ -19,13 +19,15 @@ Rowberry is an early **0.1.0** project, licensed under **GPL-3.0-only**. Public 
 | Windows x64              | Deferred; desktop build checks paused             |
 | Linux x64                | Deferred; desktop build checks paused             |
 
-Build targets and CI checks are not equivalent to a signed, tested public release. Signing, installation, and platform checks are tracked in the repository's [release checklist](https://github.com/adamspicedev/rowberry/blob/main/docs/release-checklist.md).
+Local Apple-silicon signing and notarization have passed for recorded development candidates. Downloaded-package and fresh-account installation acceptance, minimum supported macOS testing and final-release approval remain open. Build targets and CI checks do not establish a qualified public release. See the repository's [release checklist](https://github.com/adamspicedev/rowberry/blob/main/docs/release-checklist.md).
 
 Database testing covers PostgreSQL 14 and 18, with connection and TLS compatibility checks for 15, 16, and 17. This describes the test scope, not a guarantee for every server configuration.
 
 ## Current limits
 
 PostgreSQL is the only database engine. SQL results are read only. Multi-statement SQL batches, COPY streaming, import/export, schema-changing context-menu actions, ER diagrams, and automatic updates are not currently available.
+
+Native VoiceOver testing still has an unresolved Home-key focus issue in the JSON tree. Recorded automated keyboard and partial speech checks do not establish complete accessibility qualification. Unfamiliar-user task testing is also pending.
 
 See the [roadmap to v1](roadmap.md) for milestones and deferred features.
 
