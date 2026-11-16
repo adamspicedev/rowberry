@@ -22,6 +22,7 @@ Independent review identified a second reproducible case: if the database sessio
 ## Signed 0.1.6 candidate
 
 - Application source: `611dfe00ec16099afd61bdab7c7f2288cedb4bc5` (before GitHub rebase).
+- [PR #38](https://github.com/adamspicedev/rowberry/pull/38) merged after all required CI checks passed. Main commit `97e14cc53a97972b5667e56513f3750a99f6fd2d` has identical application and regression source to the tested build.
 - Host: macOS 27.3, build `26C5035r`, arm64. This is not minimum-supported-OS qualification.
 - Local installer: `release-signed/0.1.6/Rowberry-0.1.6-mac-arm64.dmg`.
 - DMG SHA-256: `08e7b626b99103cfb33f46672238221bb7d3b31a662feb52f4fb200d9b4e22f5`.

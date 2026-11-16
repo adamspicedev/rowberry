@@ -17,7 +17,9 @@ GitHub Actions scopes website and desktop changes separately. The desktop scope 
 
 The local [signed 0.1.6 candidate](qa/2026-11-16-query-confirmation-keyboard.md#signed-016-candidate) passed app/DMG signing, notarization, stapling, Gatekeeper, packaged branding verification and all 27 production package checks with no skips. Downloaded/fresh-account installation, minimum supported macOS, remaining native credential/accessibility scenarios and final-release acceptance remain open; there is no qualified public release.
 
-See [platform requirements](supported-platforms.md), [release checklist](release-checklist.md), [security](security.md), and [candidate release notes](release-notes-0.1.6.md). Rowberry is licensed under [GPL-3.0-only](../LICENSE); Baloo 2 retains its OFL license.
+The [0.1.7 connection-deletion repair](qa/2026-11-16-connection-delete-keyboard.md) passed source checks, independent review and light/dark inspection. Its app signature is valid and all 28 production package tests passed with no skips in 1.6 minutes. Installer verification remains pending; these app results do not replace the completed 0.1.6 installer evidence.
+
+See [platform requirements](supported-platforms.md), [release checklist](release-checklist.md), [security](security.md), and [candidate release notes](release-notes-0.1.7.md). Rowberry is licensed under [GPL-3.0-only](../LICENSE); Baloo 2 retains its OFL license.
 
 ## Security boundary
 

@@ -24,4 +24,20 @@ Failure wording no longer assumes credential deletion was the cause: a metadata-
 
 ## Candidate qualification
 
-Signed-package and installer checks are pending. Browser-driven keyboard tests do not qualify live VoiceOver or the separate [native Home issue](2026-11-16-signed-voiceover.md). Fresh-account installation, minimum-supported-OS coverage and final-release acceptance remain open.
+Application source: `86747b92fe40b98e8f79fcbf73ddbfd43ad32933`. The build used identical application source from pre-rebase commit `c71561fdcc609b0b0b98de3d096f6f7a1db413a5`.
+
+- Host: macOS 27.3, build `26C5035r`, arm64.
+- Local application: `release-signed/0.1.7/mac-arm64/Rowberry.app`.
+- `app.asar` SHA-256: `c81f33c3e6cd13c533c4167da4a441f0025d0f706f8dac25e3dbbd06427c26e3`.
+- The embedded version is 0.1.7. All 14 bundled application files match the frozen build output.
+- Developer ID signature verification passed with `codesign --verify --deep --strict`.
+
+```sh
+DBAPP_NATIVE_CREDENTIAL_TEST=1 bun run verify:package /Users/spicey/Projects/dbapp/release-signed/0.1.7/mac-arm64/Rowberry.app arm64
+```
+
+Run from the worktree containing the new regression: **28 passed, zero skipped, in 1.6 minutes**. Executable architecture, renderer assets, IPC and sandboxed renderer smoke also passed. This includes available native credential storage, the connection-deletion regression, PostgreSQL 14/18 workflows, recovery, guarded saves and controlled failures.
+
+Notarization stopped before submission because `notarytool` could not find the saved `rowberry-notary` profile. The same lookup failed from the main workspace and when explicitly selecting the login Keychain. The user was asked to restore the profile interactively; no credential was requested in chat. The signed application and a submission archive are retained so notarization can resume without rebuilding. **0.1.7 app notarization, stapling, Gatekeeper and final-DMG qualification remain pending.** The latest fully verified local app/DMG pair remains [0.1.6](2026-11-16-query-confirmation-keyboard.md).
+
+Browser-driven keyboard tests do not qualify live VoiceOver or the separate [native Home issue](2026-11-16-signed-voiceover.md). Fresh-account installation, minimum-supported-OS coverage and final-release acceptance remain open.

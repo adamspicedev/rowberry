@@ -25,7 +25,7 @@ Rowberry brings your PostgreSQL connections, queries, tables, and JSON into one 
 > [!IMPORTANT]
 > Rowberry is an early 0.1.x project targeting Apple silicon Macs. The local [signed 0.1.6 candidate](docs/qa/2026-11-16-query-confirmation-keyboard.md#signed-016-candidate) passed notarization, Gatekeeper and all 27 packaged workflow checks with no skips. Public distribution is not yet qualified: downloaded/fresh-account installation, minimum supported macOS, remaining native accessibility and credential scenarios, and release acceptance are still open. The current public way to try it is to run from source with a disposable database.
 
-Version 0.1.6 improves keyboard navigation in the [unfinished-query-result confirmation](docs/qa/2026-11-16-query-confirmation-keyboard.md), including focus recovery after connection loss. Source query and JSON workflows passed on PostgreSQL 14 and 18, followed by verification of the exact signed package and branded installer.
+Version 0.1.7 fixes [connection-deletion focus and a pending-request race](docs/qa/2026-11-16-connection-delete-keyboard.md) that could discard another connection's unsaved editor. The signed app passed all 28 packaged tests with no skips; installer verification remains pending. Version 0.1.6 remains the latest candidate with completed app and installer verification.
 
 ## What you can do
 
@@ -86,7 +86,7 @@ The [Rowberry website](https://rowberry.spicey.dev/) and [user documentation](ht
 | [Security](docs/security.md)                           | Understand credentials, TLS, and process boundaries.                               |
 | [Platform requirements](docs/supported-platforms.md)   | Check platform targets and qualification requirements.                             |
 | [Release checklist](docs/release-checklist.md)         | See what must be verified before distribution.                                     |
-| [Candidate release notes](docs/release-notes-0.1.6.md) | Review the 0.1.6 query-confirmation repair and remaining limits.                   |
+| [Candidate release notes](docs/release-notes-0.1.7.md) | Review the 0.1.7 connection-deletion repair and remaining limits.                  |
 
 ## Help shape Rowberry
 
