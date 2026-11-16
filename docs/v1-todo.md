@@ -18,16 +18,17 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026. I
   - [ ] Select a known package, disposable fixture and three unfamiliar preview participants.
   - [ ] Observe connect, browse, query, edit, save, verify and recovery tasks without coaching; record intervention and failure points.
   - [ ] Identify focused fixes; re-run failed tasks after changes, including keyboard, light/dark and narrow-window checks.
-- [ ] **V1-04 — Close vault and JSON recovery evidence gaps** · Engineering + QA · In progress; denied reads qualified, other native failure modes pending
+- [ ] **V1-04 — Close vault and JSON recovery evidence gaps** · Engineering + QA · In progress; denied reads and saves qualified, locked-store testing pending
   - [x] Verify the [unsigned arm64 native Keychain round trip and packaged connection workflows](qa/2026-10-24-integrity-and-package.md).
   - [ ] Exercise saved credentials, deletion and genuinely unavailable/denied native storage on each target.
-  - [x] Verify [real denied Keychain retrieval, retained data, explicit retry and restart](qa/2026-11-16-native-keychain-denial.md) on signed 0.1.3. Denied writes/deletion and locked/unavailable storage remain open.
+  - [x] Verify [real denied Keychain retrieval, retained data, explicit retry and restart](qa/2026-11-16-native-keychain-denial.md) on signed 0.1.3.
+  - [x] Verify [real denied password saving, usable session-only fallback and forgetting the password on restart](qa/2026-11-16-native-keychain-save-denial.md) on signed 0.1.4. Locked/unavailable storage and native denied deletion remain unqualified.
   - [x] Keep the [session-only password warning visible after Connect](qa/2026-11-16-session-password-warning.md); verify controlled storage failures, usable session authentication and forgetting the password on restart.
   - [x] Add packaged regressions for verbatim invalid JSON/Unicode/large-number recovery and explicit recovered-copy discard across restart.
   - [x] Verify interrupted JSON recovery, invalid JSON, Unicode, exact large numbers and durable discard in the [unsigned packaged scenarios](qa/2026-10-24-integrity-mapping.md); final-candidate qualification remains required.
   - [x] Fix retry-after-read-failure draft persistence and preserve displaced SQL as detached copies; verify [abrupt process termination after acknowledged persistence](qa/2026-10-26-recovery-retry.md).
   - [x] Qualify the signed 0.1.3 production package workflows, including available native Keychain and recovery checks; see [the candidate record](qa/2026-11-16-signed-013-qualification.md).
-  - [x] Retain completed development outcomes tied to package hashes. Real denied-read evidence is recorded separately from simulated unavailable-store checks; neither closes the remaining native failure modes.
+  - [x] Retain completed development outcomes tied to package hashes. Real denied-read and denied-save evidence are recorded separately from simulated unavailable-store checks; remaining native scenarios and final-candidate qualification stay open.
 - [ ] **V1-05 — Audit integrity and interruption coverage** · Engineering · In progress; before signed preview acceptance
   - [x] Run the [PG18 write-integrity and packaged guarded-save baseline](qa/2026-10-24-integrity-and-package.md); fix the stale Intel packaging target.
   - [x] Map contract tasks A04–A09 to [existing regression coverage and remaining gaps](qa/2026-10-24-integrity-mapping.md).

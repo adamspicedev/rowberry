@@ -17,15 +17,20 @@ const [baselinePath, candidatePath, ...flags] = process.argv.slice(2);
 if (
   !baselinePath ||
   !candidatePath ||
-  flags.some((flag) => !["--native-vault", "--deny-first"].includes(flag))
+  flags.some((flag) => !["--native-vault", "--deny-first", "--deny-write"].includes(flag))
 )
   throw new Error(
-    "Usage: bun run verify:upgrade <baseline package> <candidate package> [--native-vault] [--deny-first]",
+    "Usage: bun run verify:upgrade <baseline package> <candidate package> [--native-vault] [--deny-first | --deny-write]",
   );
 const nativeVault = flags.includes("--native-vault");
 const denyFirst = flags.includes("--deny-first");
-if (denyFirst && (!nativeVault || process.platform !== "darwin" || !process.stdin.isTTY))
-  throw new Error("--deny-first requires --native-vault, macOS and an interactive terminal");
+const denyWrite = flags.includes("--deny-write");
+if (denyFirst && denyWrite) throw new Error("Choose only one denial scenario per run");
+if (
+  (denyFirst || denyWrite) &&
+  (!nativeVault || process.platform !== "darwin" || !process.stdin.isTTY)
+)
+  throw new Error("Denial scenarios require --native-vault, macOS and an interactive terminal");
 async function operatorStep(message: string) {
   const terminal = createInterface({ input: process.stdin, output: process.stdout });
   try {
@@ -107,6 +112,14 @@ async function request(input: Record<string, unknown>) {
   if (!reply.ok) throw new Error(`${command.kind}: ${reply.error.message}`);
   return reply;
 }
+async function expectNoStoredPassword() {
+  for (const file of await fs.readdir(directory)) {
+    if (file.startsWith("profiles.sqlite"))
+      expect((await fs.readFile(path.join(directory, file))).includes(Buffer.from(secret))).toBe(
+        false,
+      );
+  }
+}
 async function launch(build: typeof baseline, userData = directory) {
   application = await electron.launch({
     executablePath: build.executable,
@@ -178,7 +191,7 @@ try {
   }
   await request({ kind: "queries.saved.save", ...query });
   await request({ kind: "workspace.save", state: workspace });
-  if (denyFirst) {
+  if (denyFirst || denyWrite) {
     // Establish fixture health before attributing a candidate failure to denied access.
     const connected = await request({ kind: "connections.connect", id: profile.id });
     if (connected.kind !== "connections.connect") throw new Error("Unexpected connect reply");
@@ -207,12 +220,7 @@ try {
     });
     expect(await request({ kind: "workspace.load" })).toMatchObject({ data: workspace });
     await expect(page.getByLabel("Recovered json draft")).toHaveValue(workspace.drafts[0]!.text);
-    for (const file of await fs.readdir(directory)) {
-      if (file.startsWith("profiles.sqlite"))
-        expect((await fs.readFile(path.join(directory, file))).includes(Buffer.from(secret))).toBe(
-          false,
-        );
-    }
+    await expectNoStoredPassword();
     console.log(
       "PASS denied credential read: disconnected; metadata, saved query and drafts retained; no plaintext secret in profile database files.",
     );
@@ -222,6 +230,47 @@ try {
     await request({ kind: "sessions.close", sessionId: recovered.data.sessionId });
     console.log(
       "PASS explicit retry: authenticated using the retained credential without resubmitting it.",
+    );
+    await close();
+  }
+  if (denyWrite) {
+    await launch(candidate);
+    await expect(page.getByLabel("Recovered json draft")).toHaveValue(workspace.drafts[0]!.text);
+    await page.getByRole("button", { name: "Keep local copies", exact: true }).click();
+    expect(await request({ kind: "connections.list", offset: 0 })).toMatchObject({
+      data: { profiles: [profile], secureStorage: true },
+    });
+    await page.getByRole("button", { name: `Select ${profile.name}`, exact: true }).click();
+    await expect(
+      page.getByRole("checkbox", { name: "Save password in OS credential store" }),
+    ).toBeChecked();
+    await page.getByLabel("Password", { exact: true }).fill(secret);
+    console.log(`Disposable Keychain test item: ${profile.id}`);
+    await operatorStep(
+      "Press Enter when ready to choose DENY on the password-save Keychain prompt. ",
+    );
+    await page.getByRole("button", { name: "More connection actions", exact: true }).click();
+    await page.getByRole("button", { name: "Save without connecting", exact: true }).click();
+    // Give the operator time to answer the real OS prompt, then inspect the result.
+    // Automatic successful access must fail this scenario instead of counting as denial.
+    await expect(page.getByRole("button", { name: "Connect", exact: true })).toBeEnabled({
+      timeout: 300000,
+    });
+    await expect(page.locator(".connection-message")).toContainText("Password is session-only");
+    await expect(page.getByLabel("Password", { exact: true })).toHaveValue("");
+    await expect(page.locator(".toast").getByRole("alert")).toHaveText(
+      `Password for ${profile.name} is session-only and will be forgotten when the app quits.`,
+    );
+    expect(await request({ kind: "queries.saved.get", id: query.id })).toMatchObject({
+      data: query,
+    });
+    expect(await request({ kind: "workspace.load" })).toMatchObject({ data: workspace });
+    await expectNoStoredPassword();
+    const connected = await request({ kind: "connections.connect", id: profile.id });
+    if (connected.kind !== "connections.connect") throw new Error("Unexpected connect reply");
+    await request({ kind: "sessions.close", sessionId: connected.data.sessionId });
+    console.log(
+      "PASS denied password save: visible session-only warning, cleared input, retained query/drafts, no plaintext password in profile database files and authenticated transient session.",
     );
     await close();
   }
@@ -237,14 +286,27 @@ try {
     await expect(page.getByLabel("Recovered json draft")).toHaveValue(workspace.drafts[0]!.text);
     await expect(page.getByText("No connection", { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Run SQL / selection" })).toHaveCount(0);
-    if (nativeVault) {
+    if (denyWrite) {
+      const command = CommandSchema.parse({
+        kind: "connections.connect",
+        id: profile.id,
+        requestId: randomUUID(),
+      });
+      const reply = await page.evaluate((command) => window.dbapp.request(command), command);
+      expect(reply).toMatchObject({ ok: false, error: { code: "CONNECTION_FAILED" } });
+      await expect(page.locator(".connection-state")).toHaveText("disconnected");
+      // An explicit connection test proves the fixture is still healthy without
+      // saving this password or restoring it to the profile's transient state.
+      await request({ kind: "connections.test", profile, secret });
+      await expectNoStoredPassword();
+    } else if (nativeVault) {
       // No secret submission in the candidate: authenticate through its real lookup path.
       const connected = await request({ kind: "connections.connect", id: profile.id });
       if (connected.kind !== "connections.connect") throw new Error("Unexpected connect reply");
       await request({ kind: "sessions.close", sessionId: connected.data.sessionId });
     }
     console.log(
-      `PASS ${phase}: connection, saved query, SQL draft and exact recovered JSON${nativeVault ? ", authenticated native credential" : " (native credential not tested)"}`,
+      `PASS ${phase}: connection, saved query, SQL draft and exact recovered JSON${denyWrite ? ", session password forgotten and old saved credential not reused" : nativeVault ? ", authenticated native credential" : " (native credential not tested)"}`,
     );
     await close();
   }
@@ -258,7 +320,18 @@ try {
     if (nativeVault) {
       cleanupDirectory = await fs.mkdtemp(path.join(tmpdir(), "rowberry-upgrade-cleanup-"));
       await launch(baseline, cleanupDirectory);
-      expect(await credential(true)).toBe(true);
+      if (denyWrite && completed) {
+        // The baseline's still-valid saved password makes restart failure proof
+        // that fallback disabled retrieval, not just that a password was missing.
+        // Preserve cleanup even if this assertion fails.
+        try {
+          expect(await credential()).toBe(true);
+        } finally {
+          expect(await credential(true)).toBe(true);
+        }
+      } else {
+        expect(await credential(true)).toBe(true);
+      }
     }
     cleanupComplete = true;
   } finally {
@@ -277,6 +350,7 @@ console.log(
       candidate,
       nativeVault,
       denyFirst,
+      denyWrite,
       platform: process.platform,
       architecture: process.arch,
     },
