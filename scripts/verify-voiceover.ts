@@ -28,6 +28,7 @@ async function preflight() {
   await appleScript('tell application "VoiceOver" to get content of last phrase');
 }
 const requestedReadback = process.argv.includes("--readback");
+const largeArray = process.argv.includes("--large-array");
 await preflight();
 if (process.argv.includes("--check")) {
   console.log("VoiceOver is running and its speech scripting interface is available");
@@ -49,12 +50,14 @@ await mkdir(evidence);
 const report: {
   appAsarSha256: string;
   speechMode: string;
+  largeArrayItems: number;
   status: string;
   steps: unknown[];
   error?: string;
 } = {
   appAsarSha256: digest,
   speechMode: requestedReadback ? "requested-readback" : "automatic-announcements",
+  largeArrayItems: largeArray ? 100000 : 0,
   status: "running",
   steps: [],
 };
@@ -80,6 +83,10 @@ try {
   await client.query(
     `CREATE TABLE "${schema}".records(id int PRIMARY KEY, note text, doc json); INSERT INTO "${schema}".records VALUES(1,'original','{"name":"Rowberry","items":[{"name":"Apple"},{"name":"Berry"}]}')`,
   );
+  if (largeArray)
+    await client.query(
+      `INSERT INTO "${schema}".records SELECT 2, 'large array', json_build_object('items', json_agg(n ORDER BY n)) FROM generate_series(0, 99999) AS n`,
+    );
   app = await electron.launch({
     executablePath: executable,
     args: [`--user-data-dir=${profile}`],
@@ -185,6 +192,70 @@ try {
     ["expand name", "name name"],
   );
   await panel.getByRole("button", { name: "Close JSON", exact: true }).click();
+  if (largeArray) {
+    await grid.getByRole("gridcell").nth(5).dblclick();
+    const tree = panel.getByRole("tree", { name: "JSON tree", exact: true });
+    const array = panel.getByRole("treeitem", { name: "items: array, 100000 items", exact: true });
+    const selected = panel.getByRole("treeitem", { selected: true });
+    await step("large-select-items", () => array.click(), ["items", "collapsed"]);
+    await appleScript('tell application "VoiceOver" to tell vo cursor to move into item');
+    await step(
+      "large-expand-items",
+      async () => {
+        await nativeKey(124);
+        await expect(array).toHaveAttribute("aria-expanded", "true");
+        if (requestedReadback) await nativeKey(99, true);
+      },
+      ["items", "expanded"],
+    );
+    const assertPosition = async (position: number) => {
+      await expect(selected).toHaveAccessibleName(`${position - 1}: ${position - 1}`);
+      await expect(selected).toHaveAttribute("aria-posinset", String(position));
+      await expect(selected).toHaveAttribute("aria-setsize", "100000");
+      expect(await panel.getByRole("treeitem").count()).toBeLessThan(40);
+      await expect(tree).toBeFocused();
+    };
+    await step(
+      "large-first-position",
+      async () => {
+        await nativeKey(124);
+        await assertPosition(1);
+      },
+      ["1 of 100000"],
+    );
+    await step(
+      "large-last-position",
+      async () => {
+        await nativeKey(119);
+        await assertPosition(100000);
+      },
+      ["99999", "100000 of 100000"],
+    );
+    await tree.evaluate((element) => element.scrollTo({ top: 0 }));
+    await expect(tree).toHaveAttribute(
+      "aria-activedescendant",
+      (await selected.getAttribute("id")) as string,
+    );
+    await expect(selected).toHaveCount(1);
+    await step(
+      "large-offscreen-navigation",
+      async () => {
+        await nativeKey(126);
+        await assertPosition(99999);
+      },
+      ["99998", "99999 of 100000"],
+    );
+    await step(
+      "large-home",
+      async () => {
+        await nativeKey(115);
+        await expect(selected).toHaveAccessibleName("JSON root: object, 1 keys");
+        await expect(tree).toBeFocused();
+      },
+      ["json root"],
+    );
+    await panel.getByRole("button", { name: "Close JSON", exact: true }).click();
+  }
   await grid.getByRole("gridcell").nth(1).click();
   await page.getByRole("button", { name: "Edit selected cell", exact: true }).click();
   await page.getByRole("textbox", { name: "Cell draft", exact: true }).fill("voiceover draft only");

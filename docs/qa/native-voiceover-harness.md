@@ -4,7 +4,7 @@ This opt-in harness reads **actual VoiceOver output** through the installed macO
 
 ## Setup
 
-Use an unlocked local Mac with the unsigned packaged Rowberry build and the disposable PostgreSQL 18 fixture on `127.0.0.1:55418` (database/user `fixture`, fixture-only password). The harness creates a uniquely named schema and a temporary application profile. It stages a change, cancels the preview, verifies the database is unchanged, and drops only its own schema. It does not use saved personal connections or Keychain secrets.
+Use an unlocked local Mac with a known packaged Rowberry build and the disposable PostgreSQL 18 fixture on `127.0.0.1:55418` (database/user `fixture`, fixture-only password). Current qualification can use the signed candidate; historical unsigned results below retain their original scope. The harness creates a uniquely named schema and a temporary application profile. It stages a change, cancels the preview, verifies the database is unchanged, and drops only its own schema. It does not use saved personal connections or Keychain secrets.
 
 1. Turn VoiceOver on and use English speech/UI for the current phrase matchers.
 2. In VoiceOver Utility → General, enable **Allow VoiceOver to be controlled with AppleScript**.
@@ -16,6 +16,8 @@ bun run verify:voiceover --check
 DBAPP_VOICEOVER=1 bun run verify:voiceover
 # Separate qualification of explicitly requested state readback:
 DBAPP_VOICEOVER=1 bun run verify:voiceover --readback
+# Also qualify navigation and spoken positions in a virtualized 100,000-item array:
+DBAPP_VOICEOVER=1 DBAPP_PACKAGE_EXECUTABLE="$PWD/release-signed/0.1.4/mac-arm64/Rowberry.app/Contents/MacOS/Rowberry" bun run verify:voiceover --large-array
 ```
 
 The default executable is `release/mac-arm64/Rowberry.app/Contents/MacOS/Rowberry`. Override it with `DBAPP_PACKAGE_EXECUTABLE` for another packaged candidate. `--check` verifies VoiceOver is running and its last-phrase interface is readable; it does not prove native keystroke permission. A live run verifies that separately.
@@ -29,6 +31,10 @@ The capture polls while native input and its DOM verification are in flight, the
 The default mode requires automatic announcements. `--readback` explicitly asks VoiceOver to describe the current item (VO-F3) after expansion/collapse; it is **not evidence of automatic state-change announcements**. The report records `speechMode` so the results cannot be confused. Both modes enter the JSON table's VoiceOver interaction context. Preview cancellation uses VO-Tab followed by Escape to pass the key to Rowberry, because VoiceOver can consume Escape itself. Plain Escape with VoiceOver active is not qualified by this scenario.
 
 Current scenarios: select/expand/collapse JSON items, select a scalar without a bogus Expand label, open a save preview with Cancel focused, Escape back to Preview changes, and independent verification that cancellation did not write the staged value. Because only the last phrase is exposed, rapidly superseded announcements can produce a failure requiring inspection; this is not a complete speech transcript.
+
+`--large-array` adds a second disposable row containing 100,000 numeric array entries. Native keys select the first and last entries, return Home, and navigate after the active descendant has been scrolled out of view. Each position check requires fresh spoken ordinal/count evidence as well as the correct selected value, ARIA position/count, tree focus and fewer than 40 mounted rows. The report records `largeArrayItems`. Matchers tolerate grouping commas in numeric speech but reject a different ordinal or sibling count; they do not infer a spoken count from the DOM. The flag can combine with `--readback`, whose expansion/collapse limitations remain unchanged.
+
+The [signed 0.1.4 run on 16 November](2026-11-16-signed-voiceover.md) captured the correct large-array positions but **failed native Home**, which moved focus to the panel's resize control. The opt-in run therefore remains failing on that candidate; preview checks after Home were not reached. The failure and diagnostic controls are retained. Browser-driven Home and native Home without VoiceOver passing do not close this gap.
 
 CI runs the transcript matcher/freshness tests. Native qualification is intentionally local and explicit: hosted CI has no configured VoiceOver desktop or macOS permissions.
 

@@ -36,6 +36,7 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026. I
   - [x] Establish working M4 development budgets and qualify bounded large JSON workloads. [Three latest packaged repetitions](qa/json-performance-and-accessibility.md#packaged-follow-up-26-october-2026) passed nine tests, 60 cleanup cycles and 60 large-string selection samples; large-string selection now enforces the 100 ms budget.
   - [x] Qualify a [one-hour repeated JSON cleanup workload](qa/json-performance-and-accessibility.md#one-hour-packaged-result-26-october-2026): 6,365 cycles within retained-resource limits.
   - [x] Add and run [process-memory checks without forced collection](qa/json-performance-and-accessibility.md#packaged-process-memory-result-27-october-2026): six scenarios, 180 cycles, maximum sampled total 1,193.84 MiB within the calibrated 1.5 GiB reference ceiling.
+  - [x] Refresh the bounded checks on [signed 0.1.4](qa/json-performance-and-accessibility.md#signed-014-refresh-16-november-2026): six passing scenarios, 180 cycles, 366 snapshots and 60 large-scalar selections; maximum sampled working set 1,175.72 MiB.
   - [ ] Qualify peak process memory, hours-long typical use and lower-spec supported Macs; the repeated-cleanup scenario does not close these broader items.
 - [ ] **V1-06 — Decide minimum result-export scope** · Product · After initial V1-03 observations
   - [ ] Record whether a real core task is blocked without export.
@@ -47,6 +48,8 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026. I
   - [ ] Record maintainer acceptance and, if applicable, the explicit first-release bootstrap exception; update the baseline register.
 - [ ] **V1-08 — Preview feedback and targeted polish** · Product + Engineering · Depends on V1-07
   - [x] Build the [native VoiceOver harness](qa/native-voiceover-harness.md) and fix automatic JSON expansion/collapse announcements on the recorded unsigned candidate.
+  - [x] Extend the harness with 100,000-item positions, offscreen navigation and native Home. [Signed 0.1.4 evidence](qa/2026-11-16-signed-voiceover.md) records nine passing speech steps and a failing Home check; this is not a complete native pass.
+  - [ ] Resolve native Home moving focus to Resize JSON panel with VoiceOver active; confirm physical-key input and repeat the full native run, including preview cancellation. The physical Fn–Left attempt was inconclusive.
   - [x] Fix [notification expiry during overlapping pointer and keyboard interaction](qa/2026-10-27-toast-interaction.md); packaged regression verifies pause, keyboard Undo and resumed dismissal.
   - [x] Fix [inactive-tab close focus and context-menu Tab navigation](qa/2026-10-27-workspace-keyboard-focus.md); verify tab cycling, close cancellation and structure-dialog focus return in the package.
   - [ ] Observe actual task completion, collect reproducible findings and fix release blockers.
