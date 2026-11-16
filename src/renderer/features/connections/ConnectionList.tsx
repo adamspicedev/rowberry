@@ -8,6 +8,7 @@ import { ConnectionDialog } from "./ConnectionDialog";
 export function ConnectionList({
   activeId,
   connecting = false,
+  awaitingCredentials = false,
   editorHost,
   onShow,
   onConnected,
@@ -17,6 +18,7 @@ export function ConnectionList({
 }: {
   activeId?: string;
   connecting?: boolean;
+  awaitingCredentials?: boolean;
   editorHost: HTMLElement | null;
   onShow: () => void;
   onConnected: () => void;
@@ -168,7 +170,11 @@ export function ConnectionList({
                 </small>
                 {activeId === profile.id && (
                   <span id={`connection-status-${profile.id}`} className="connection-session-label">
-                    {connecting ? "Connecting…" : "Connected"}
+                    {awaitingCredentials
+                      ? "Waiting for Keychain access…"
+                      : connecting
+                        ? "Connecting…"
+                        : "Connected"}
                   </span>
                 )}
               </button>

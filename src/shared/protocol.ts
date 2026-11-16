@@ -416,7 +416,7 @@ export const AppEventSchema = z.discriminatedUnion("kind", [
       sessionId: SessionIdSchema,
       profileId: ConnectionIdSchema,
       generation: z.number().int().positive(),
-      state: z.enum(["connecting", "connected", "disconnected"]),
+      state: z.enum(["awaiting-credentials", "connecting", "connected", "disconnected"]),
     })
     .strict(),
 ]);
