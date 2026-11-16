@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
 import { once } from "node:events";
+import { createInterface } from "node:readline/promises";
 import { createHash, randomUUID } from "node:crypto";
 import {
   _electron as electron,
@@ -13,11 +14,26 @@ import { z } from "zod";
 import { CommandSchema } from "../src/shared/protocol";
 
 const [baselinePath, candidatePath, ...flags] = process.argv.slice(2);
-if (!baselinePath || !candidatePath || flags.some((flag) => flag !== "--native-vault"))
+if (
+  !baselinePath ||
+  !candidatePath ||
+  flags.some((flag) => !["--native-vault", "--deny-first"].includes(flag))
+)
   throw new Error(
-    "Usage: bun run verify:upgrade <baseline package> <candidate package> [--native-vault]",
+    "Usage: bun run verify:upgrade <baseline package> <candidate package> [--native-vault] [--deny-first]",
   );
 const nativeVault = flags.includes("--native-vault");
+const denyFirst = flags.includes("--deny-first");
+if (denyFirst && (!nativeVault || process.platform !== "darwin" || !process.stdin.isTTY))
+  throw new Error("--deny-first requires --native-vault, macOS and an interactive terminal");
+async function operatorStep(message: string) {
+  const terminal = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    await terminal.question(message);
+  } finally {
+    terminal.close();
+  }
+}
 async function describe(directory: string) {
   const root = await fs.realpath(directory);
   const executable = path.join(
@@ -162,7 +178,53 @@ try {
   }
   await request({ kind: "queries.saved.save", ...query });
   await request({ kind: "workspace.save", state: workspace });
+  if (denyFirst) {
+    // Establish fixture health before attributing a candidate failure to denied access.
+    const connected = await request({ kind: "connections.connect", id: profile.id });
+    if (connected.kind !== "connections.connect") throw new Error("Unexpected connect reply");
+    await request({ kind: "sessions.close", sessionId: connected.data.sessionId });
+  }
   await close();
+  if (denyFirst) {
+    await launch(candidate);
+    console.log(`Disposable Keychain test item: ${profile.id}`);
+    await operatorStep(
+      "Press Enter when ready to choose DENY on the candidate's Keychain prompt. ",
+    );
+    const deniedCommand = CommandSchema.parse({
+      kind: "connections.connect",
+      id: profile.id,
+      requestId: randomUUID(),
+    });
+    const denied = await page.evaluate((command) => window.dbapp.request(command), deniedCommand);
+    expect(denied).toMatchObject({ ok: false, error: { code: "CONNECTION_FAILED" } });
+    await expect(page.locator(".connection-state")).toHaveText("disconnected");
+    expect(await request({ kind: "connections.list", offset: 0 })).toMatchObject({
+      data: { profiles: [profile] },
+    });
+    expect(await request({ kind: "queries.saved.get", id: query.id })).toMatchObject({
+      data: query,
+    });
+    expect(await request({ kind: "workspace.load" })).toMatchObject({ data: workspace });
+    await expect(page.getByLabel("Recovered json draft")).toHaveValue(workspace.drafts[0]!.text);
+    for (const file of await fs.readdir(directory)) {
+      if (file.startsWith("profiles.sqlite"))
+        expect((await fs.readFile(path.join(directory, file))).includes(Buffer.from(secret))).toBe(
+          false,
+        );
+    }
+    console.log(
+      "PASS denied credential read: disconnected; metadata, saved query and drafts retained; no plaintext secret in profile database files.",
+    );
+    await operatorStep("Press Enter when ready to retry and ALLOW access to the same test item. ");
+    const recovered = await request({ kind: "connections.connect", id: profile.id });
+    if (recovered.kind !== "connections.connect") throw new Error("Unexpected connect reply");
+    await request({ kind: "sessions.close", sessionId: recovered.data.sessionId });
+    console.log(
+      "PASS explicit retry: authenticated using the retained credential without resubmitting it.",
+    );
+    await close();
+  }
   for (const phase of ["upgrade", "candidate restart"]) {
     await launch(candidate);
     expect(await request({ kind: "connections.list", offset: 0 })).toMatchObject({
@@ -210,7 +272,14 @@ try {
 if (shutdownErrors.length) throw new AggregateError(shutdownErrors, "Package shutdown failed");
 console.log(
   JSON.stringify(
-    { baseline, candidate, nativeVault, platform: process.platform, architecture: process.arch },
+    {
+      baseline,
+      candidate,
+      nativeVault,
+      denyFirst,
+      platform: process.platform,
+      architecture: process.arch,
+    },
     null,
     2,
   ),
