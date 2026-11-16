@@ -115,6 +115,8 @@ Perform a focused security/dependency review covering Electron support/advisorie
 
 ### M3 — Deliver a signed, usable preview
 
+The [exact 0.1.8 candidate is retained privately](qa/2026-11-16-retained-018.md) with pinned source, native app archive and checksums. Authenticated retrieval, signature/ticket verification and launch smoke passed. This completes V1-07's private retention subtask; installation, acceptance and publication gates remain open.
+
 **Owner roles:** release engineering and QA; maintainer controls signing/publication. **Dependencies:** M1/M2 blockers closed, M0 release resources available.
 
 - Produce versioned, signed and notarized candidates with corresponding source and notices. Hash final signed artifacts, not just unsigned build outputs.

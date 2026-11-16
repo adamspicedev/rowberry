@@ -46,4 +46,6 @@ A read-only mount verified the exact tested app archive, matching branded backgr
 
 Version 0.1.8 is the latest completed local app/installer record. These local artifacts are not a durable accepted baseline or a published release. Fresh-account installation, minimum-supported-OS coverage, native unavailable-store checks and final-release acceptance remain open.
 
+The [private retention follow-up](2026-11-16-retained-018.md) records the later authenticated upload/download verification of these exact artifacts, with pinned release and asset IDs. It does not promote this candidate to an accepted baseline.
+
 The desktop regression begins after a successful workspace load. Initial-read failure/retry behavior uses controlled unit coverage, not a native disk failure. These tests do not establish persistence before acknowledgement, machine power-loss recovery, native VoiceOver behavior or final-release acceptance.
