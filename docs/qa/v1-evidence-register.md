@@ -48,6 +48,8 @@ Keep [the baseline register](../upgrade-baselines.md) authoritative for accepted
 
 [Additional input-path controls](2026-11-16-signed-voiceover.md#input-path-controls-with-voiceover-off): native and browser Home passed all six cases with VoiceOver off, including application screen-reader mode. Native input reached Electron's input hook while browser input bypassed it. The harness now retains bounded event/focus traces and checks final UI state after speech; these controls and harness regressions do not close the live VoiceOver failure.
 
+[JSON discard keyboard repair](2026-11-16-json-discard-keyboard.md): reproduced missing initial focus on signed 0.1.4 and verified both discard entry points, keyboard containment, safe cancellation, focus restoration and exact invalid-draft preservation on the 0.1.5 development build. This is separate from native screen-reader qualification.
+
 ## Existing evidence and limits
 
 | Evidence                                                                                                                                   | What it establishes                                                                                                                                                                                                                                  | What it does not establish                                                                                                                                                                  |

@@ -52,6 +52,7 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026. I
   - [ ] Resolve native Home moving focus to Resize JSON panel with VoiceOver active; confirm physical-key input and repeat the full native run, including preview cancellation. The physical Fn–Left attempt was inconclusive.
   - [x] Fix [notification expiry during overlapping pointer and keyboard interaction](qa/2026-10-27-toast-interaction.md); packaged regression verifies pause, keyboard Undo and resumed dismissal.
   - [x] Fix [inactive-tab close focus and context-menu Tab navigation](qa/2026-10-27-workspace-keyboard-focus.md); verify tab cycling, close cancellation and structure-dialog focus return in the package.
+  - [x] Fix [JSON discard confirmation keyboard focus](qa/2026-11-16-json-discard-keyboard.md): safe initial focus, contained Tab navigation, Escape cancellation, focus return and draft preservation from both entry points.
   - [ ] Observe actual task completion, collect reproducible findings and fix release blockers.
   - [x] Fix Keychain approval timing and announce credential access; [0.1.3 connection regressions](qa/2026-11-16-keychain-wait.md) cover delayed resolution, cancellation and switching.
   - [ ] Re-test affected workflows and record evidence; silence or elapsed time alone is not acceptance.

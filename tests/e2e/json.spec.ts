@@ -157,10 +157,34 @@ for (const version of [14, 18])
       await page.keyboard.press("ControlOrMeta+A");
       await page.keyboard.type('{"duplicate":1,"duplicate":2}');
       await expect(panel).toContainText("Duplicate keys");
-      await panel.getByRole("button", { name: "Close JSON", exact: true }).click();
-      await expect(panel.getByRole("alertdialog")).toBeVisible();
-      await panel.getByRole("button", { name: "Keep editing JSON" }).click();
-      await expect(panel.locator(".view-lines")).toContainText('{"duplicate":1,"duplicate":2}');
+      const closeJson = panel.getByRole("button", { name: "Close JSON", exact: true });
+      const discardDraft = panel.getByRole("button", { name: "Discard draft…", exact: true });
+      const discardDialog = panel.getByRole("alertdialog", { name: "Discard JSON draft" });
+      const keepEditing = discardDialog.getByRole("button", { name: "Keep editing JSON" });
+      const discardAndClose = discardDialog.getByRole("button", { name: "Discard and close JSON" });
+      for (const trigger of [closeJson, discardDraft]) {
+        await trigger.focus();
+        await page.keyboard.press("Enter");
+        await expect(discardDialog).toBeVisible();
+        await expect(keepEditing).toBeFocused();
+        await page.keyboard.press("Tab");
+        await expect(discardAndClose).toBeFocused();
+        await page.keyboard.press("Tab");
+        await expect(keepEditing).toBeFocused();
+        await page.keyboard.press("Shift+Tab");
+        await expect(discardAndClose).toBeFocused();
+        await page.keyboard.press("Escape");
+        await expect(discardDialog).not.toBeVisible();
+        await expect(trigger).toBeFocused();
+        await expect(panel.locator(".view-lines")).toContainText('{"duplicate":1,"duplicate":2}');
+
+        await page.keyboard.press("Enter");
+        await expect(keepEditing).toBeFocused();
+        await page.keyboard.press("Enter");
+        await expect(discardDialog).not.toBeVisible();
+        await expect(trigger).toBeFocused();
+        await expect(panel.locator(".view-lines")).toContainText('{"duplicate":1,"duplicate":2}');
+      }
       await panel.getByLabel("JSON viewer actions", { exact: true }).click();
       await panel.getByLabel("JSON view", { exact: true }).selectOption("text");
       await panel.getByLabel("JSON viewer actions", { exact: true }).click();
@@ -183,8 +207,12 @@ for (const version of [14, 18])
       await panel.getByRole("button", { name: "Undo JSON" }).click();
       await expect(panel).toContainText("Duplicate keys");
 
-      await panel.getByRole("button", { name: "Close JSON", exact: true }).click();
-      await panel.getByRole("button", { name: "Discard and close JSON" }).click();
+      await closeJson.focus();
+      await page.keyboard.press("Enter");
+      await expect(keepEditing).toBeFocused();
+      await page.keyboard.press("Tab");
+      await expect(discardAndClose).toBeFocused();
+      await page.keyboard.press("Enter");
       await expect(panel).toHaveCount(0);
       await sql.focus();
       await page.keyboard.press("ControlOrMeta+A");
