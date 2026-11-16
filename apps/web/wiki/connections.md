@@ -34,3 +34,9 @@ On macOS, credential access may involve Keychain prompts. Enter your password on
 Disconnect before leaving a database session you no longer need. Switching connections closes the previous database session. Open transactions and incomplete results require care: review their state before changing connections.
 
 Workspace drafts may be recovered locally, but reconnecting does not replay SQL or automatically apply edits. See [drafts and recovery](recovery.md).
+
+## Removing a saved connection
+
+Disconnect first if the connection is active. Select its saved profile, open **More connection actions** (the three-dot button), and choose **Delete connection**. This removes Rowberry's saved profile and password; it does not delete your database or its tables.
+
+From version 0.1.7, the confirmation starts on **Cancel**. Before deletion starts, Escape or Cancel returns you to the connection editor. Once you confirm deletion, wait for it to finish: the prompt stays open and cannot cancel a request already in progress. If deletion fails, the error stays in the prompt so you can retry or cancel. Successful removal returns keyboard focus to **New connection**.

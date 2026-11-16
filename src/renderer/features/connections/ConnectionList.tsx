@@ -37,6 +37,13 @@ export function ConnectionList({
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("");
   const [deleting, setDeleting] = useState<ConnectionProfile | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const deletePending = useRef(false);
+  const deleteDialog = useRef<HTMLDialogElement>(null);
+  const cancelDelete = useRef<HTMLButtonElement>(null);
+  const deleteReturnFocus = useRef<HTMLButtonElement | null>(null);
+  const newConnection = useRef<HTMLButtonElement>(null);
   const requestId = () => RequestIdSchema.parse(crypto.randomUUID());
   async function refresh(message = "") {
     const all: ConnectionProfile[] = [];
@@ -65,8 +72,26 @@ export function ConnectionList({
   useEffect(() => {
     dirty.current = false;
   }, [resetKey]);
+  useEffect(() => {
+    const confirmation = deleteDialog.current;
+    if (!confirmation) return;
+    if (deleting) {
+      if (!confirmation.open) {
+        confirmation.showModal();
+        cancelDelete.current?.focus();
+      }
+    } else if (confirmation.open) {
+      confirmation.close();
+      const target = deleteReturnFocus.current;
+      if (target?.isConnected && !target.disabled && target.checkVisibility()) target.focus();
+      else newConnection.current?.focus();
+    }
+  }, [deleting]);
+  useEffect(() => {
+    if (deleting && !deleteBusy && deleteError) cancelDelete.current?.focus();
+  }, [deleting, deleteBusy, deleteError]);
   function select(next: "new" | ConnectionProfile | null) {
-    if (busy.current) return;
+    if (busy.current || deletePending.current) return;
     if (dirty.current && !window.confirm("Discard unsaved connection changes?")) return;
     dirty.current = false;
     onDirty(false);
@@ -76,6 +101,7 @@ export function ConnectionList({
     onShow();
   }
   async function connect(profile: ConnectionProfile) {
+    if (deletePending.current) return;
     if (document.querySelector('[data-saving="true"]')) return;
     if (
       document.querySelector('[data-dirty="true"]') &&
@@ -97,28 +123,39 @@ export function ConnectionList({
     }
   }
   async function remove() {
-    if (!deleting) return;
-    const reply = await window.dbapp.request({
-      kind: "connections.delete",
-      requestId: requestId(),
-      id: deleting.id,
-    });
-    if (!reply.ok) {
-      setMessage(
-        "Connection was retained because credential deletion failed. Unlock the OS credential store and retry.",
-      );
+    if (!deleting || deletePending.current) return;
+    deletePending.current = true;
+    setDeleteBusy(true);
+    onBusy(true);
+    setDeleteError("");
+    try {
+      const reply = await window.dbapp.request({
+        kind: "connections.delete",
+        requestId: requestId(),
+        id: deleting.id,
+      });
+      if (!reply.ok) {
+        setDeleteError(reply.error.message);
+        return;
+      }
+      setProfiles((current) => current.filter((profile) => profile.id !== deleting.id));
+      setDialog(null);
+      dirty.current = false;
+      onDirty(false);
+      await refresh("Connection and its password deleted.");
       setDeleting(null);
-      return;
+    } catch {
+      setDeleteError("The operation could not be completed. Try again.");
+    } finally {
+      deletePending.current = false;
+      setDeleteBusy(false);
+      onBusy(busy.current);
     }
-    setDeleting(null);
-    setDialog(null);
-    dirty.current = false;
-    onDirty(false);
-    await refresh("Connection and its password deleted.");
   }
   return (
     <>
       <Button
+        ref={newConnection}
         className="new-connection-button"
         onClick={() => select("new")}
         aria-label="New connection"
@@ -185,7 +222,7 @@ export function ConnectionList({
                 title={`Connect ${profile.name}`}
                 disabled={connecting}
                 onClick={() => {
-                  if (busy.current) return;
+                  if (busy.current || deletePending.current) return;
                   if (
                     dirty.current &&
                     !window.confirm("Discard unsaved connection changes before connecting?")
@@ -224,7 +261,7 @@ export function ConnectionList({
                 }}
                 onBusy={(value) => {
                   busy.current = value;
-                  onBusy(value);
+                  onBusy(value || deletePending.current);
                 }}
                 onSaved={async (message, profile, passwordStorage) => {
                   await refresh(message);
@@ -245,14 +282,18 @@ export function ConnectionList({
                 onDelete={
                   dialog === "new"
                     ? undefined
-                    : () => {
+                    : (returnFocus) => {
+                        if (busy.current || deletePending.current) return;
                         if (
                           !dirty.current ||
                           window.confirm(
                             "Discard unsaved connection changes and delete this connection?",
                           )
-                        )
+                        ) {
+                          deleteReturnFocus.current = returnFocus;
+                          setDeleteError("");
                           setDeleting(dialog);
+                        }
                       }
                 }
               />
@@ -271,27 +312,30 @@ export function ConnectionList({
           </>,
           editorHost,
         )}
-      {deleting && (
-        <div className="dialog-backdrop">
-          <dialog
-            className="connection-dialog"
-            ref={(node) => {
-              if (node && !node.open) node.showModal();
-            }}
-            onCancel={() => setDeleting(null)}
-            aria-labelledby="delete-title"
-          >
-            <h2 id="delete-title">Delete {deleting.name}?</h2>
-            <p>This removes the saved profile and its OS credential.</p>
-            <div className="dialog-actions">
-              <Button variant="ghost" onClick={() => setDeleting(null)}>
-                Cancel
-              </Button>
-              <Button onClick={() => void remove()}>Delete connection</Button>
-            </div>
-          </dialog>
+      <dialog
+        className="confirmation-dialog"
+        ref={deleteDialog}
+        onCancel={(event) => {
+          event.preventDefault();
+          if (!deletePending.current) setDeleting(null);
+        }}
+        aria-labelledby="delete-title"
+        aria-describedby="delete-description"
+        aria-busy={deleteBusy}
+      >
+        <h2 id="delete-title">Delete {deleting?.name}?</h2>
+        <p id="delete-description">This removes the saved profile and its OS credential.</p>
+        {deleteBusy && <output aria-live="polite">Deleting connection…</output>}
+        {deleteError && <p role="alert">{deleteError}</p>}
+        <div className="dialog-actions">
+          <Button ref={cancelDelete} disabled={deleteBusy} onClick={() => setDeleting(null)}>
+            Cancel
+          </Button>
+          <Button variant="outline" disabled={deleteBusy} onClick={() => void remove()}>
+            Delete connection
+          </Button>
         </div>
-      )}
+      </dialog>
     </>
   );
 }

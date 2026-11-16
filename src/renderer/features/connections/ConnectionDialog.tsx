@@ -29,10 +29,11 @@ export function ConnectionDialog({
   onBusy: (busy: boolean) => void;
   onConnect: (profile: ConnectionProfile) => Promise<void>;
   locked?: boolean;
-  onDelete?: () => void;
+  onDelete?: (returnFocus: HTMLButtonElement | null) => void;
 }) {
   const actionsId = useId();
   const actionsPopover = useRef<HTMLDivElement>(null);
+  const actionsButton = useRef<HTMLButtonElement>(null);
   const profileId = useRef(profile?.id ?? ConnectionIdSchema.parse(crypto.randomUUID()));
   const password = useRef<HTMLInputElement>(null);
   const [tls, setTls] = useState(profile?.tls.kind ?? "verify-full");
@@ -395,6 +396,7 @@ export function ConnectionDialog({
               {busy && action === "connect" ? "Connecting…" : "Connect"}
             </Button>
             <Button
+              ref={actionsButton}
               type="button"
               variant="ghost"
               disabled={busy || locked}
@@ -421,7 +423,7 @@ export function ConnectionDialog({
                   disabled={busy || locked}
                   onClick={() => {
                     actionsPopover.current?.hidePopover();
-                    onDelete();
+                    onDelete(actionsButton.current);
                   }}
                   aria-label={`Delete ${profile?.name}`}
                 >
