@@ -22,6 +22,7 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026. I
   - [x] Verify the [unsigned arm64 native Keychain round trip and packaged connection workflows](qa/2026-10-24-integrity-and-package.md).
   - [ ] Exercise saved credentials, deletion and genuinely unavailable/denied native storage on each target.
   - [x] Verify [real denied Keychain retrieval, retained data, explicit retry and restart](qa/2026-11-16-native-keychain-denial.md) on signed 0.1.3. Denied writes/deletion and locked/unavailable storage remain open.
+  - [x] Keep the [session-only password warning visible after Connect](qa/2026-11-16-session-password-warning.md); verify controlled storage failures, usable session authentication and forgetting the password on restart.
   - [x] Add packaged regressions for verbatim invalid JSON/Unicode/large-number recovery and explicit recovered-copy discard across restart.
   - [x] Verify interrupted JSON recovery, invalid JSON, Unicode, exact large numbers and durable discard in the [unsigned packaged scenarios](qa/2026-10-24-integrity-mapping.md); final-candidate qualification remains required.
   - [x] Fix retry-after-read-failure draft persistence and preserve displaced SQL as detached copies; verify [abrupt process termination after acknowledged persistence](qa/2026-10-26-recovery-retry.md).

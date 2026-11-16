@@ -226,9 +226,14 @@ export function ConnectionList({
                   busy.current = value;
                   onBusy(value);
                 }}
-                onSaved={async (message, profile) => {
+                onSaved={async (message, profile, passwordStorage) => {
                   await refresh(message);
-                  toast("Connection saved");
+                  if (passwordStorage === "session")
+                    toast(
+                      `Password for ${profile.name} is session-only and will be forgotten when the app quits.`,
+                      { error: true },
+                    );
+                  else toast("Connection saved");
                   setDialog(profile);
                   onDirty(false);
                 }}
