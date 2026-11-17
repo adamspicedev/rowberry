@@ -14,7 +14,7 @@ After the workspace has loaded, turning **Recover drafts on this device** off cl
 
 From 0.1.8, turning recovery back on captures the current text in open SQL and JSON editors, staged table changes and unfinished cell edits, including inactive open tabs. You do not need to make another edit. Editors closed or explicitly discarded while recovery was off are not restored.
 
-Saving uses a short delay. If Rowberry reports that recovery could not be read or saved, keep the window open and follow the retry guidance or copy important work elsewhere before closing. A checked recovery setting alone does not prove that a save has completed.
+Saving uses a short delay. If Rowberry reports that recovery could not be read or saved, keep the window open and follow the retry guidance or copy important work elsewhere before closing. A checked recovery setting alone does not prove that a save has completed. From source version 0.1.9, an older successful save cannot hide a newer recovery error. Reduce an oversized draft or copy it elsewhere, then retry; the warning clears when the current snapshot saves successfully.
 
 ## When the database has changed
 

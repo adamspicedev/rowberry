@@ -40,6 +40,66 @@ test("failed persistence retains invalid live text and exposes actionable retry 
   expect(workspace.workspaceState().drafts[0]?.text).toBe("{latest closed editor");
   expect(workspace.workspaceError()).toContain("Keep this window open");
 });
+
+test("an older successful save cannot hide a newer validation failure", async () => {
+  vi.useFakeTimers();
+  let stored = emptyWorkspace();
+  let releaseFirstSave!: () => void;
+  const firstSavePending = new Promise<void>((resolve) => {
+    releaseFirstSave = resolve;
+  });
+  let deferNextSave = true;
+  vi.stubGlobal("localStorage", { getItem: () => null, removeItem: vi.fn() });
+  vi.stubGlobal("window", {
+    dbapp: {
+      request: async (command: Command): Promise<Reply> => {
+        // Preload rejects invalid commands immediately, even while an older save
+        // is waiting behind another main-process operation such as Keychain access.
+        if (!boundedCommand(command) || !CommandSchema.safeParse(command).success)
+          return failure("VALIDATION_ERROR", command.requestId);
+        if (command.kind === "workspace.load")
+          return {
+            ok: true,
+            kind: command.kind,
+            requestId: command.requestId,
+            data: structuredClone(stored),
+          };
+        if (command.kind === "workspace.save") {
+          if (deferNextSave) {
+            deferNextSave = false;
+            await firstSavePending;
+          }
+          stored = structuredClone(command.state);
+          return { ok: true, kind: command.kind, requestId: command.requestId, data: {} };
+        }
+        return failure("INTERNAL_ERROR", command.requestId);
+      },
+    },
+  });
+  const workspace = await import("./workspace");
+  await workspace.loadWorkspace();
+  workspace.updateWorkspace({ sql: ["SELECT previously_valid"] });
+  const olderSave = workspace.flushWorkspace();
+  const latestSql = "x".repeat(1024 * 1024 + 1);
+  workspace.updateWorkspace({ sql: [latestSql] });
+  expect(await workspace.flushWorkspace()).toBe(false);
+  expect(workspace.workspaceError()).toContain("supported limit");
+  expect(workspace.canRetryWorkspaceSave()).toBe(true);
+
+  releaseFirstSave();
+  expect(await olderSave).toBe(true);
+  expect(stored.sql).toEqual(["SELECT previously_valid"]);
+  expect(workspace.workspaceState().sql).toEqual([latestSql]);
+  expect(workspace.workspaceError()).toContain("supported limit");
+  expect(workspace.canRetryWorkspaceSave()).toBe(true);
+
+  workspace.updateWorkspace({ sql: ["SELECT corrected"] });
+  expect(await workspace.flushWorkspace()).toBe(true);
+  expect(stored.sql).toEqual(["SELECT corrected"]);
+  expect(workspace.workspaceError()).toBe("");
+  expect(workspace.canRetryWorkspaceSave()).toBe(false);
+});
+
 test("disabled recovery removes legacy storage and never persists live SQL or JSON", async () => {
   vi.useFakeTimers();
   const removeItem = vi.fn();

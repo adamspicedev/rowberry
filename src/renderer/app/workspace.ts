@@ -8,6 +8,7 @@ const listeners = new Set<() => void>();
 let error = "";
 let migrationError = "";
 let migrationPending = false;
+let saveAttempt = 0;
 const notify = () => listeners.forEach((listener) => listener());
 export const workspaceState = () => state;
 export const workspaceError = () => [error, migrationError].filter(Boolean).join(" ");
@@ -115,11 +116,15 @@ export async function flushWorkspace() {
   if (!initialized) return false;
   clearTimeout(timer);
   const snapshot = state;
+  const attempt = ++saveAttempt;
   const reply = await window.dbapp.request({
     kind: "workspace.save",
     requestId: requestId(),
     state: snapshot,
   });
+  // Preload can reject a newer snapshot while an older valid save is still
+  // queued in main. Only the latest attempt may change the recovery warning.
+  if (attempt !== saveAttempt) return reply.ok;
   error = reply.ok
     ? ""
     : reply.error.code === "VALIDATION_ERROR"
