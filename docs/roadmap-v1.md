@@ -35,7 +35,7 @@ ECC Council was used to choose release scope and tradeoffs. The roadmap translat
 
 ## Current progress
 
-The [0.1.9 source repair](qa/2026-11-17-recovery-save-warning.md) keeps recovery errors visible when an older save finishes after a newer failure. Its focused regression and source checks pass; signed 0.1.9 qualification is pending. The verified and privately retained installer remains 0.1.8, and fresh-account installation is deferred until the maintainer is ready.
+The [0.1.9 source repair](qa/2026-11-17-recovery-save-warning.md) keeps recovery errors visible when an older save finishes after a newer failure. Its focused regression and source checks pass; signed 0.1.9 passed all 30 package tests and app/DMG signature, notarization, stapling and Gatekeeper checks. The latest locally verified installer is 0.1.9; the privately retained installer remains 0.1.8, and fresh-account installation is deferred until the maintainer is ready.
 
 V1-01's release contract and evidence register are complete. Local signing is working, and focused reliability and keyboard fixes continue while unfamiliar preview participants are unavailable. This summary links recorded results; it is not a new packaged acceptance run.
 
@@ -92,7 +92,7 @@ Fix observed navigation, naming, focus, menu, error and save-feedback failures. 
 
 ### M2 — Prove integrity, recovery and responsiveness
 
-The [0.1.8 recovery repair](qa/2026-11-16-recovery-toggle.md) captures open edits when recovery is turned back on, without requiring another edit. PostgreSQL 14/18 regressions verify exact content after acknowledged persistence and a process crash, while closed/discarded peers stay absent. All 30 signed-package tests passed with no skips. App/DMG signing, notarization, stapling, Gatekeeper and embedded branding checks passed; 0.1.8 is the latest verified local candidate. Installation, native VoiceOver and final-release gates remain open.
+The [0.1.8 recovery repair](qa/2026-11-16-recovery-toggle.md) captures open edits when recovery is turned back on, without requiring another edit. PostgreSQL 14/18 regressions verify exact content after acknowledged persistence and a process crash, while closed/discarded peers stay absent. All 30 signed-package tests passed with no skips. App/DMG signing, notarization, stapling, Gatekeeper and embedded branding checks passed; 0.1.8 is a previously verified local candidate. Installation, native VoiceOver and final-release gates remain open.
 
 **Owner roles:** desktop engineering and QA. **Dependencies:** stable core flows from M1; can start alongside usability work.
 

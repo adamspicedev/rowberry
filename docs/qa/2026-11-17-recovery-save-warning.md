@@ -20,4 +20,21 @@ The separate initial-read merge remains unchanged: unread stored copies are reta
 - Resumed verification on 17 November: all 77 unit/storage tests passed again (one opt-in native-vault test skipped), along with type checking, lint, tracked-file formatting and the application build. The strict documentation build also passed.
 - Both source desktop recovery tests passed: process-crash recovery of acknowledged JSON without executing SQL, and cancellation/explicit discard of recovered unsaved work. These tests exercise the development Electron application; they do not qualify the signed 0.1.9 installer or reproduce the save-reply race through native storage.
 
-The regression controls reply timing at the renderer bridge boundary; it does not qualify actual locked or denied native storage. Signed 0.1.9 package qualification is pending. The retained 0.1.8 installer and its recorded checks are unchanged. Fresh-account installation remains deferred at the maintainer's request; this source repair does not close that gate.
+The regression controls reply timing at the renderer bridge boundary; it does not qualify actual locked or denied native storage. Signed 0.1.9 package results are recorded below. The retained 0.1.8 installer and its recorded checks are unchanged. Fresh-account installation remains deferred at the maintainer's request; this source repair does not close that gate.
+
+## Signed candidate qualification
+
+Application source commit: `d6e34a3696cfe34d17fc3d549635268cf601cbe2`. Host: macOS 27.3 (`26C5035r`), arm64.
+
+- App: `release-signed/0.1.9/mac-arm64/Rowberry.app`.
+- Installer: `release-signed/0.1.9/Rowberry-0.1.9-mac-arm64.dmg`.
+- Final stapled DMG SHA-256: `4b120efcee59648fff80b1ea4e2050f265193cd28261c336630bcc55adfa01f7`.
+- App archive SHA-256: `a91a5919a5a13cae040499caca937d466af93bb644bbe79af89481f78463c80d`.
+- Embedded version is 0.1.9; all 14 checked build assets (JavaScript, HTML, CSS, SVG, fonts and text) match the local build output.
+- Full integration suite: **124 passed, one opt-in native-vault test skipped**.
+- `DBAPP_NATIVE_CREDENTIAL_TEST=1 bun run verify:package release-signed/0.1.9/mac-arm64/Rowberry.app arm64`: **30 passed, zero skipped, in 1.7 minutes**, including native Keychain, PostgreSQL 14/18, recovery, guarded-save and security workflows.
+- Negative package checks correctly rejected a missing worker, enabled renderer Node integration and a missing executable, using temporary copies.
+- Both app and installer passed signature verification, Apple notarization, stapled-ticket validation and Gatekeeper assessment. DMG submission `f8534de4-1daa-40f3-8d4f-5f4c66e3f0b6` was Accepted. The installer checksum was generated after stapling.
+- Read-only installer inspection confirmed the tested app archive, matching background and volume icon, and Applications link. The mounted app passed deep/strict signature and stapled-ticket checks.
+
+Version 0.1.9 is now the latest locally verified candidate. Version 0.1.8 remains the privately retained candidate. This run does not qualify fresh-account installation, supported-OS coverage, actual unavailable native storage, VoiceOver Home navigation or final-release acceptance. No remote CI, publication or accepted-baseline promotion occurred in this follow-up. The save-reply race itself remains covered by the controlled source regression, not an induced native-storage failure.

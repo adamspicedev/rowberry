@@ -1,16 +1,16 @@
 # Project status
 
-Rowberry is an early **0.1.x** project, licensed under **GPL-3.0-only**. Public distribution is not yet qualified. The current supported way to evaluate it is to [run from source](getting-started.md). See the [0.1.8 candidate notes](https://github.com/adamspicedev/rowberry/blob/main/docs/release-notes-0.1.8.md) for the latest recovery repair.
+Rowberry is an early **0.1.x** project, licensed under **GPL-3.0-only**. Public distribution is not yet qualified. The current supported way to evaluate it is to [run from source](getting-started.md). See the [0.1.9 candidate notes](https://github.com/adamspicedev/rowberry/blob/main/docs/release-notes-0.1.9.md) for the latest recovery repair.
 
 Turning recovery off and back on now captures open SQL, JSON and table/cell work without requiring another edit. It also clears pending copies after a failed startup read so retrying cannot revive those discarded drafts. [Source and signed-package recovery checks](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/2026-11-16-recovery-toggle.md#candidate-qualification) cover exact drafts, explicit discard and crash/restart without automatic database writes.
 
-All 30 signed 0.1.8 package tests passed with no skips. App and installer signing, notarization, stapling, Gatekeeper and embedded branding checks passed; 0.1.8 is the latest verified local candidate. Earlier connection-deletion and keyboard repairs remain in the [evidence register](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/v1-evidence-register.md).
+All 30 signed 0.1.8 package tests passed with no skips. App and installer signing, notarization, stapling, Gatekeeper and embedded branding checks passed; 0.1.8 is a previously verified local candidate. Earlier connection-deletion and keyboard repairs remain in the [evidence register](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/v1-evidence-register.md).
 
 The [exact candidate and source are retained privately](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/2026-11-16-retained-018.md), with successful download/checksum and native app verification. This is preparation for future upgrade qualification, not an accepted baseline or public download. The downloaded app passed a development-profile compatibility check from 0.1.7, retaining saved work and native credentials across two launches; installer replacement remains unqualified.
 
 ## Current scope
 
-Source version 0.1.9 keeps failed-recovery warnings visible when older saves finish later. See the [development notes](https://github.com/adamspicedev/rowberry/blob/main/docs/release-notes-0.1.9.md). Its signed installer qualification is pending; the 0.1.8 candidate evidence above does not qualify the newer source.
+Source version 0.1.9 keeps failed-recovery warnings visible when older saves finish later. See the [development notes](https://github.com/adamspicedev/rowberry/blob/main/docs/release-notes-0.1.9.md). Its signed candidate passed all 30 package tests with no skips and app/installer signature, notarization, stapling and Gatekeeper checks. It is the latest locally verified candidate; 0.1.8 remains privately retained.
 
 - PostgreSQL connection profiles and verified TLS.
 - Schema navigation, table browsing, and mixed table/query tabs.
