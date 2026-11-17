@@ -35,6 +35,8 @@ ECC Council was used to choose release scope and tradeoffs. The roadmap translat
 
 ## Current progress
 
+The [0.1.9 source repair](qa/2026-11-17-recovery-save-warning.md) keeps recovery errors visible when an older save finishes after a newer failure. Its focused regression and source checks pass; signed 0.1.9 qualification is pending. The verified and privately retained installer remains 0.1.8, and fresh-account installation is deferred until the maintainer is ready.
+
 V1-01's release contract and evidence register are complete. Local signing is working, and focused reliability and keyboard fixes continue while unfamiliar preview participants are unavailable. This summary links recorded results; it is not a new packaged acceptance run.
 
 | Area         | Present                                                                                             | Still to establish                                                                                              |

@@ -1,6 +1,6 @@
 # V1 to-do list
 
-Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026 and updated 16 November 2026. IDs are repository tracking labels, not GitHub issues. A checked item means its stated deliverable is complete; it does not imply release approval. Owner names below are responsibility roles, not assignments to external people.
+Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026 and updated 17 November 2026. IDs are repository tracking labels, not GitHub issues. A checked item means its stated deliverable is complete; it does not imply release approval. Owner names below are responsibility roles, not assignments to external people.
 
 - [x] **V1-01 — Release contract and evidence register** · Maintainer + QA
   - [x] Define scope, observable acceptance tasks and release blockers in the [release contract](v1-release-contract.md).
@@ -20,6 +20,7 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026 an
   - [ ] Observe connect, browse, query, edit, save, verify and recovery tasks without coaching; record intervention and failure points.
   - [ ] Identify focused fixes; re-run failed tasks after changes, including keyboard, light/dark and narrow-window checks.
 - [ ] **V1-04 — Close vault and JSON recovery evidence gaps** · Engineering + QA · In progress; denied reads and saves qualified, locked-store testing pending
+  - [x] Fix [stale save replies hiding newer recovery errors](qa/2026-11-17-recovery-save-warning.md) in source version 0.1.9. The controlled regression verifies the warning, preserved live text and successful corrected-save retry. Signed 0.1.9 qualification remains pending; 0.1.8 is still the latest verified installer.
   - [x] Verify the [unsigned arm64 native Keychain round trip and packaged connection workflows](qa/2026-10-24-integrity-and-package.md).
   - [ ] Exercise saved credentials, deletion and genuinely unavailable/denied native storage on each target.
   - [x] Verify [real denied Keychain retrieval, retained data, explicit retry and restart](qa/2026-11-16-native-keychain-denial.md) on signed 0.1.3.

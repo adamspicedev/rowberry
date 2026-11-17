@@ -10,6 +10,8 @@ The [exact candidate and source are retained privately](https://github.com/adams
 
 ## Current scope
 
+Source version 0.1.9 keeps failed-recovery warnings visible when older saves finish later. See the [development notes](https://github.com/adamspicedev/rowberry/blob/main/docs/release-notes-0.1.9.md). Its signed installer qualification is pending; the 0.1.8 candidate evidence above does not qualify the newer source.
+
 - PostgreSQL connection profiles and verified TLS.
 - Schema navigation, table browsing, and mixed table/query tabs.
 - SQL completion, saved queries, cancellation, and explicit transactions.

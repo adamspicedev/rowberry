@@ -24,6 +24,8 @@ The [0.1.8 candidate](2026-11-16-recovery-toggle.md#candidate-qualification) is 
 
 ## Current development checks
 
+[17 November recovery save warnings](2026-11-17-recovery-save-warning.md): source version 0.1.9 prevents an older successful save from hiding a newer failed-save warning. A controlled regression reproduced the failure and now passes, including corrected-save recovery. Signed 0.1.9 qualification remains pending; 0.1.8 remains the latest verified local installer.
+
 [16 November recovery re-enable](2026-11-16-recovery-toggle.md): signed 0.1.7 reproduced empty stored SQL/drafts after toggling recovery off/on. The 0.1.8 repair passed real-editor crash/restart checks on PostgreSQL 14 and 18, including inactive editors, exact invalid JSON, staged/unfinished cell work and non-resurrection of discarded peers. All 30 signed-package tests and separate app/DMG verification passed; the report records exact hashes and remaining release gates.
 
 [16 November signed 0.1.3 qualification](2026-11-16-signed-013-qualification.md): signed app and DMG verification, production package workflows and native-vault upgrade/restart evidence are now recorded together. Local storage is not a durable release baseline; unavailable-store and unfamiliar-user acceptance remain open.
