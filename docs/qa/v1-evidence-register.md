@@ -6,13 +6,13 @@ The signing budget blocker was resolved on 16 November 2026. Developer ID signat
 
 ## Candidate status
 
-| Field                                        | macOS arm64                                                                                           | macOS Intel x64           |
-| -------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------- |
-| Final v1 source/version/package              | Not selected                                                                                          | Deferred                  |
-| Signed artifact identifiers and hashes       | [Local 0.1.8 candidate](2026-11-16-recovery-toggle.md#candidate-qualification); final v1 not selected | Not required for v1       |
-| Accepted upgrade baseline                    | None registered                                                                                       | None registered; deferred |
-| Contract A01–A12 qualification               | Not run on final candidate                                                                            | Outside v1 scope          |
-| Maintainer acceptance / publication approval | Pending / pending                                                                                     | Not applicable to v1      |
+| Field                                        | macOS arm64                                                                                                        | macOS Intel x64           |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------- |
+| Final v1 source/version/package              | Not selected                                                                                                       | Deferred                  |
+| Signed artifact identifiers and hashes       | [Local 0.1.9 candidate](2026-11-17-recovery-save-warning.md#signed-candidate-qualification); final v1 not selected | Not required for v1       |
+| Accepted upgrade baseline                    | None registered                                                                                                    | None registered; deferred |
+| Contract A01–A12 qualification               | Not run on final candidate                                                                                         | Outside v1 scope          |
+| Maintainer acceptance / publication approval | Pending / pending                                                                                                  | Not applicable to v1      |
 
 Scope decision, 23 October 2026: the maintainer approved Apple silicon-only v1 because purchasing Intel test hardware is outside the current budget. Intel build checks are paused; native qualification and supported downloads are deferred.
 
@@ -113,3 +113,25 @@ Use **Not run**, **Blocked**, **Fail**, **Partial** or **Pass**. Partial/blocked
 - Maintainer target acceptance, name/date and any approved bootstrap exception:
 - Separate publication approval, name/date:
 - Published download hash verification and retained baseline record:
+
+## Sidebar keyboard and window resizing
+
+On 19 November 2026 the local Electron connections suite passed six workflows and skipped the packaged native-vault case. The divider regression exercised pointer dragging, keyboard resizing, and restoration after reload. Shrinking the viewport from 1000 to 800 pixels reduced the rendered sidebar and its accessible value from 650 to 520 pixels. The next Left Arrow moved it to 500 pixels, and repeated presses stopped at 200. Signed-package and VoiceOver verification of the divider remain open.
+
+## Table filter keyboard focus
+
+On 20 November 2026, pressing Enter on Add filter created a second condition but left its column selector unfocused. After the fix, the source-built Electron browse workflow on PostgreSQL 18 passed focus assertions for adding a condition, removing the last of two conditions and clearing the sole condition. Packaged and VoiceOver coverage remain open.
+
+## Table header keyboard controls
+
+On 20 November 2026, sorting the ID column with Enter returned correctly ordered rows but the header lacked an accessible sort direction. After the repair, the Electron browse workflow on PostgreSQL 18 verified ascending and descending header states alongside the first returned ID. Right and Left Arrow resized the column from 210 to 230 pixels and back, with the original cell still selected after widening. Live VoiceOver speech and signed-package coverage remain open.
+
+A follow-up keyboard test reproduced focus loss after the sorted rows loaded. The repaired Electron workflow on PostgreSQL 18 passed a second Enter press without refocusing the ID header. Sorting the horizontally scrolled last column also returned focus to its button after the grid reloaded.
+
+## Table browser version checkpoint
+
+On 20 November 2026 the development build passed the combined-filter regression on PostgreSQL 18. Applying both ID bounds returned two rows, and removing the upper bound immediately returned three rows with keyboard focus on the remaining filter. The same workflow exercised paging, column resizing and keyboard sorting.
+
+The unit/storage suite passed 77 tests with one opt-in skip. The integration suite passed 124 with one opt-in skip against disposable PostgreSQL 14 and 18 instances. The PostgreSQL Electron suite passed all 22 workflows. The default Electron suite passed 18 and skipped the packaged native-vault case. Type checking, lint, tracked-file formatting, the application build and the strict documentation build passed.
+
+This is the source checkpoint for a proposed 0.1.10 development candidate. The signed 0.1.9 artifact predates these table-browser changes. Packaging, native Keychain verification on the new artifact and live VoiceOver checks remain open.

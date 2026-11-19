@@ -510,3 +510,41 @@ test("connection deletion keeps pending work modal and restores keyboard focus",
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await expect(page.getByLabel("Name", { exact: true })).toHaveValue("Other connection");
 });
+
+test("dragging the table list divider widens the sidebar", async () => {
+  const page = await launch();
+  const sidebar = page.getByRole("complementary", { name: "Connections and schemas" });
+  const handle = page.getByRole("separator", { name: "Resize table list" });
+  await expect(handle).toBeVisible();
+  const box = (await handle.boundingBox())!;
+  const width = (await sidebar.boundingBox())!.width;
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + 100, y, { steps: 5 });
+  await page.mouse.up();
+  await expect(sidebar).toHaveCSS("width", `${width + 100}px`);
+  await handle.focus();
+  await page.keyboard.press("ArrowLeft");
+  await expect(sidebar).toHaveCSS("width", `${width + 80}px`);
+  await expect(handle).toHaveAttribute("aria-valuenow", String(width + 80));
+  await expect
+    .poll(() => page.evaluate(() => localStorage.getItem("rowberry-sidebar-width")))
+    .toBe(String(width + 80));
+  await page.reload();
+  await expect(sidebar).toHaveCSS("width", `${width + 80}px`);
+  await page.setViewportSize({ width: 1000, height: 720 });
+  await expect(handle).toHaveAttribute("aria-valuemax", "650");
+  await handle.focus();
+  for (let i = 0; i < 32; i++) await handle.press("ArrowRight");
+  await expect(sidebar).toHaveCSS("width", "650px");
+  await page.setViewportSize({ width: 800, height: 720 });
+  await expect(sidebar).toHaveCSS("width", "520px");
+  await expect(handle).toHaveAttribute("aria-valuenow", "520");
+  await handle.press("ArrowLeft");
+  await expect(sidebar).toHaveCSS("width", "500px");
+  for (let i = 0; i < 20; i++) await handle.press("ArrowLeft");
+  await expect(sidebar).toHaveCSS("width", "200px");
+  await expect(handle).toHaveAttribute("aria-valuenow", "200");
+});
