@@ -90,7 +90,7 @@ test("live schema navigation, typed virtual grid, filtering, sorting, paging and
     await expect(page.getByRole("button", { name: "Sort by id", exact: true })).toBeVisible();
 
     const idHeader = grid.getByRole("columnheader").filter({
-      has: page.getByRole("button", { name: "Sort by id", exact: true }),
+      has: page.getByRole("separator", { name: "Resize id", exact: true }),
     });
     const resizeId = idHeader.getByRole("separator");
     const selectedCell = grid.getByRole("gridcell", { selected: true });
@@ -104,13 +104,15 @@ test("live schema navigation, typed virtual grid, filtering, sorting, paging and
     await expect(grid.getByRole("gridcell").first()).toHaveText("1");
     await expect(idHeader).toHaveAttribute("aria-sort", "ascending");
     await expect(sortId).toBeFocused();
+    await expect(sortId).toHaveAccessibleName("Sort by id, sorted ascending");
     await page.keyboard.press("Enter");
     await expect(grid.getByRole("gridcell").first()).toHaveText("1200");
     await expect(idHeader).toHaveAttribute("aria-sort", "descending");
+    await expect(sortId).toHaveAccessibleName("Sort by id, sorted descending");
     await grid.evaluate((element) => {
       element.scrollLeft = element.scrollWidth;
     });
-    const lastSort = grid.getByRole("button", { name: "Sort by tail_9", exact: true });
+    const lastSort = grid.getByRole("button", { name: /^Sort by tail_9(?:,|$)/ });
     await lastSort.press("Enter");
     await expect(lastSort).toBeFocused();
     await expect(grid.getByRole("columnheader", { name: /Sort by tail_9/ })).toHaveAttribute(

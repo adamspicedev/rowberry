@@ -145,3 +145,7 @@ The macOS arm64 build from source commit `1060125` passed all 32 packaged workfl
 - Apple DMG submission: `cae21d7d-1f45-45c5-bda0-2a9f7529a086`.
 
 All six standard live VoiceOver checks passed. The 100,000-item run passed first, last and offscreen navigation before Home moved focus away from the JSON tree. The table-controls run heard “id Filter column 2 menu pop-up collapsed button” after adding a filter. After keyboard sorting it heard button guidance and captured no fresh announcement of “ascending”. Automatic sort-direction speech and native Home navigation remain open. Reports and screenshots are stored locally under `release-signed/0.1.10/voiceover/`. Fresh-account installation, supported-OS coverage and publication remain open.
+
+### Sort button follow-up
+
+The development build includes the current direction in the focused sort button’s accessible name. The PostgreSQL 18 browse workflow passed on a separately packaged, unsigned arm64 app, checking both direction labels, header states, returned rows and keyboard focus. The native table-controls harness now checks both directions after consecutive Enter presses. All nine native speech steps passed on that build, including “Sort by id, sorted ascending” and “Sort by id, sorted descending” after consecutive Enter presses. A new signed candidate still needs this check.

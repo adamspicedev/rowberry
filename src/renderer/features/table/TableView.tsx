@@ -352,6 +352,8 @@ export function TableView({
   const firstColumn = Math.max(0, offsets.findIndex((x) => x > scroll.left) - 2);
   const rightEdge = offsets.findIndex((x) => x >= scroll.left + scroll.width);
   const lastColumn = rightEdge < 0 ? table.columns.length : rightEdge + 1;
+  const sort = input.sort?.[0];
+  const sortDirection = sort?.direction === "asc" ? "ascending" : "descending";
   const workspace = useRef<HTMLElement>(null);
   const pendingSortFocus = useRef<FetchInput | null>(null);
   useLayoutEffect(() => {
@@ -853,13 +855,7 @@ export function TableView({
               {table.columns.slice(firstColumn, lastColumn).map((c, i) => (
                 <div
                   role="columnheader"
-                  aria-sort={
-                    input.sort?.[0]?.column === c.name
-                      ? input.sort[0].direction === "asc"
-                        ? "ascending"
-                        : "descending"
-                      : undefined
-                  }
+                  aria-sort={sort?.column === c.name ? sortDirection : undefined}
                   aria-colindex={firstColumn + i + 1}
                   key={c.name}
                   style={{
@@ -870,7 +866,11 @@ export function TableView({
                 >
                   <button
                     type="button"
-                    aria-label={`Sort by ${c.name}`}
+                    aria-label={
+                      sort?.column === c.name
+                        ? `Sort by ${c.name}, sorted ${sortDirection}`
+                        : `Sort by ${c.name}`
+                    }
                     onClick={(event) => {
                       const next: FetchInput = {
                         ...input,

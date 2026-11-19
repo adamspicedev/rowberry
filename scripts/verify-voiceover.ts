@@ -179,7 +179,7 @@ try {
     }
   }
   if (process.argv.includes("--table-controls")) {
-    const sort = grid.getByRole("button", { name: "Sort by id", exact: true });
+    const sort = grid.getByRole("button", { name: /^Sort by id(?:,|$)/ });
     await page.getByRole("button", { name: "Add filter", exact: true }).focus();
     await step(
       "add-filter",
@@ -191,16 +191,18 @@ try {
       },
     );
     await sort.focus();
-    await step(
-      "sort-ascending",
-      () => nativeKey(36),
-      ["ascending"],
-      [],
-      async () => {
-        await expect(sort).toBeFocused();
-        await expect(grid.locator('[aria-sort="ascending"]')).toContainText("id");
-      },
-    );
+    for (const direction of ["ascending", "descending"]) {
+      await step(
+        `sort-${direction}`,
+        () => nativeKey(36),
+        [direction],
+        [],
+        async () => {
+          await expect(sort).toBeFocused();
+          await expect(grid.locator(`[aria-sort="${direction}"]`)).toContainText("id");
+        },
+      );
+    }
   }
   await grid.getByRole("gridcell").nth(2).dblclick();
   const verifyItems = async (expanded: boolean) => {
