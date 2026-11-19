@@ -9,7 +9,7 @@ The signing budget blocker was resolved on 16 November 2026. Developer ID signat
 | Field                                        | macOS arm64                                                             | macOS Intel x64           |
 | -------------------------------------------- | ----------------------------------------------------------------------- | ------------------------- |
 | Final v1 source/version/package              | Not selected                                                            | Deferred                  |
-| Signed artifact identifiers and hashes       | [Local 0.1.10 candidate](#signed-0110-candidate); final v1 not selected | Not required for v1       |
+| Signed artifact identifiers and hashes       | [Local 0.1.11 candidate](#signed-0111-candidate); final v1 not selected | Not required for v1       |
 | Accepted upgrade baseline                    | None registered                                                         | None registered; deferred |
 | Contract A01–A12 qualification               | Not run on final candidate                                              | Outside v1 scope          |
 | Maintainer acceptance / publication approval | Pending / pending                                                       | Not applicable to v1      |
@@ -155,3 +155,13 @@ On signed 0.1.10, [native keyboard comparisons](native-voiceover-harness.md#sign
 ## Recovering from a removed sort column
 
 The PostgreSQL 18 Electron browsing regression sorted a filtered table by amount, dropped that column from the disposable fixture, and refreshed. The fetch failed because the sort still referenced amount. In the development build, activating **Clear filters and sorting** with Enter reloaded the first 200 rows, cleared the filter value, removed the obsolete header and allowed JSON inspection in the same tab. Signed-package verification remains open.
+
+## Signed 0.1.11 candidate
+
+The Apple-silicon candidate from source revision `9053716` passed all 32 packaged workflows, including native Keychain and recovery after a sorted column disappears. All nine live table-controls VoiceOver checks passed. Two successive Enter presses produced “Sort by id, sorted ascending” and “Sort by id, sorted descending” with focus on the button. Reports and screenshots are retained under `release-signed/0.1.11/voiceover/table-controls/`. Plain Home remains a separate open issue.
+
+All 15 build files matched the packaged archive. Three negative checks passed. Apple notarized both the app and DMG, stapled tickets validated, and Gatekeeper accepted both. The read-only mounted app passed deep signature and ticket checks, and its archive matched the tested app.
+
+- Final stapled DMG SHA-256: `925405bb6cf2506cf5fc3f90c664351b295db907d2bee1d9f56d4a125d7ed651`.
+- App archive SHA-256: `6ec351b86f526c2ad23b8bdf2e75dfa3eb291c8b39d1a28e8c3cc81464b26420`.
+- Apple DMG submission: `b7b15716-2495-4969-bcdb-3877b4ecf573`.
