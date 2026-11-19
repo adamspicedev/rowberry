@@ -19,6 +19,7 @@ export const WorkspaceSchema = z
   .object({
     version: z.literal(1),
     recoveryEnabled: z.boolean(),
+    sidebarWidth: z.number().int().min(200).optional(),
     layout: z
       .object({ sqlOpened: z.boolean(), showSql: z.boolean() })
       .strict()

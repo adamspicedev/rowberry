@@ -206,7 +206,14 @@ try {
       );
     }
   }
-  await grid.getByRole("gridcell").nth(2).dblclick();
+  const fixtureCell = (id: number, column: number) =>
+    grid
+      .getByRole("row")
+      .filter({
+        has: page.getByRole("gridcell", { name: String(id), exact: true }),
+      })
+      .locator(`[role="gridcell"][aria-colindex="${column}"]`);
+  await fixtureCell(1, 3).dblclick();
   const verifyItems = async (expanded: boolean) => {
     await expect(items).toHaveAttribute("aria-selected", "true");
     await expect(items).toHaveAttribute("aria-expanded", String(expanded));
@@ -255,7 +262,7 @@ try {
   );
   await panel.getByRole("button", { name: "Close JSON", exact: true }).click();
   if (largeArray) {
-    await grid.getByRole("gridcell").nth(5).dblclick();
+    await fixtureCell(2, 3).dblclick();
     const array = panel.getByRole("treeitem", { name: "items: array, 100000 items", exact: true });
     const selected = panel.getByRole("treeitem", { selected: true });
     const verifyArray = async (expanded: boolean) => {
@@ -351,7 +358,7 @@ try {
     );
     await panel.getByRole("button", { name: "Close JSON", exact: true }).click();
   }
-  await grid.getByRole("gridcell").nth(1).click();
+  await fixtureCell(1, 2).click();
   await page.getByRole("button", { name: "Edit selected cell", exact: true }).click();
   await page.getByRole("textbox", { name: "Cell draft", exact: true }).fill("voiceover draft only");
   await page.getByRole("button", { name: "Stage cell", exact: true }).click();

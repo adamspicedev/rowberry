@@ -4,7 +4,7 @@ The schema sidebar shows the database's schemas and tables. Expand a table to se
 
 ## Find what you need
 
-In the development build, drag the sidebar divider to resize the table list, or focus the divider and use the Left and Right Arrow keys. Rowberry remembers the width when local storage is available.
+In the development build, drag the sidebar divider to resize the table list, or focus the divider and use the Left and Right Arrow keys. The development build saves the width in your local workspace and restores it when you reopen Rowberry.
 
 Focus a column’s sort button and press Enter to switch sort direction. In the development build, the sorted header exposes its direction to assistive technology and regains keyboard focus when the rows reload, so pressing Enter again reverses the sort. Focus the column divider and press Left or Right Arrow to resize it.
 

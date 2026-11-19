@@ -34,6 +34,10 @@ export class ConnectionStore {
     try {
       this.db.exec("PRAGMA busy_timeout = 3000; PRAGMA secure_delete = ON");
       migrate(this.db);
+      // Keep optional UI preferences outside the strictly versioned recovery JSON.
+      this.db.exec(
+        "CREATE TABLE IF NOT EXISTS sidebar_preference (id INTEGER PRIMARY KEY CHECK(id=1), width INTEGER NOT NULL)",
+      );
     } catch {
       this.db.close();
       throw new Error("Local storage could not be updated.");
@@ -41,10 +45,12 @@ export class ConnectionStore {
   }
   workspaceLoad(): Workspace {
     const row = this.db.prepare("SELECT state FROM workspace WHERE id=1").get();
-    return row ? WorkspaceSchema.parse(JSON.parse(String(row.state))) : emptyWorkspace();
+    const preference = this.db.prepare("SELECT width FROM sidebar_preference WHERE id=1").get();
+    const state = row ? JSON.parse(String(row.state)) : emptyWorkspace();
+    return WorkspaceSchema.parse(preference ? { ...state, sidebarWidth: preference.width } : state);
   }
   workspaceSave(input: unknown): void {
-    const state = WorkspaceSchema.parse(input);
+    const { sidebarWidth, ...state } = WorkspaceSchema.parse(input);
     if (!state.recoveryEnabled) {
       state.sql = [];
       state.drafts = [];
@@ -56,6 +62,12 @@ export class ConnectionStore {
           "INSERT INTO workspace(id,state) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state",
         )
         .run(JSON.stringify(state));
+      if (sidebarWidth !== undefined)
+        this.db
+          .prepare(
+            "INSERT INTO sidebar_preference(id,width) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET width=excluded.width",
+          )
+          .run(sidebarWidth);
       this.db.exec("COMMIT");
     } catch {
       if (this.db.isTransaction) this.db.exec("ROLLBACK");

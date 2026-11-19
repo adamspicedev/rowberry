@@ -1,4 +1,5 @@
 import { test, expect, _electron as electron, type ElectronApplication } from "@playwright/test";
+import { RequestIdSchema } from "../../src/shared/protocol";
 import { mkdtempSync, rmSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -530,21 +531,34 @@ test("dragging the table list divider widens the sidebar", async () => {
   await expect(sidebar).toHaveCSS("width", `${width + 80}px`);
   await expect(handle).toHaveAttribute("aria-valuenow", String(width + 80));
   await expect
-    .poll(() => page.evaluate(() => localStorage.getItem("rowberry-sidebar-width")))
-    .toBe(String(width + 80));
-  await page.reload();
-  await expect(sidebar).toHaveCSS("width", `${width + 80}px`);
-  await page.setViewportSize({ width: 1000, height: 720 });
-  await expect(handle).toHaveAttribute("aria-valuemax", "650");
-  await handle.focus();
-  for (let i = 0; i < 32; i++) await handle.press("ArrowRight");
-  await expect(sidebar).toHaveCSS("width", "650px");
-  await page.setViewportSize({ width: 800, height: 720 });
-  await expect(sidebar).toHaveCSS("width", "520px");
-  await expect(handle).toHaveAttribute("aria-valuenow", "520");
-  await handle.press("ArrowLeft");
-  await expect(sidebar).toHaveCSS("width", "500px");
-  for (let i = 0; i < 20; i++) await handle.press("ArrowLeft");
-  await expect(sidebar).toHaveCSS("width", "200px");
-  await expect(handle).toHaveAttribute("aria-valuenow", "200");
+    .poll(() =>
+      page.evaluate(async (requestId) => {
+        const reply = await window.dbapp.request({ kind: "workspace.load", requestId });
+        return reply.ok && reply.kind === "workspace.load" ? reply.data.sidebarWidth : undefined;
+      }, RequestIdSchema.parse(crypto.randomUUID())),
+    )
+    .toBe(width + 80);
+  await application.close();
+  const reopened = await launch();
+  const restoredSidebar = reopened.getByRole("complementary", { name: "Connections and schemas" });
+  const restoredHandle = reopened.getByRole("separator", { name: "Resize table list" });
+  await expect(restoredSidebar).toHaveCSS("width", `${width + 80}px`);
+  await reopened.setViewportSize({ width: 1000, height: 720 });
+  await expect(restoredHandle).toHaveAttribute("aria-valuemax", "650");
+  await restoredHandle.focus();
+  for (let i = 0; i < 32; i++) await restoredHandle.press("ArrowRight");
+  await expect(restoredSidebar).toHaveCSS("width", "650px");
+  await reopened.setViewportSize({ width: 800, height: 720 });
+  await expect(restoredSidebar).toHaveCSS("width", "520px");
+  await expect(restoredHandle).toHaveAttribute("aria-valuenow", "520");
+  await reopened.getByRole("button", { name: "New connection", exact: true }).click();
+  await reopened.getByLabel("Name", { exact: true }).fill("Narrow editor");
+  await reopened.getByRole("button", { name: "More connection actions" }).click();
+  await reopened.getByRole("button", { name: "Save without connecting" }).click();
+  await expect(reopened.getByRole("button", { name: "Select Narrow editor" })).toBeVisible();
+  await restoredHandle.press("ArrowLeft");
+  await expect(restoredSidebar).toHaveCSS("width", "500px");
+  for (let i = 0; i < 20; i++) await restoredHandle.press("ArrowLeft");
+  await expect(restoredSidebar).toHaveCSS("width", "200px");
+  await expect(restoredHandle).toHaveAttribute("aria-valuenow", "200");
 });

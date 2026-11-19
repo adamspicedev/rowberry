@@ -3,7 +3,7 @@ import { recordDraft } from "../../app/workspace";
 import { useRecoveryEnabled } from "../../app/useRecoveryEnabled";
 /* oxlint-disable jsx-a11y/prefer-tag-over-role -- Virtual rows and columns use ARIA grid semantics with absolute positions. */
 import { JsonInspector, type ValidatedJsonDraft, type JsonSaveTarget } from "../json/JsonInspector";
-import { useState, useRef, useEffect, useLayoutEffect, useId } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useId } from "react";
 import { RequestIdSchema, type SessionId } from "../../../shared/protocol";
 import {
   FetchSchema,
@@ -271,7 +271,7 @@ export function TableView({
   function newFilter() {
     return {
       id: crypto.randomUUID(),
-      column: table.columns[0]?.name ?? "",
+      column: "",
       operator: "eq",
       value: "",
     };
@@ -322,6 +322,25 @@ export function TableView({
   const [inspected, setInspected] = useState<string | null>(null);
   const [inspectStatus, setInspectStatus] = useState("");
   const grid = useRef<HTMLDivElement>(null);
+  const observeGrid = useCallback((element: HTMLDivElement | null) => {
+    grid.current = element;
+    if (!element) return;
+    const measure = () => {
+      const { clientWidth: width, clientHeight: height } = element;
+      setScroll((current) =>
+        current.width === width && current.height === height
+          ? current
+          : { ...current, width, height },
+      );
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      grid.current = null;
+    };
+  }, []);
   const inspectionVersion = useRef(0);
   useEffect(
     () => () => {
@@ -688,7 +707,11 @@ export function TableView({
         onSubmit={(event) => {
           event.preventDefault();
           const parsed = FilterSchema.array().safeParse(
-            conditions.map(({ column, operator, value }) => ({ column, operator, value })),
+            conditions.map(({ column, operator, value }) => ({
+              column: column || table.columns[0]?.name,
+              operator,
+              value,
+            })),
           );
           if (parsed.success && reset({ ...input, cursor: null, filter: parsed.data }))
             setAppliedIds(conditions.map((row) => row.id));
@@ -711,7 +734,7 @@ export function TableView({
                   focusFilter.current = null;
                 }
               }}
-              value={row.column}
+              value={row.column || table.columns[0]?.name || ""}
               onChange={(e) => updateCondition(row.id, { column: e.target.value })}
             >
               {table.columns.map((c) => (
@@ -814,7 +837,7 @@ export function TableView({
             aria-rowcount={page.rows.length + 1}
             aria-colcount={table.columns.length}
             tabIndex={0}
-            ref={grid}
+            ref={observeGrid}
             onScroll={(e) => {
               const el = e.currentTarget;
               setScroll({

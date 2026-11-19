@@ -18,6 +18,8 @@ test("live schema navigation, typed virtual grid, filtering, sorting, paging and
  INSERT INTO dbapp_desktop_browse.records (id,amount,doc) SELECT i,12345678901234567890.123456789,'{"n":9007199254740993,"n":2}'::json FROM generate_series(1,1200) i;
  UPDATE dbapp_desktop_browse.records SET doc=('"'||repeat('x',1048576)||'"')::json WHERE id=1;
  UPDATE dbapp_desktop_browse.records SET doc=('"'||repeat('x',33554432)||'"')::json WHERE id=2;
+ CREATE TABLE dbapp_desktop_browse.removed_first (obsolete text, id int PRIMARY KEY);
+ INSERT INTO dbapp_desktop_browse.removed_first VALUES ('old',1), ('old',2);
  CREATE TABLE dbapp_desktop_browse.empty (id integer PRIMARY KEY);
  CREATE TABLE dbapp_desktop_browse.keyless (v text); INSERT INTO dbapp_desktop_browse.keyless VALUES ('read only');`);
   const userData = mkdtempSync(path.join(tmpdir(), "dbapp-browse-ui-"));
@@ -68,6 +70,27 @@ test("live schema navigation, typed virtual grid, filtering, sorting, paging and
       page.getByText("12345678901234567890.123456789", { exact: true }).first(),
     ).toBeVisible();
     expect(await grid.getByRole("row").count()).toBeLessThan(40); // a bounded slice of the 200-row page
+    const divider = page.getByRole("separator", { name: "Resize table list" });
+    for (let i = 0; i < 30; i++) await divider.press("ArrowRight");
+    await grid.evaluate((el) => {
+      el.scrollTop = 34;
+    });
+    await expect.poll(() => grid.evaluate((el) => el.scrollTop)).toBe(34);
+    for (let i = 0; i < 30; i++) await divider.press("ArrowLeft");
+    await expect
+      .poll(() =>
+        grid.evaluate((el) => {
+          const headers = el.querySelectorAll('[role="columnheader"]');
+          return (
+            headers[headers.length - 1]!.getBoundingClientRect().right >=
+            el.getBoundingClientRect().left + el.clientWidth
+          );
+        }),
+      )
+      .toBe(true);
+    await grid.evaluate((el) => {
+      el.scrollTop = 0;
+    });
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await expect(page.getByText("200 rows · page 2", { exact: true })).toBeVisible();
     await expect(grid.getByRole("gridcell").first()).toHaveText("201");
@@ -193,6 +216,22 @@ test("live schema navigation, typed virtual grid, filtering, sorting, paging and
     await grid.getByRole("gridcell").nth(1).dblclick();
     await expect.poll(async () => (await copiedDraft()).length).toBe(1048578);
     await page.getByRole("button", { name: "Close JSON", exact: true }).click();
+    await search.fill("dbapp_desktop_browse.removed_first");
+    await page.getByRole("button", { name: "removed_first dbapp_desktop_browse · table" }).click();
+    await grid.getByRole("button", { name: "Sort by obsolete" }).click();
+    await expect(grid.getByRole("columnheader", { name: /Sort by obsolete/ })).toHaveAttribute(
+      "aria-sort",
+      "ascending",
+    );
+    await client.query("ALTER TABLE dbapp_desktop_browse.removed_first DROP COLUMN obsolete");
+    await page.getByRole("button", { name: "Refresh", exact: true }).click();
+    await page.getByRole("button", { name: "Clear filters and sorting" }).click();
+    const recoveredTab = page.getByRole("region", { name: "Table removed_first", exact: true });
+    await expect(recoveredTab.getByLabel("Filter column", { exact: true })).toHaveValue("id");
+    await recoveredTab.getByLabel("Filter value", { exact: true }).fill("2");
+    await page.getByRole("button", { name: "Apply filter", exact: true }).click();
+    await expect(grid.getByRole("gridcell")).toHaveCount(1);
+    await expect(grid.getByRole("gridcell")).toHaveText("2");
     await search.fill("dbapp_desktop_browse.empty");
     await page.getByRole("button", { name: "empty dbapp_desktop_browse · table" }).click();
     await expect(page.getByText("No rows found.", { exact: true })).toBeVisible();
