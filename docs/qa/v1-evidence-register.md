@@ -165,3 +165,11 @@ All 15 build files matched the packaged archive. Three negative checks passed. A
 - Final stapled DMG SHA-256: `925405bb6cf2506cf5fc3f90c664351b295db907d2bee1d9f56d4a125d7ed651`.
 - App archive SHA-256: `6ec351b86f526c2ad23b8bdf2e75dfa3eb291c8b39d1a28e8c3cc81464b26420`.
 - Apple DMG submission: `b7b15716-2495-4969-bcdb-3877b4ecf573`.
+
+### Post-review package and profile compatibility
+
+The unsigned macOS arm64 app built from `e9ec585` passed all 32 packaged workflows with native Keychain enabled and PostgreSQL 14 and 18 fixtures. The regressions covered filtering after removal of the first column, grid coverage after widening the viewport, connection actions at a narrow editor width and sidebar width after a full restart. The three negative package checks passed. Its app archive SHA-256 is `6e7c7d18ff7903ff0c9590203051548defbb3da56490f5d02a053af92515e23e`.
+
+A disposable profile created by the signed 0.1.11 app retained its connection, saved query, SQL draft and exact recovered JSON on first launch of the post-review build and again after restart. PostgreSQL authentication used the saved native credential on both launches. Installer replacement and signing of the post-review build remain open.
+
+Separately, the revised VoiceOver harness passed all 17 combined table-controls and parent-navigation steps on the signed 0.1.11 archive. It selected the correct fixture documents after descending sort and reached the root of the 100,000-item tree with Left Arrow. Plain Home remains open. The local report is in `release-signed/0.1.11/voiceover/combined-Dyopxl/`.
