@@ -151,3 +151,7 @@ All six standard live VoiceOver checks passed. The 100,000-item run passed first
 The development build includes the current direction in the focused sort button’s accessible name. The PostgreSQL 18 browse workflow passed on a separately packaged, unsigned arm64 app, checking both direction labels, header states, returned rows and keyboard focus. The native table-controls harness now checks both directions after consecutive Enter presses. All nine native speech steps passed on that build, including “Sort by id, sorted ascending” and “Sort by id, sorted descending” after consecutive Enter presses. A new signed candidate still needs this check.
 
 On signed 0.1.10, [native keyboard comparisons](native-voiceover-harness.md#signed-0110-home-comparison) confirmed that pass-through Home also loses focus. Left Arrow parent navigation reached the root with speech and focus intact. Plain Home remains open.
+
+## Recovering from a removed sort column
+
+The PostgreSQL 18 Electron browsing regression sorted a filtered table by amount, dropped that column from the disposable fixture, and refreshed. The fetch failed because the sort still referenced amount. In the development build, activating **Clear filters and sorting** with Enter reloaded the first 200 rows, cleared the filter value, removed the obsolete header and allowed JSON inspection in the same tab. Signed-package verification remains open.
