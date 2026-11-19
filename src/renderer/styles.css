@@ -2116,3 +2116,100 @@ summary:focus-visible {
 .structure-dialog th {
   color: var(--subtle);
 }
+
+button.primary-button,
+a.primary-button {
+  background-color: #6743b5;
+  color: white;
+}
+.primary-button:not(:disabled):hover {
+  background-color: #59399e;
+}
+.column-resizer {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 9px;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+}
+.column-resizer:hover,
+.column-resizer:focus-visible {
+  border-right: 3px solid var(--accent);
+}
+
+.filter-builder {
+  padding: 4px 8px;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+  max-height: 35vh;
+  overflow: auto;
+}
+.filter-condition {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 14%) minmax(0, 14%) minmax(60px, 1fr) 32px 32px;
+  align-items: center;
+  gap: 6px;
+}
+.filter-condition + .filter-condition {
+  margin-top: 6px;
+}
+.filter-condition input,
+.filter-condition select {
+  min-width: 0;
+  width: 100%;
+  height: 31px;
+  padding: 0 8px;
+  border-radius: 5px;
+  background: var(--muted);
+  color: var(--foreground);
+}
+.filter-condition button {
+  height: 30px;
+  border-radius: 50%;
+  font-size: 18px;
+  color: var(--foreground);
+}
+.filter-condition button[type="submit"],
+.filter-condition button:hover {
+  background: var(--muted);
+}
+.filter-condition button[type="submit"] {
+  font-size: 13px;
+}
+.filter-and {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--subtle);
+}
+
+.app > aside {
+  position: relative;
+  max-width: 65vw;
+}
+.sidebar-resizer {
+  margin: 0;
+  border: 0;
+  height: 100%;
+  position: absolute;
+  inset: 0 -4px 0 auto;
+  width: 9px;
+  z-index: 3;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+  display: grid;
+  place-items: center;
+}
+.sidebar-resizer::after {
+  content: "";
+  width: 3px;
+  height: 32px;
+  border-radius: 2px;
+  background: var(--subtle);
+}
+.sidebar-resizer:hover::after,
+.sidebar-resizer:focus-visible::after {
+  background: var(--accent);
+}

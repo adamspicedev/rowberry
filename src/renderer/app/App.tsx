@@ -12,6 +12,46 @@ import { Button } from "../components/ui/button";
 import type { Table } from "../../shared/browse";
 import { SchemaSidebar } from "../features/schema/SchemaSidebar";
 export function App() {
+  const [sidebarWidth, setSidebarWidth] = useState<number | undefined>(() => {
+    try {
+      const saved = Number(localStorage.getItem("rowberry-sidebar-width"));
+      if (Number.isFinite(saved) && saved >= 200) return saved;
+    } catch {
+      /* Width is optional when storage is unavailable. */
+    }
+  });
+  const [sidebar, setSidebar] = useState<HTMLElement | null>(null);
+  const [sidebarRange, setSidebarRange] = useState({ width: 248, max: 248 });
+  useEffect(() => {
+    if (!sidebar) return;
+    const measure = () =>
+      setSidebarRange({
+        width: Math.round(sidebar.getBoundingClientRect().width),
+        max: Math.max(200, Math.round(window.innerWidth * 0.65)),
+      });
+    const observer = new ResizeObserver(measure);
+    observer.observe(sidebar);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [sidebar]);
+  const dragOffset = useRef(0);
+  function resizeSidebar(width: number) {
+    setSidebarWidth(Math.round(Math.max(200, Math.min(width, window.innerWidth * 0.65))));
+  }
+  useEffect(() => {
+    if (sidebarWidth === undefined) return;
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem("rowberry-sidebar-width", String(sidebarWidth));
+      } catch {
+        /* Resizing remains available without storage. */
+      }
+    }, 100);
+    return () => window.clearTimeout(timer);
+  }, [sidebarWidth]);
   const [managerVisible, setManagerVisible] = useState(true);
   const [editorHost, setEditorHost] = useState<HTMLDivElement | null>(null);
   const connectionFlags = useRef({ dirty: false, busy: false });
@@ -96,7 +136,12 @@ export function App() {
   if (!loaded) return <output>Loading local workspace…</output>;
   return (
     <div className="app" data-app-ready>
-      <aside aria-label="Connections and schemas">
+      <aside
+        ref={setSidebar}
+        id="table-list-sidebar"
+        aria-label="Connections and schemas"
+        style={{ width: sidebarWidth }}
+      >
         <header>
           <img className="brand-mark" src={mark} alt="" />
           <strong className="brand-wordmark">rowberry</strong>
@@ -152,6 +197,43 @@ export function App() {
             <option value="dark">Dark</option>
           </select>
         </footer>
+        <div
+          // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- Interactive window splitter.
+          role="separator"
+          className="sidebar-resizer"
+          tabIndex={0}
+          aria-label="Resize table list"
+          aria-controls="table-list-sidebar"
+          aria-orientation="vertical"
+          aria-valuemin={200}
+          aria-valuemax={sidebarRange.max}
+          aria-valuenow={sidebarRange.width}
+          title="Drag to resize the table list"
+          onPointerDown={(e) => {
+            if (e.button !== 0 || !e.isPrimary) return;
+            dragOffset.current =
+              e.clientX - e.currentTarget.parentElement!.getBoundingClientRect().width;
+            e.currentTarget.setPointerCapture(e.pointerId);
+          }}
+          onPointerMove={(e) => {
+            if (e.currentTarget.hasPointerCapture(e.pointerId))
+              resizeSidebar(e.clientX - dragOffset.current);
+          }}
+          onPointerUp={(e) => {
+            if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+              resizeSidebar(e.clientX - dragOffset.current);
+              e.currentTarget.releasePointerCapture(e.pointerId);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+            e.preventDefault();
+            resizeSidebar(
+              e.currentTarget.parentElement!.getBoundingClientRect().width +
+                (e.key === "ArrowRight" ? 20 : -20),
+            );
+          }}
+        />
       </aside>
       <main>
         <nav aria-label="Workspace tabs">

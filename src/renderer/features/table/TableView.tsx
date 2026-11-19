@@ -3,7 +3,7 @@ import { recordDraft } from "../../app/workspace";
 import { useRecoveryEnabled } from "../../app/useRecoveryEnabled";
 /* oxlint-disable jsx-a11y/prefer-tag-over-role -- Virtual rows and columns use ARIA grid semantics with absolute positions. */
 import { JsonInspector, type ValidatedJsonDraft, type JsonSaveTarget } from "../json/JsonInspector";
-import { useState, useRef, useEffect, useId } from "react";
+import { useState, useRef, useEffect, useLayoutEffect, useId } from "react";
 import { RequestIdSchema, type SessionId } from "../../../shared/protocol";
 import {
   FetchSchema,
@@ -36,7 +36,21 @@ export function TableView({
   const [reload, setReload] = useState(0);
   const state = useTablePage(sessionId, generation, input, reload);
   const [committedPage, setCommittedPage] = useState<RowPage | null>(null);
-  const page = committedPage ?? (state.kind === "ready" ? state.page : null);
+  const [outgoing, setOutgoing] = useState<{
+    page: RowPage;
+    number: number;
+    input: FetchInput;
+    generation: number;
+    sessionId: SessionId;
+  } | null>(null);
+  const paging =
+    state.kind === "loading" &&
+    outgoing?.input === input &&
+    outgoing.generation === generation &&
+    outgoing.sessionId === sessionId;
+  const page =
+    committedPage ?? (state.kind === "ready" ? state.page : paging ? outgoing.page : null);
+  if (outgoing && !paging) setOutgoing(null);
   const table = page?.table ?? initialTable;
   const [drafts, setDrafts] = useState<SaveInput["changes"]>([]);
   const [editor, setEditor] = useState<{
@@ -254,9 +268,36 @@ export function TableView({
         "Current rows unavailable. Drafts and original targets retained; reconnect explicitly.",
       );
   }
-  const [filterColumn, setFilterColumn] = useState(table.columns[0]?.name ?? "");
-  const [operator, setOperator] = useState("eq");
-  const [value, setValue] = useState("");
+  function newFilter() {
+    return {
+      id: crypto.randomUUID(),
+      column: table.columns[0]?.name ?? "",
+      operator: "eq",
+      value: "",
+    };
+  }
+  const [conditions, setConditions] = useState(() => [newFilter()]);
+  const focusFilter = useRef<string | null>(null);
+  const [appliedIds, setAppliedIds] = useState<string[]>([]);
+  function updateCondition(
+    id: string,
+    change: Partial<Pick<(typeof conditions)[number], "column" | "operator" | "value">>,
+  ) {
+    setConditions((rows) => rows.map((row) => (row.id === id ? { ...row, ...change } : row)));
+  }
+  function removeCondition(id: string) {
+    const index = appliedIds.indexOf(id);
+    if (index >= 0) {
+      if (!reset({ ...input, cursor: null, filter: input.filter?.filter((_, i) => i !== index) }))
+        return;
+      setAppliedIds(appliedIds.filter((key) => key !== id));
+    }
+    const remaining = conditions.filter((row) => row.id !== id);
+    if (!remaining.length) remaining.push(newFilter());
+    const removedIndex = conditions.findIndex((row) => row.id === id);
+    focusFilter.current = remaining[Math.min(removedIndex, remaining.length - 1)]!.id;
+    setConditions(remaining);
+  }
   const [scroll, setScroll] = useState({ top: 0, left: 0, width: 1000, height: 500 });
   const [selection, setSelection] = useState({ row: 0, col: 0 });
   const [jsonTarget, setJsonTarget] = useState<JsonSaveTarget | undefined>();
@@ -300,8 +341,54 @@ export function TableView({
   }
   const firstRow = Math.max(0, Math.floor(scroll.top / HEIGHT) - 3),
     lastRow = Math.ceil((scroll.top + scroll.height) / HEIGHT) + 3;
-  const firstColumn = Math.max(0, Math.floor(scroll.left / WIDTH) - 1),
-    lastColumn = Math.ceil((scroll.left + scroll.width) / WIDTH) + 1;
+  const [widths, setWidths] = useState(new Map<string, number>());
+  const drag = useRef<{ x: number; width: number } | null>(null);
+  let totalWidth = 0;
+  const offsets = [0];
+  for (const column of table.columns) {
+    totalWidth += widths.get(column.name) ?? WIDTH;
+    offsets.push(totalWidth);
+  }
+  const firstColumn = Math.max(0, offsets.findIndex((x) => x > scroll.left) - 2);
+  const rightEdge = offsets.findIndex((x) => x >= scroll.left + scroll.width);
+  const lastColumn = rightEdge < 0 ? table.columns.length : rightEdge + 1;
+  const workspace = useRef<HTMLElement>(null);
+  const pendingSortFocus = useRef<FetchInput | null>(null);
+  useLayoutEffect(() => {
+    if (!pendingSortFocus.current) return;
+    if (
+      pendingSortFocus.current !== input ||
+      state.kind === "error" ||
+      document.activeElement !== workspace.current
+    ) {
+      pendingSortFocus.current = null;
+      return;
+    }
+    if (!grid.current || !page) return;
+    const index = table.columns.findIndex((column) => column.name === input.sort?.[0]?.column);
+    const button = grid.current.querySelector<HTMLButtonElement>(
+      `[role="columnheader"][aria-colindex="${index + 1}"] button`,
+    );
+    if (!button && index >= 0) {
+      grid.current.scrollLeft = offsets[index] ?? 0;
+      return;
+    }
+    pendingSortFocus.current = null;
+    (button ?? grid.current).focus();
+  });
+  function resizeColumn(name: string, width: number) {
+    setWidths((previous) => new Map(previous).set(name, Math.max(80, Math.min(4096, width))));
+  }
+  function paginate(cursor: string | null, nextHistory: (string | null)[]) {
+    if (!page || paging || !discardAllowed()) return;
+    const next = { ...input, cursor };
+    setOutgoing({ page, number: history.length + 1, input: next, generation, sessionId });
+    setCommittedPage(null);
+    setHistory(nextHistory);
+    setInput(next);
+    clearInspection();
+    resetViewport();
+  }
   function resetViewport() {
     setScroll((current) => ({ ...current, top: 0, left: 0 }));
     setSelection({ row: 0, col: 0 });
@@ -404,9 +491,13 @@ export function TableView({
   return (
     <section
       className={`table-workspace ${inspected !== null ? "has-json-panel" : ""}`}
+      ref={workspace}
+      tabIndex={-1}
       aria-label={`Table ${table.name}`}
       data-dirty={!!(drafts.length || editor || jsonDirty)}
       data-saving={saving}
+      inert={paging}
+      aria-busy={paging}
     >
       <div className="table-toolbar">
         <strong>
@@ -590,52 +681,88 @@ export function TableView({
         </section>
       )}
       <form
-        className="filter-toolbar"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const filter = FilterSchema.safeParse({ column: filterColumn, operator, value });
-          if (filter.success) reset({ ...input, cursor: null, filter: [filter.data] });
+        className="filter-builder"
+        aria-label="Table filters"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const parsed = FilterSchema.array().safeParse(
+            conditions.map(({ column, operator, value }) => ({ column, operator, value })),
+          );
+          if (parsed.success && reset({ ...input, cursor: null, filter: parsed.data }))
+            setAppliedIds(conditions.map((row) => row.id));
         }}
       >
-        <select
-          aria-label="Filter column"
-          value={filterColumn}
-          onChange={(e) => setFilterColumn(e.target.value)}
-        >
-          {table.columns.map((c) => (
-            <option key={c.name}>{c.name}</option>
-          ))}
-        </select>
-        <select
-          aria-label="Filter operator"
-          value={operator}
-          onChange={(e) => setOperator(e.target.value)}
-        >
-          <option value="eq">equals</option>
-          <option value="ne">not equal</option>
-          <option value="contains">contains</option>
-          <option value="gt">greater than</option>
-          <option value="lt">less than</option>
-          <option value="isNull">is NULL</option>
-          <option value="isNotNull">is not NULL</option>
-        </select>
-        <input
-          aria-label="Filter value"
-          value={value}
-          disabled={operator === "isNull" || operator === "isNotNull"}
-          onChange={(e) => setValue(e.target.value)}
-          maxLength={4096}
-        />
-        <Button variant="default" type="submit">
-          Apply filter
-        </Button>
-        <Button
-          variant="ghost"
-          type="button"
-          onClick={() => reset({ ...input, cursor: null, filter: [] })}
-        >
-          Clear
-        </Button>
+        {conditions.map((row, i) => (
+          <div className="filter-condition" key={row.id}>
+            {i === 0 ? (
+              <button type="submit" aria-label="Apply filter" title="Apply filters (Enter)">
+                〈〉
+              </button>
+            ) : (
+              <span className="filter-and">AND</span>
+            )}
+            <select
+              aria-label={i ? `Filter column ${i + 1}` : "Filter column"}
+              ref={(select) => {
+                if (select && focusFilter.current === row.id) {
+                  select.focus();
+                  focusFilter.current = null;
+                }
+              }}
+              value={row.column}
+              onChange={(e) => updateCondition(row.id, { column: e.target.value })}
+            >
+              {table.columns.map((c) => (
+                <option key={c.name}>{c.name}</option>
+              ))}
+            </select>
+            <select
+              aria-label={i ? `Filter operator ${i + 1}` : "Filter operator"}
+              value={row.operator}
+              onChange={(e) => updateCondition(row.id, { operator: e.target.value })}
+            >
+              <option value="eq">equals</option>
+              <option value="ne">not equal</option>
+              <option value="contains">contains</option>
+              <option value="gt">greater than</option>
+              <option value="gte">greater than or equal</option>
+              <option value="lt">less than</option>
+              <option value="lte">less than or equal</option>
+              <option value="isNull">is NULL</option>
+              <option value="isNotNull">is not NULL</option>
+            </select>
+            <input
+              aria-label={i ? `Filter value ${i + 1}` : "Filter value"}
+              value={row.value}
+              disabled={row.operator === "isNull" || row.operator === "isNotNull"}
+              onChange={(e) => updateCondition(row.id, { value: e.target.value })}
+              maxLength={4096}
+            />
+            <button
+              type="button"
+              aria-label={conditions.length === 1 ? "Clear" : `Remove filter ${i + 1}`}
+              title="Remove filter"
+              onClick={() => removeCondition(row.id)}
+            >
+              −
+            </button>
+            {i === 0 && (
+              <button
+                type="button"
+                aria-label="Add filter"
+                title="Add AND condition"
+                disabled={conditions.length >= 16}
+                onClick={() => {
+                  const next = newFilter();
+                  focusFilter.current = next.id;
+                  setConditions([...conditions, next]);
+                }}
+              >
+                +
+              </button>
+            )}
+          </div>
+        ))}
       </form>
       {!table.key.length && (
         <p className="table-note">
@@ -712,28 +839,40 @@ export function TableView({
               if (rowInspection && next.row !== selection.row) inspectRow(next.row);
               grid.current?.scrollTo({
                 top: Math.max(0, (next.row - 2) * HEIGHT),
-                left: Math.max(0, (next.col - 2) * WIDTH),
+                left: Math.min(
+                  offsets[next.col] ?? 0,
+                  Math.max(
+                    0,
+                    (offsets[next.col + 1] ?? 0) - (grid.current?.clientWidth || scroll.width),
+                  ),
+                ),
               });
             }}
           >
-            <div
-              className="grid-header"
-              role="row"
-              aria-rowindex={1}
-              style={{ width: table.columns.length * WIDTH }}
-            >
+            <div className="grid-header" role="row" aria-rowindex={1} style={{ width: totalWidth }}>
               {table.columns.slice(firstColumn, lastColumn).map((c, i) => (
                 <div
                   role="columnheader"
+                  aria-sort={
+                    input.sort?.[0]?.column === c.name
+                      ? input.sort[0].direction === "asc"
+                        ? "ascending"
+                        : "descending"
+                      : undefined
+                  }
                   aria-colindex={firstColumn + i + 1}
                   key={c.name}
-                  style={{ position: "absolute", left: (firstColumn + i) * WIDTH, width: WIDTH }}
+                  style={{
+                    position: "absolute",
+                    left: offsets[firstColumn + i],
+                    width: widths.get(c.name) ?? WIDTH,
+                  }}
                 >
                   <button
                     type="button"
                     aria-label={`Sort by ${c.name}`}
-                    onClick={() =>
-                      reset({
+                    onClick={(event) => {
+                      const next: FetchInput = {
                         ...input,
                         cursor: null,
                         sort: [
@@ -746,8 +885,12 @@ export function TableView({
                                 : "asc",
                           },
                         ],
-                      })
-                    }
+                      };
+                      if (reset(next) && event.detail === 0) {
+                        pendingSortFocus.current = next;
+                        workspace.current?.focus({ preventScroll: true });
+                      }
+                    }}
                   >
                     {c.name}{" "}
                     {input.sort?.[0]?.column === c.name
@@ -760,13 +903,43 @@ export function TableView({
                       {c.generated ? " · generated" : c.identity ? " · identity" : ""}
                     </small>
                   </button>
+                  <div
+                    role="separator"
+                    tabIndex={0}
+                    aria-orientation="vertical"
+                    aria-label={`Resize ${c.name}`}
+                    aria-valuenow={widths.get(c.name) ?? WIDTH}
+                    aria-valuemin={80}
+                    aria-valuemax={4096}
+                    className="column-resizer"
+                    onPointerDown={(e) => {
+                      if (e.button !== 0 || !e.isPrimary) return;
+                      e.currentTarget.setPointerCapture(e.pointerId);
+                      drag.current = { x: e.clientX, width: widths.get(c.name) ?? WIDTH };
+                    }}
+                    onPointerMove={(e) => {
+                      if (drag.current && e.currentTarget.hasPointerCapture(e.pointerId))
+                        resizeColumn(c.name, drag.current.width + e.clientX - drag.current.x);
+                    }}
+                    onLostPointerCapture={() => {
+                      drag.current = null;
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+                      e.preventDefault();
+                      resizeColumn(
+                        c.name,
+                        (widths.get(c.name) ?? WIDTH) + (e.key === "ArrowRight" ? 20 : -20),
+                      );
+                    }}
+                  />
                 </div>
               ))}
             </div>
             <div
               style={{
                 height: page.rows.length * HEIGHT,
-                width: table.columns.length * WIDTH,
+                width: totalWidth,
                 position: "relative",
               }}
             >
@@ -780,7 +953,7 @@ export function TableView({
                     position: "absolute",
                     top: (firstRow + i) * HEIGHT,
                     height: HEIGHT,
-                    width: table.columns.length * WIDTH,
+                    width: totalWidth,
                   }}
                 >
                   {row.cells.slice(firstColumn, lastColumn).map((cell, j) => (
@@ -799,8 +972,8 @@ export function TableView({
                       className={`grid-cell ${cell.text === null ? "muted-cell" : ""}`}
                       style={{
                         position: "absolute",
-                        left: (firstColumn + j) * WIDTH,
-                        width: WIDTH,
+                        left: offsets[firstColumn + j],
+                        width: widths.get(table.columns[firstColumn + j]?.name ?? "") ?? WIDTH,
                         height: HEIGHT,
                       }}
                       onClick={() => {
@@ -840,7 +1013,7 @@ export function TableView({
           {!page.rows.length && <output className="table-note">No rows found.</output>}
           <div className="table-pagination">
             <span>
-              {page.rows.length} rows · page {history.length + 1}
+              {page.rows.length} rows · page {paging ? outgoing.number : history.length + 1}
             </span>
             <label>
               Rows per page{" "}
@@ -859,29 +1032,14 @@ export function TableView({
             <Button
               variant="default"
               disabled={!history.length}
-              onClick={() => {
-                if (!discardAllowed()) return;
-                setCommittedPage(null);
-                const cursor = history.at(-1) ?? null;
-                setHistory((h) => h.slice(0, -1));
-                setInput({ ...input, cursor });
-                resetViewport();
-                clearInspection();
-              }}
+              onClick={() => paginate(history.at(-1) ?? null, history.slice(0, -1))}
             >
               Previous
             </Button>
             <Button
               variant="default"
               disabled={!page.nextCursor}
-              onClick={() => {
-                if (!discardAllowed()) return;
-                setCommittedPage(null);
-                setHistory((h) => [...h, input.cursor ?? null]);
-                setInput({ ...input, cursor: page.nextCursor });
-                clearInspection();
-                resetViewport();
-              }}
+              onClick={() => paginate(page.nextCursor ?? null, [...history, input.cursor ?? null])}
             >
               Next
             </Button>

@@ -22,7 +22,11 @@ test("live schema navigation, typed virtual grid, filtering, sorting, paging and
  CREATE TABLE dbapp_desktop_browse.keyless (v text); INSERT INTO dbapp_desktop_browse.keyless VALUES ('read only');`);
   const userData = mkdtempSync(path.join(tmpdir(), "dbapp-browse-ui-"));
   const application = await electron.launch({
-    args: [path.resolve("."), `--user-data-dir=${userData}`],
+    executablePath: process.env.DBAPP_PACKAGE_EXECUTABLE,
+    args: [
+      ...(process.env.DBAPP_PACKAGE_EXECUTABLE ? [] : [path.resolve(".")]),
+      `--user-data-dir=${userData}`,
+    ],
   });
   try {
     const page = await application.firstWindow();
@@ -85,10 +89,51 @@ test("live schema navigation, typed virtual grid, filtering, sorting, paging and
     await expect(grid.getByRole("gridcell").first()).toHaveText("201");
     await expect(page.getByRole("button", { name: "Sort by id", exact: true })).toBeVisible();
 
-    await page.getByRole("button", { name: "Sort by id", exact: true }).click();
+    const idHeader = grid.getByRole("columnheader").filter({
+      has: page.getByRole("button", { name: "Sort by id", exact: true }),
+    });
+    const resizeId = idHeader.getByRole("separator");
+    const selectedCell = grid.getByRole("gridcell", { selected: true });
+    await resizeId.press("ArrowRight");
+    await expect(resizeId).toHaveAttribute("aria-valuenow", "230");
+    await expect(selectedCell).toHaveText("201");
+    await resizeId.press("ArrowLeft");
+    await expect(resizeId).toHaveAttribute("aria-valuenow", "210");
+    const sortId = idHeader.getByRole("button");
+    await sortId.press("Enter");
     await expect(grid.getByRole("gridcell").first()).toHaveText("1");
-    await page.getByRole("button", { name: "Sort by id", exact: true }).click();
+    await expect(idHeader).toHaveAttribute("aria-sort", "ascending");
+    await expect(sortId).toBeFocused();
+    await page.keyboard.press("Enter");
     await expect(grid.getByRole("gridcell").first()).toHaveText("1200");
+    await expect(idHeader).toHaveAttribute("aria-sort", "descending");
+    await grid.evaluate((element) => {
+      element.scrollLeft = element.scrollWidth;
+    });
+    const lastSort = grid.getByRole("button", { name: "Sort by tail_9", exact: true });
+    await lastSort.press("Enter");
+    await expect(lastSort).toBeFocused();
+    await expect(grid.getByRole("columnheader", { name: /Sort by tail_9/ })).toHaveAttribute(
+      "aria-sort",
+      "ascending",
+    );
+    await page.getByRole("button", { name: "Add filter" }).press("Enter");
+    await expect(page.getByLabel("Filter column 2", { exact: true })).toBeFocused();
+    await page.getByRole("button", { name: "Remove filter 2" }).press("Enter");
+    await expect(page.getByLabel("Filter column", { exact: true })).toBeFocused();
+    await page.getByRole("button", { name: "Clear", exact: true }).press("Enter");
+    await expect(page.getByLabel("Filter column", { exact: true })).toBeFocused();
+    await page.getByLabel("Filter operator", { exact: true }).selectOption("gte");
+    await page.getByLabel("Filter value", { exact: true }).fill("1198");
+    await page.getByRole("button", { name: "Add filter" }).press("Enter");
+    await page.getByLabel("Filter operator 2").selectOption("lt");
+    await page.getByLabel("Filter value 2").fill("1200");
+    await page.getByLabel("Filter value 2").press("Enter");
+    await expect(page.getByText("2 rows · page 1", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Remove filter 2" }).press("Enter");
+    await expect(page.getByText("3 rows · page 1", { exact: true })).toBeVisible();
+    await expect(page.getByLabel("Filter column", { exact: true })).toBeFocused();
+    await page.getByLabel("Filter operator", { exact: true }).selectOption("eq");
     await page.getByLabel("Filter column", { exact: true }).selectOption("id");
     await page.getByLabel("Filter value", { exact: true }).fill("42");
     await page.getByRole("button", { name: "Apply filter", exact: true }).click();

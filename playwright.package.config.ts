@@ -2,6 +2,7 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "tests/e2e",
   testMatch: [
+    "**/browse.spec.ts",
     "**/schema-browser.spec.ts",
     "**/connection-test.spec.ts",
     "**/connections.spec.ts",
