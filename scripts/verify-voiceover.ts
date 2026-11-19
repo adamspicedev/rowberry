@@ -145,7 +145,6 @@ try {
   await page.getByRole("textbox", { name: "Search schemas and tables" }).fill(schema);
   await page.getByRole("button", { name: `records ${schema} · table`, exact: true }).click();
   const grid = page.getByRole("grid", { name: "Table rows" });
-  await grid.getByRole("gridcell").nth(2).dblclick();
   const panel = page.getByRole("region", { name: "JSON inspector", exact: true });
   const tree = panel.getByRole("tree", { name: "JSON tree", exact: true });
   const items = panel.getByRole("treeitem", { name: "items: array, 2 items", exact: true });
@@ -179,6 +178,31 @@ try {
       throw error;
     }
   }
+  if (process.argv.includes("--table-controls")) {
+    const sort = grid.getByRole("button", { name: "Sort by id", exact: true });
+    await page.getByRole("button", { name: "Add filter", exact: true }).focus();
+    await step(
+      "add-filter",
+      () => nativeKey(36),
+      ["Filter column 2"],
+      [],
+      async () => {
+        await expect(page.getByLabel("Filter column 2", { exact: true })).toBeFocused();
+      },
+    );
+    await sort.focus();
+    await step(
+      "sort-ascending",
+      () => nativeKey(36),
+      ["ascending"],
+      [],
+      async () => {
+        await expect(sort).toBeFocused();
+        await expect(grid.locator('[aria-sort="ascending"]')).toContainText("id");
+      },
+    );
+  }
+  await grid.getByRole("gridcell").nth(2).dblclick();
   const verifyItems = async (expanded: boolean) => {
     await expect(items).toHaveAttribute("aria-selected", "true");
     await expect(items).toHaveAttribute("aria-expanded", String(expanded));

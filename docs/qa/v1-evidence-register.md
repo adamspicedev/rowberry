@@ -6,13 +6,13 @@ The signing budget blocker was resolved on 16 November 2026. Developer ID signat
 
 ## Candidate status
 
-| Field                                        | macOS arm64                                                                                                        | macOS Intel x64           |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------- |
-| Final v1 source/version/package              | Not selected                                                                                                       | Deferred                  |
-| Signed artifact identifiers and hashes       | [Local 0.1.9 candidate](2026-11-17-recovery-save-warning.md#signed-candidate-qualification); final v1 not selected | Not required for v1       |
-| Accepted upgrade baseline                    | None registered                                                                                                    | None registered; deferred |
-| Contract A01–A12 qualification               | Not run on final candidate                                                                                         | Outside v1 scope          |
-| Maintainer acceptance / publication approval | Pending / pending                                                                                                  | Not applicable to v1      |
+| Field                                        | macOS arm64                                                             | macOS Intel x64           |
+| -------------------------------------------- | ----------------------------------------------------------------------- | ------------------------- |
+| Final v1 source/version/package              | Not selected                                                            | Deferred                  |
+| Signed artifact identifiers and hashes       | [Local 0.1.10 candidate](#signed-0110-candidate); final v1 not selected | Not required for v1       |
+| Accepted upgrade baseline                    | None registered                                                         | None registered; deferred |
+| Contract A01–A12 qualification               | Not run on final candidate                                              | Outside v1 scope          |
+| Maintainer acceptance / publication approval | Pending / pending                                                       | Not applicable to v1      |
 
 Scope decision, 23 October 2026: the maintainer approved Apple silicon-only v1 because purchasing Intel test hardware is outside the current budget. Intel build checks are paused; native qualification and supported downloads are deferred.
 
@@ -135,3 +135,13 @@ On 20 November 2026 the development build passed the combined-filter regression 
 The unit/storage suite passed 77 tests with one opt-in skip. The integration suite passed 124 with one opt-in skip against disposable PostgreSQL 14 and 18 instances. The PostgreSQL Electron suite passed all 22 workflows. The default Electron suite passed 18 and skipped the packaged native-vault case. Type checking, lint, tracked-file formatting, the application build and the strict documentation build passed.
 
 This is the source checkpoint for a proposed 0.1.10 development candidate. The signed 0.1.9 artifact predates these table-browser changes. Packaging, native Keychain verification on the new artifact and live VoiceOver checks remain open.
+
+## Signed 0.1.10 candidate
+
+The macOS arm64 build from source commit `1060125` passed all 32 packaged workflows with native Keychain enabled, including the table browser and PostgreSQL 14/18 coverage. All 15 build files matched the app archive. Three negative package checks passed. The app and DMG passed signature, notarization, stapling and Gatekeeper checks. The read-only mounted app passed deep signature and ticket checks, and its archive matched the tested executable bundle.
+
+- DMG SHA-256 after stapling: `9eec5be0d4ae6e3f601e291ebc7be9e3fc23d42f0d8052114d47c60a3d82021e`.
+- App archive SHA-256: `291d106ffc1f2cb7376c08a5bb66cd0b94c2847c3b107435007f1218350f6134`.
+- Apple DMG submission: `cae21d7d-1f45-45c5-bda0-2a9f7529a086`.
+
+All six standard live VoiceOver checks passed. The 100,000-item run passed first, last and offscreen navigation before Home moved focus away from the JSON tree. The table-controls run heard “id Filter column 2 menu pop-up collapsed button” after adding a filter. After keyboard sorting it heard button guidance and captured no fresh announcement of “ascending”. Automatic sort-direction speech and native Home navigation remain open. Reports and screenshots are stored locally under `release-signed/0.1.10/voiceover/`. Fresh-account installation, supported-OS coverage and publication remain open.
