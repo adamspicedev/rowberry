@@ -71,3 +71,9 @@ The new packaged candidate passed the default **automatic-announcements** run, w
 - Six speech-capture tests cover freshness, normalization, forbidden labels, focus loss, speech during an unfinished action, and action failure despite matching speech.
 
 This closes the specific automatic expansion/collapse gap for this candidate on the test Mac. It does not qualify every VoiceOver setting, every announcement in the queue, other screen readers, or plain Escape while VoiceOver consumes that key.
+
+## Signed 0.1.10 Home comparison
+
+On 20 November 2026, the 100,000-item fixture was tested twice on the signed arm64 app. With `--pass-home`, Control-Option-Tab followed by Home selected the root but left focus on Resize JSON panel, reproducing the plain Home focus failure. With `--parent-navigation`, three Left Arrow presses from the offscreen-navigation step selected the array, collapsed it, then selected the root. VoiceOver spoke “JSON root: object, 1 keys selected expanded outline row (1 of 1)” and the JSON tree retained focus. All 14 steps passed, including preview cancellation. These comparison flags each enable the large-array fixture. The default `--large-array` scenario continues to test plain Home.
+
+The reports and screenshots are retained locally in `release-signed/0.1.10/voiceover/pass-home` and `release-signed/0.1.10/voiceover/parent-navigation`.
