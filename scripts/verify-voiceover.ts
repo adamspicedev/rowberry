@@ -29,7 +29,9 @@ async function preflight() {
   await appleScript('tell application "VoiceOver" to get content of last phrase');
 }
 const requestedReadback = process.argv.includes("--readback");
-const largeArray = process.argv.includes("--large-array");
+const passHome = process.argv.includes("--pass-home");
+const parentNavigation = process.argv.includes("--parent-navigation");
+const largeArray = process.argv.includes("--large-array") || passHome || parentNavigation;
 await preflight();
 if (process.argv.includes("--check")) {
   console.log("VoiceOver is running and its speech scripting interface is available");
@@ -314,9 +316,32 @@ try {
       [],
       () => assertPosition(99999),
     );
+    if (parentNavigation) {
+      await step(
+        "large-parent",
+        () => nativeKey(123),
+        ["items", "100000"],
+        [],
+        () => verifyArray(true),
+      );
+      await step(
+        "large-collapse-parent",
+        () => nativeKey(123),
+        ["items", "collapsed"],
+        [],
+        () => verifyArray(false),
+      );
+    }
     await step(
-      "large-home",
-      () => nativeKey(115),
+      parentNavigation
+        ? "large-parent-root"
+        : passHome
+          ? "large-home-passed-through"
+          : "large-home",
+      async () => {
+        if (passHome) await nativeKey(48, true);
+        await nativeKey(parentNavigation ? 123 : 115);
+      },
       ["json root"],
       [],
       async () => {

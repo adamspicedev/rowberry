@@ -35,7 +35,7 @@ Database testing covers PostgreSQL 14 and 18, with connection and TLS compatibil
 
 PostgreSQL is the only database engine. SQL results are read only. Multi-statement SQL batches, COPY streaming, import/export, schema-changing context-menu actions, ER diagrams, and automatic updates are not currently available.
 
-Native VoiceOver testing still has an unresolved Home-key focus issue in the JSON tree. Recorded automated keyboard and partial speech checks do not establish complete accessibility qualification. Unfamiliar-user task testing is also pending.
+With VoiceOver on, Home can move focus from the JSON tree to the panel divider. To reach the root while staying in the tree, press Left Arrow repeatedly. From a leaf it selects the parent. On an expanded parent it first collapses that item, then the next press moves up a level. Recorded automated keyboard and partial speech checks do not establish complete accessibility qualification. Unfamiliar-user task testing is also pending.
 
 See the [roadmap to v1](roadmap.md) for milestones and deferred features.
 
