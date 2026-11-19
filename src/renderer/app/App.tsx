@@ -12,14 +12,7 @@ import { Button } from "../components/ui/button";
 import type { Table } from "../../shared/browse";
 import { SchemaSidebar } from "../features/schema/SchemaSidebar";
 export function App() {
-  const [sidebarWidth, setSidebarWidth] = useState<number | undefined>(() => {
-    try {
-      const saved = Number(localStorage.getItem("rowberry-sidebar-width"));
-      if (Number.isFinite(saved) && saved >= 200) return saved;
-    } catch {
-      /* Width is optional when storage is unavailable. */
-    }
-  });
+  const [sidebarWidth, setSidebarWidth] = useState<number>();
   const [sidebar, setSidebar] = useState<HTMLElement | null>(null);
   const [sidebarRange, setSidebarRange] = useState({ width: 248, max: 248 });
   useEffect(() => {
@@ -39,19 +32,10 @@ export function App() {
   }, [sidebar]);
   const dragOffset = useRef(0);
   function resizeSidebar(width: number) {
-    setSidebarWidth(Math.round(Math.max(200, Math.min(width, window.innerWidth * 0.65))));
+    const nextWidth = Math.round(Math.max(200, Math.min(width, window.innerWidth * 0.65)));
+    setSidebarWidth(nextWidth);
+    updateWorkspace({ sidebarWidth: nextWidth });
   }
-  useEffect(() => {
-    if (sidebarWidth === undefined) return;
-    const timer = window.setTimeout(() => {
-      try {
-        localStorage.setItem("rowberry-sidebar-width", String(sidebarWidth));
-      } catch {
-        /* Resizing remains available without storage. */
-      }
-    }, 100);
-    return () => window.clearTimeout(timer);
-  }, [sidebarWidth]);
   const [managerVisible, setManagerVisible] = useState(true);
   const [editorHost, setEditorHost] = useState<HTMLDivElement | null>(null);
   const connectionFlags = useRef({ dirty: false, busy: false });
@@ -115,6 +99,7 @@ export function App() {
   useEffect(() => {
     void loadWorkspace().then((state) => {
       setTheme(state.theme);
+      setSidebarWidth(state.sidebarWidth);
       setLoaded(true);
     });
     const protect = (event: BeforeUnloadEvent) => {

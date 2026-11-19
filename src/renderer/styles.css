@@ -1037,6 +1037,7 @@ textarea:focus-visible {
 }
 .connection-editor-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-end;
   border-top: 1px solid var(--border);
@@ -1852,7 +1853,6 @@ summary:focus-visible {
     gap: 12px;
   }
   .connection-editor-actions {
-    flex-wrap: nowrap;
     gap: 4px;
   }
   .connection-editor-actions > button {

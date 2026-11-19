@@ -20,7 +20,7 @@ Keep [the baseline register](../upgrade-baselines.md) authoritative for accepted
 
 The [0.1.8 private candidate retention record](2026-11-16-retained-018.md) pins an unpublished GitHub draft's release/asset IDs and checksums. All ten retrieved assets matched; the extracted native app passed metadata, signature, ticket, Gatekeeper and launch checks. This closes private retention under V1-07; accepted-baseline and public-release qualification remain pending. The same retrieved app also passed [development-profile compatibility from 0.1.7](2026-11-16-retained-018.md#retrieved-development-profile-compatibility-follow-up), including exact saved work and native-credential authentication on both candidate launches; this does not establish installer replacement.
 
-The [0.1.8 candidate](2026-11-16-recovery-toggle.md#candidate-qualification) has completed local app and installer verification; 0.1.9 is the latest locally verified candidate. All 30 signed-package tests passed with no skips; app/DMG signing, notarization, stapling, Gatekeeper and embedded branding checks passed. Historical candidate evidence remains below, and no accepted release baseline is registered.
+The [0.1.8 candidate](2026-11-16-recovery-toggle.md#candidate-qualification) has completed local app and installer verification; [0.1.11](#signed-0111-candidate) is the latest locally verified candidate. All 32 signed-package tests passed with no skips; app/DMG signing, notarization, stapling, Gatekeeper and embedded branding checks passed. Historical candidate evidence remains below, and no accepted release baseline is registered.
 
 ## Current development checks
 

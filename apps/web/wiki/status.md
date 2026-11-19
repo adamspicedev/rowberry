@@ -1,6 +1,6 @@
 # Project status
 
-Rowberry is an early **0.1.x** project, licensed under **GPL-3.0-only**. Public distribution is not yet qualified. The current supported way to evaluate it is to [run from source](getting-started.md). See the [0.1.9 candidate notes](https://github.com/adamspicedev/rowberry/blob/main/docs/release-notes-0.1.9.md) for the latest recovery repair.
+Rowberry is an early **0.1.x** project, licensed under **GPL-3.0-only**. Public distribution is not yet qualified. The current supported way to evaluate it is to [run from source](getting-started.md). See the [signed 0.1.11 qualification record](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/v1-evidence-register.md#signed-0111-candidate) for the current candidate.
 
 Turning recovery off and back on now captures open SQL, JSON and table/cell work without requiring another edit. It also clears pending copies after a failed startup read so retrying cannot revive those discarded drafts. [Source and signed-package recovery checks](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/2026-11-16-recovery-toggle.md#candidate-qualification) cover exact drafts, explicit discard and crash/restart without automatic database writes.
 
@@ -10,7 +10,7 @@ The [exact candidate and source are retained privately](https://github.com/adams
 
 ## Current scope
 
-Source version 0.1.9 keeps failed-recovery warnings visible when older saves finish later. See the [development notes](https://github.com/adamspicedev/rowberry/blob/main/docs/release-notes-0.1.9.md). Its signed candidate passed all 30 package tests with no skips and app/installer signature, notarization, stapling and Gatekeeper checks. It is the latest locally verified candidate; 0.1.8 remains privately retained.
+The latest locally verified candidate is 0.1.11. All 32 packaged workflows and nine live VoiceOver checks passed, including keyboard sorting and recovery after a sorted column disappears. Apple notarized the app and installer, and Gatekeeper accepted both. The privately retained candidate remains 0.1.8.
 
 - PostgreSQL connection profiles and verified TLS.
 - Schema navigation, table browsing, and mixed table/query tabs.

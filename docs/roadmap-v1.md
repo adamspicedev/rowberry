@@ -35,7 +35,7 @@ ECC Council was used to choose release scope and tradeoffs. The roadmap translat
 
 ## Current progress
 
-The [0.1.9 source repair](qa/2026-11-17-recovery-save-warning.md) keeps recovery errors visible when an older save finishes after a newer failure. Its focused regression and source checks pass; signed 0.1.9 passed all 30 package tests and app/DMG signature, notarization, stapling and Gatekeeper checks. The latest locally verified installer is 0.1.9; the privately retained installer remains 0.1.8, and fresh-account installation is deferred until the maintainer is ready.
+The [0.1.9 source repair](qa/2026-11-17-recovery-save-warning.md) keeps recovery errors visible when an older save finishes after a newer failure. Its focused regression and source checks pass; signed 0.1.9 passed all 30 package tests and app/DMG signature, notarization, stapling and Gatekeeper checks. The latest locally verified installer is [0.1.11](qa/v1-evidence-register.md#signed-0111-candidate), which passed 32 packaged tests; the privately retained installer remains 0.1.8, and fresh-account installation is deferred until the maintainer is ready.
 
 V1-01's release contract and evidence register are complete. Local signing is working, and focused reliability and keyboard fixes continue while unfamiliar preview participants are unavailable. This summary links recorded results; it is not a new packaged acceptance run.
 

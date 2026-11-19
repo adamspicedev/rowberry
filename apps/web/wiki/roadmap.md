@@ -19,7 +19,7 @@ The [0.1.8 recovery repair](https://github.com/adamspicedev/rowberry/blob/main/d
 
 The next work is qualification of the installation and real-user experience:
 
-Source version 0.1.9 also fixes an older save response hiding a newer recovery warning. [The regression and source checks pass](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/2026-11-17-recovery-save-warning.md); its signed app and installer checks now pass, including all 30 package tests with no skips. Version 0.1.9 is the latest verified local installer, and clean-account testing is deferred until the maintainer is ready.
+Source version 0.1.9 also fixes an older save response hiding a newer recovery warning. [The regression and source checks pass](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/2026-11-17-recovery-save-warning.md); its signed app and installer checks now pass, including all 30 package tests with no skips. [Version 0.1.11](https://github.com/adamspicedev/rowberry/blob/main/docs/qa/v1-evidence-register.md#signed-0111-candidate) is the latest verified local installer with 32 passing packaged tests, and clean-account testing is deferred until the maintainer is ready.
 
 - Make connecting, finding data and saving JSON understandable without coaching.
 - Verify native Keychain behaviour, including unavailable credential storage.
