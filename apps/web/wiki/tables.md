@@ -34,3 +34,5 @@ Table editing requires a stable row identity. If Rowberry cannot safely identify
 Saves use optimistic conflict checks. If another client changed the row after you loaded it, reload and compare the latest value before deciding what to do. Do not repeatedly submit an old draft over a conflict.
 
 Query results are always read only. If an edit action is disabled there, open the underlying table to edit an eligible row instead.
+
+In the development build, if a table fails to load with filters or sorting applied, choose **Clear filters and sorting** to return to the first page. This can restore the table after a filtered or sorted column is removed.

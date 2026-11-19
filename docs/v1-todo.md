@@ -58,6 +58,7 @@ Execution record for the [v1 roadmap](roadmap-v1.md), started 23 October 2026 an
   - [ ] Qualify the development fix for missing automatic sort-direction speech on the next signed candidate. Both directions passed locally in the [native table-controls check](qa/v1-evidence-register.md#signed-0110-candidate).
   - [x] Expose table sort direction, restore keyboard focus after sorting virtualized columns, and verify keyboard column resizing preserves selection. See the [desktop regression](qa/v1-evidence-register.md#table-header-keyboard-controls).
   - [x] Restore keyboard focus when adding, removing or clearing a table filter. See the [PostgreSQL 18 desktop regression](qa/v1-evidence-register.md#table-filter-keyboard-focus).
+  - [x] Recover a table tab after its sort column disappears. The [source Electron regression](qa/v1-evidence-register.md#recovering-from-a-removed-sort-column) verifies the refreshed schema and first page.
   - [x] Verify sidebar divider keyboard bounds, restored width and narrow-window accessibility values in the local Electron build. See the [evidence register](qa/v1-evidence-register.md#sidebar-keyboard-and-window-resizing).
   - [x] Fix [notification expiry during overlapping pointer and keyboard interaction](qa/2026-10-27-toast-interaction.md); packaged regression verifies pause, keyboard Undo and resumed dismissal.
   - [x] Fix [inactive-tab close focus and context-menu Tab navigation](qa/2026-10-27-workspace-keyboard-focus.md); verify tab cycling, close cancellation and structure-dialog focus return in the package.

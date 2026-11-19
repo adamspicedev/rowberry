@@ -177,8 +177,17 @@ test("live schema navigation, typed virtual grid, filtering, sorting, paging and
     await page.getByLabel("Filter value", { exact: true }).fill("1");
     await page.getByRole("button", { name: "Apply filter", exact: true }).click();
     await expect(grid.getByRole("gridcell").first()).toHaveText("1");
+    await grid.getByRole("button", { name: "Sort by amount", exact: true }).click();
+    await expect(grid.getByRole("columnheader", { name: /Sort by amount/ })).toHaveAttribute(
+      "aria-sort",
+      "ascending",
+    );
     await client.query("ALTER TABLE dbapp_desktop_browse.records DROP COLUMN amount");
     await page.getByRole("button", { name: "Refresh", exact: true }).click();
+    await expect(page.getByRole("alert").filter({ hasText: "Could not load rows" })).toBeVisible();
+    await page.getByRole("button", { name: "Clear filters and sorting" }).press("Enter");
+    await expect(page.getByText("200 rows · page 1", { exact: true })).toBeVisible();
+    await expect(page.getByLabel("Filter value", { exact: true })).toHaveValue("");
     await expect(page.getByRole("button", { name: "Sort by amount", exact: true })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Sort by doc", exact: true })).toBeVisible();
     await grid.getByRole("gridcell").nth(1).dblclick();

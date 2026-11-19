@@ -774,9 +774,23 @@ export function TableView({
       {!page && state.kind === "loading" ? (
         <output className="table-note">Loading rows…</output>
       ) : !page && state.kind === "error" ? (
-        <p role="alert" className="table-note">
-          {state.message}
-        </p>
+        <div className="table-note">
+          <p role="alert">{state.message}</p>
+          {(!!input.filter?.length || !!input.sort?.length) && (
+            <Button
+              variant="ghost"
+              onClick={() => {
+                if (!reset({ ...input, filter: [], sort: [], cursor: null })) return;
+                const condition = newFilter();
+                focusFilter.current = condition.id;
+                setConditions([condition]);
+                setAppliedIds([]);
+              }}
+            >
+              Clear filters and sorting
+            </Button>
+          )}
+        </div>
       ) : page ? (
         <>
           <span id={`${gridId}-keyboard-help`} className="sr-only">
